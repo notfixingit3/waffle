@@ -209,3 +209,12 @@ Example: `{"type": "SPOT_UPDATED", "payload": {"spot_number": 12, "status": "pai
 - Use clear service boundaries
 - Readable names over clever ones
 - Comments only where logic is non-obvious
+
+## Commit Message Guidelines
+
+Every commit should include a random Scooby-Doo quote somewhere in the message body. Examples:
+- "Ruh-roh!"
+- "Zoinks!"
+- "Jinkies!"
+- "Would you do it for a Scooby Snack?"
+- "Puppy Power!"
