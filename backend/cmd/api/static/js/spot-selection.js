@@ -3,9 +3,11 @@ var SpotSelection = (function() {
 
   var selectedSpots = new Set();
   var config = {};
+  var _cacheKey = null;
 
   function init(opts) {
     config = opts || {};
+    _cacheKey = config.slug || null;
 
     var grid = document.getElementById('spot-grid');
     if (!grid) return;
@@ -38,6 +40,18 @@ var SpotSelection = (function() {
     }
 
     updateClaimButton();
+    if (!navigator.onLine) {
+      setOfflineClaim();
+    }
+    window.addEventListener('waffle:offline', function() { setOfflineClaim(); });
+    window.addEventListener('waffle:online', function() { updateClaimButton(); });
+  }
+
+  function setOfflineClaim() {
+    var btn = document.getElementById('claim-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Offline — cannot claim';
   }
 
   function toggleSpot(num, el) {
@@ -148,6 +162,17 @@ var SpotSelection = (function() {
       });
 
       selectedSpots.clear();
+
+      if (_cacheKey && typeof OfflineHandler !== 'undefined') {
+        fetch('/api/waffles/' + _cacheKey + '/spots')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.spots) {
+              OfflineHandler.setCachedData(_cacheKey, data.spots);
+            }
+          })
+          .catch(function() { /* cache update failed — non-critical */ });
+      }
 
       successEl.textContent = spotsArray.length + ' spot' + (spotsArray.length !== 1 ? 's' : '') + ' claimed by @' + handle + '!';
       successEl.classList.remove('hidden');
