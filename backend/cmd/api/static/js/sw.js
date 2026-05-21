@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `waffle-${CACHE_VERSION}-static`;
 const PAGES_CACHE = `waffle-${CACHE_VERSION}-pages`;
 
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   '/static/favicon.svg',
   '/static/img/logo.png',
   '/static/manifest.json',
+  '/static/offline.html',
   '/static/js/sw.js',
   '/static/js/offline-handler.js',
   '/static/js/spot-selection.js',
@@ -116,7 +117,9 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return response;
-        }).catch(() => cached);
+        }).catch(() => {
+          return caches.match('/static/offline.html');
+        });
 
         return cached || fetchPromise;
       })
