@@ -5,32 +5,34 @@
 {{ define "content" }}
 <div class="max-w-4xl mx-auto">
   <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Active Waffles</h1>
-    <span class="text-sm text-gray-500">{{ len .waffles }} total</span>
+    <h1 class="text-2xl font-bold text-base-content">Active Waffles</h1>
+    <span class="text-sm text-base-content/60">{{ len .waffles }} total</span>
   </div>
 
   {{ if eq (len .waffles) 0 }}
   <div class="text-center py-12">
-    <p class="text-gray-500">No active waffles right now</p>
+    <p class="text-base-content/60">No active waffles right now</p>
   </div>
   {{ else }}
   <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
     {{ range .waffles }}
-    <a href="/waffle/{{ .Slug }}" class="block bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow border border-gray-100">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-semibold text-gray-900">{{ .Title }}</h2>
-        {{ if eq .Status "active" }}
-        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Active</span>
-        {{ else }}
-        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">Completed</span>
+    <a href="/waffle/{{ .Slug }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-base-200">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-semibold text-base-content">{{ .Title }}</h2>
+          {{ if eq .Status "active" }}
+          <span class="badge badge-success">Active</span>
+          {{ else }}
+          <span class="badge badge-ghost">Completed</span>
+          {{ end }}
+        </div>
+        {{ if .Description }}
+        <p class="text-base-content/70 text-sm mb-3 line-clamp-2">{{ .Description }}</p>
         {{ end }}
-      </div>
-      {{ if .Description }}
-      <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ .Description }}</p>
-      {{ end }}
-      <div class="flex items-center gap-4 text-sm text-gray-500">
-        <span>{{ .TotalSpots }} spots</span>
-        <span>${{ .SpotPrice }} each</span>
+        <div class="flex items-center gap-4 text-sm text-base-content/60">
+          <span>{{ .TotalSpots }} spots</span>
+          <span>${{ .SpotPrice }} each</span>
+        </div>
       </div>
     </a>
     {{ end }}

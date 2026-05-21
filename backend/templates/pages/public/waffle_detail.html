@@ -6,168 +6,177 @@
 <div class="waffle-detail max-w-4xl mx-auto" data-waffle-id="{{ .waffle.ID }}" data-waffle-slug="{{ .waffle.Slug }}">
   {{/* Winner banner */}}
   {{ if eq .waffle.Status "completed" }}
-  <div class="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 mb-6 text-center">
+  <div class="alert alert-warning mb-6 text-center">
     <div class="text-3xl mb-1">🏆</div>
-    <p class="text-lg font-bold text-yellow-800">
+    <p class="text-lg font-bold">
       Winner: Spot #{{ deref .waffle.WinningSpotNumber }}
     </p>
     {{ if .waffle.WinningInstagramHandle }}
-    <p class="text-sm text-yellow-700 mt-1">@{{ deref .waffle.WinningInstagramHandle }}</p>
+    <p class="text-sm mt-1">@{{ deref .waffle.WinningInstagramHandle }}</p>
     {{ end }}
   </div>
   {{ end }}
 
   {{/* Waffle info header */}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-    <div class="flex items-center justify-between mb-2">
-      <h1 class="text-2xl font-bold text-gray-900">{{ .waffle.Title }}</h1>
-      <span class="px-3 py-1 rounded-full text-xs font-semibold
-        {{ if eq .waffle.Status "active" }}bg-green-100 text-green-800{{ else }}bg-gray-100 text-gray-600{{ end }}">
-        {{ if eq .waffle.Status "active" }}Active{{ else }}Completed{{ end }}
-      </span>
-    </div>
+  <div class="card bg-base-100 shadow-sm mb-4">
+    <div class="card-body p-5">
+      <div class="flex items-center justify-between mb-2">
+        <h1 class="text-2xl font-bold text-base-content">{{ .waffle.Title }}</h1>
+        <span class="
+          {{ if eq .waffle.Status "active" }}badge badge-success{{ else }}badge badge-ghost{{ end }}">
+          {{ if eq .waffle.Status "active" }}Active{{ else }}Completed{{ end }}
+        </span>
+      </div>
 
-    {{ if .waffle.Description }}
-    <p class="text-gray-600 text-sm mb-3">{{ deref .waffle.Description }}</p>
-    {{ end }}
+      {{ if .waffle.Description }}
+      <p class="text-base-content/70 text-sm mb-3">{{ deref .waffle.Description }}</p>
+      {{ end }}
 
-    {{ if .waffle.PaymentInfo }}
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-      <p class="text-sm text-blue-800 font-medium">Payment Info</p>
-      <p class="text-sm text-blue-700 whitespace-pre-wrap">{{ deref .waffle.PaymentInfo }}</p>
-    </div>
-    {{ end }}
+      {{ if .waffle.PaymentInfo }}
+      <div class="alert alert-info mb-3">
+        <p class="text-sm font-medium">Payment Info</p>
+        <p class="text-sm whitespace-pre-wrap">{{ deref .waffle.PaymentInfo }}</p>
+      </div>
+      {{ end }}
 
-    <div class="flex items-center gap-4 text-sm text-gray-500">
-      <span><span class="font-medium text-gray-700">{{ .waffle.TotalSpots }}</span> spots</span>
-      <span><span class="font-medium text-gray-700">${{ .waffle.SpotPrice }}</span> each</span>
-    </div>
+      <div class="flex items-center gap-4 text-sm text-base-content/60">
+        <span><span class="font-medium text-base-content">{{ .waffle.TotalSpots }}</span> spots</span>
+        <span><span class="font-medium text-base-content">${{ .waffle.SpotPrice }}</span> each</span>
+      </div>
 
-    {{ if .waffle.InstagramMediaLinks }}
-    <div class="flex flex-wrap gap-2 mt-3">
-      {{ range .waffle.InstagramMediaLinks }}
-      <a href="{{ . }}" target="_blank" rel="noopener noreferrer"
-         class="text-xs bg-pink-50 text-pink-700 px-3 py-1 rounded-full hover:bg-pink-100 transition-colors border border-pink-200">
-        📸 IG Post
-      </a>
+      {{ if .waffle.InstagramMediaLinks }}
+      <div class="flex flex-wrap gap-2 mt-3">
+        {{ range .waffle.InstagramMediaLinks }}
+        <a href="{{ . }}" target="_blank" rel="noopener noreferrer"
+           class="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full hover:bg-accent/20 transition-colors border border-accent">
+          📸 IG Post
+        </a>
+        {{ end }}
+      </div>
       {{ end }}
     </div>
-    {{ end }}
   </div>
 
   {{/* Stats bar */}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-    <div class="grid grid-cols-3 gap-3 text-center">
-      <div>
-        <div class="text-2xl font-bold text-green-600">{{ index .stats "spots_remaining" }}</div>
-        <div class="text-xs text-gray-500">Available</div>
-      </div>
-      <div>
-        <div class="text-2xl font-bold text-yellow-600">{{ index .stats "pending" }}</div>
-        <div class="text-xs text-gray-500">Pending</div>
-      </div>
-      <div>
-        <div class="text-2xl font-bold text-red-600">{{ index .stats "paid" }}</div>
-        <div class="text-xs text-gray-500">Paid</div>
+  <div class="card bg-base-100 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="grid grid-cols-3 gap-3 text-center">
+        <div>
+          <div class="text-2xl font-bold text-success">{{ index .stats "spots_remaining" }}</div>
+          <div class="text-xs text-base-content/60">Available</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-warning">{{ index .stats "pending" }}</div>
+          <div class="text-xs text-base-content/60">Pending</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-error">{{ index .stats "paid" }}</div>
+          <div class="text-xs text-base-content/60">Paid</div>
+        </div>
       </div>
     </div>
   </div>
 
   {{/* Spot grid */}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-lg font-semibold text-gray-900">Spots</h2>
-      <div class="flex items-center gap-1" id="ws-status">
-        <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span>
-        <span class="text-xs text-gray-400">live</span>
+  <div class="card bg-base-100 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold text-base-content">Spots</h2>
+        <div class="flex items-center gap-1" id="ws-status">
+          <span class="w-2 h-2 rounded-full bg-base-300 inline-block"></span>
+          <span class="text-xs text-base-content/40">live</span>
+        </div>
       </div>
-    </div>
 
-    <div id="spot-grid" class="grid grid-cols-5 sm:grid-cols-10 gap-2">
-      {{ range .spots }}
-      {{ $spot := . }}
-      <button type="button" role="checkbox"
-        class="spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none
-        {{ if eq $spot.Status "available" }}
-          bg-green-50 border-green-400 hover:bg-green-100 active:bg-green-200 cursor-pointer text-green-900
-        {{ else if eq $spot.Status "pending" }}
-          bg-yellow-50 border-yellow-400 text-yellow-900 cursor-default
-        {{ else if eq $spot.Status "paid" }}
-          bg-red-50 border-red-400 text-red-900 cursor-default
-        {{ else if eq $spot.Status "winner" }}
-          bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-900 cursor-default
-        {{ else if eq $spot.Status "loser" }}
-          bg-gray-200 border-gray-400 text-gray-500 opacity-60 cursor-default
-        {{ end }}"
-        data-spot-number="{{ $spot.Number }}"
-        data-spot-status="{{ $spot.Status }}"
-        {{ if ne $spot.Status "available" }}disabled{{ end }}
-        aria-label="Spot {{ $spot.Number }} - {{ $spot.Status }}">
-        <span class="text-base font-bold leading-tight">{{ $spot.Number }}</span>
-        {{ if eq $spot.Status "winner" }}
-        <span class="text-sm mt-0.5">🏆</span>
+      <div id="spot-grid" class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+        {{ range .spots }}
+        {{ $spot := . }}
+        <button type="button" role="checkbox"
+          class="spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none
+          {{ if eq $spot.Status "available" }}
+            bg-success/10 border-success hover:bg-success/20 active:bg-success/30 cursor-pointer text-success-content
+          {{ else if eq $spot.Status "pending" }}
+            bg-warning/10 border-warning text-warning-content cursor-default
+          {{ else if eq $spot.Status "paid" }}
+            bg-error/10 border-error text-error-content cursor-default
+          {{ else if eq $spot.Status "winner" }}
+            bg-secondary/10 border-secondary ring-2 ring-secondary text-secondary-content cursor-default
+          {{ else if eq $spot.Status "loser" }}
+            bg-base-300 border-base-300 text-base-content/50 opacity-60 cursor-default
+          {{ end }}"
+          data-spot-number="{{ $spot.Number }}"
+          data-spot-status="{{ $spot.Status }}"
+          {{ if ne $spot.Status "available" }}disabled{{ end }}
+          aria-label="Spot {{ $spot.Number }} - {{ $spot.Status }}">
+          <span class="text-base font-bold leading-tight">{{ $spot.Number }}</span>
+          {{ if eq $spot.Status "winner" }}
+          <span class="text-sm mt-0.5">🏆</span>
+          {{ end }}
+          {{ if $spot.ClaimedByHandle }}
+          <span class="text-[10px] truncate w-full mt-0.5 opacity-70">{{ deref $spot.ClaimedByHandle }}</span>
+          {{ end }}
+        </button>
         {{ end }}
-        {{ if $spot.ClaimedByHandle }}
-        <span class="text-[10px] truncate w-full mt-0.5 opacity-70">{{ deref $spot.ClaimedByHandle }}</span>
-        {{ end }}
-      </button>
-      {{ end }}
-    </div>
+      </div>
 
-    {{/* Legend */}}
-    <div class="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100">
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-green-100 border border-green-400 inline-block"></span> Available</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-yellow-100 border border-yellow-400 inline-block"></span> Pending</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-red-100 border border-red-400 inline-block"></span> Paid</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-purple-100 border border-purple-500 inline-block"></span> Winner</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-gray-200 border border-gray-400 inline-block"></span> Loser</span>
+      {{/* Legend */}}
+      <div class="flex flex-wrap gap-3 mt-3 pt-3 border-t border-base-200">
+        <span class="flex items-center gap-1 text-xs text-base-content/60"><span class="w-3 h-3 rounded bg-success/10 border border-success inline-block"></span> Available</span>
+        <span class="flex items-center gap-1 text-xs text-base-content/60"><span class="w-3 h-3 rounded bg-warning/10 border border-warning inline-block"></span> Pending</span>
+        <span class="flex items-center gap-1 text-xs text-base-content/60"><span class="w-3 h-3 rounded bg-error/10 border border-error inline-block"></span> Paid</span>
+        <span class="flex items-center gap-1 text-xs text-base-content/60"><span class="w-3 h-3 rounded bg-secondary/10 border border-secondary inline-block"></span> Winner</span>
+        <span class="flex items-center gap-1 text-xs text-base-content/60"><span class="w-3 h-3 rounded bg-base-300 border border-base-300 inline-block"></span> Loser</span>
+      </div>
     </div>
   </div>
 
   {{/* Claim form (only shown for active waffles) */}}
   {{ if eq .waffle.Status "active" }}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Claim Spots</h2>
+  <div class="card bg-base-100 shadow-sm mb-4">
+    <div class="card-body p-5">
+      <h2 class="text-lg font-semibold text-base-content mb-4">Claim Spots</h2>
 
-    <div id="claim-summary" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-      <p class="text-sm text-blue-800">
-        <span id="claim-count">0</span> spots selected &middot;
-        <span class="font-semibold" id="claim-total">$0</span>
-      </p>
+      <div id="claim-summary" class="hidden alert alert-info mb-4">
+        <p class="text-sm">
+          <span id="claim-count">0</span> spots selected &middot;
+          <span class="font-semibold" id="claim-total">$0</span>
+        </p>
+      </div>
+
+      <div class="mb-4">
+        <label for="instagram-handle" class="block text-sm font-medium text-base-content mb-1">Instagram Handle</label>
+        <input type="text" id="instagram-handle" maxlength="30" placeholder="yourhandle" required
+          class="input input-bordered w-full"
+          autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+        <p class="text-xs text-base-content/40 mt-1">Letters, numbers, underscores, and periods only. Max 30 chars.</p>
+      </div>
+
+      <button type="button" id="claim-btn"
+        class="btn btn-primary w-full text-base"
+        disabled>
+        Select Spots to Claim
+      </button>
+
+      <p id="claim-error" class="hidden text-error text-sm mt-2"></p>
+      <p id="claim-success" class="hidden text-success text-sm mt-2"></p>
     </div>
-
-    <div class="mb-4">
-      <label for="instagram-handle" class="block text-sm font-medium text-gray-700 mb-1">Instagram Handle</label>
-      <input type="text" id="instagram-handle" maxlength="30" placeholder="yourhandle" required
-        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-        autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-      <p class="text-xs text-gray-400 mt-1">Letters, numbers, underscores, and periods only. Max 30 chars.</p>
-    </div>
-
-    <button type="button" id="claim-btn"
-      class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-base"
-      disabled>
-      Select Spots to Claim
-    </button>
-
-    <p id="claim-error" class="hidden text-red-600 text-sm mt-2"></p>
-    <p id="claim-success" class="hidden text-green-600 text-sm mt-2"></p>
   </div>
   {{ end }}
 </div>
 {{ end }}
 
 {{ define "scripts" }}
+<script src="/static/js/spot-status-classes.js"></script>
 <script src="/static/js/websocket-client.js"></script>
 <script src="/static/js/spot-selection.js"></script>
 <script>
 (function() {
   var SPOT_CLASSES = {
-    available: 'bg-green-50 border-green-400 hover:bg-green-100 active:bg-green-200 cursor-pointer text-green-900',
-    pending:   'bg-yellow-50 border-yellow-400 text-yellow-900 cursor-default',
-    paid:      'bg-red-50 border-red-400 text-red-900 cursor-default',
-    winner:    'bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-900 cursor-default',
-    loser:     'bg-gray-200 border-gray-400 text-gray-500 opacity-60 cursor-default'
+    available: 'bg-success/10 border-success hover:bg-success/20 active:bg-success/30 cursor-pointer text-success-content',
+    pending:   'bg-warning/10 border-warning text-warning-content cursor-default',
+    paid:      'bg-error/10 border-error text-error-content cursor-default',
+    winner:    'bg-secondary/10 border-secondary ring-2 ring-secondary text-secondary-content cursor-default',
+    loser:     'bg-base-300 border-base-300 text-base-content/50 opacity-60 cursor-default'
   };
 
   function updateSpotElement(el, status, handle) {
@@ -207,8 +216,8 @@
     var lastUpdated = OfflineHandler.getLastUpdated(slug) || 'unknown';
     var notice = document.createElement('div');
     notice.id = 'offline-cache-notice';
-    notice.className = 'bg-amber-50 border border-amber-300 rounded-lg p-3 mb-4 text-center';
-    notice.innerHTML = '<p class="text-sm text-amber-800 font-medium">Offline — showing cached data</p><p class="text-xs text-amber-600 mt-1">Last updated: ' + lastUpdated + '</p>';
+    notice.className = 'alert alert-warning mb-4 text-center';
+    notice.innerHTML = '<p class="text-sm font-medium">Offline — showing cached data</p><p class="text-xs mt-1">Last updated: ' + lastUpdated + '</p>';
     container.insertBefore(notice, container.firstChild);
   }
 
