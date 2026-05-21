@@ -1,3 +1,8 @@
+# Node build artifacts (DaisyUI/tailwind)
+backend/cmd/api/static/css/node_modules/
+backend/cmd/api/static/css/package.json
+backend/cmd/api/static/css/package-lock.json
+
 # Local environment
 .env
 .env.*

@@ -2,9 +2,8 @@
 FROM node:20-alpine AS tailwind
 WORKDIR /app
 COPY backend/cmd/api/static/css/input.css ./cmd/api/static/css/
-COPY backend/cmd/api/tailwind.config.js ./cmd/api/
 COPY backend/templates ./templates
-RUN npm install tailwindcss @tailwindcss/cli && \
+RUN npm install tailwindcss @tailwindcss/cli daisyui && \
     npx @tailwindcss/cli -i ./cmd/api/static/css/input.css -o ./cmd/api/static/css/output.css --content="./templates/**/*.html" --content="./cmd/api/static/js/**/*.js" --minify
 
 # Stage 2: Build Go binary
