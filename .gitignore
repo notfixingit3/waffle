@@ -1,0 +1,22 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Local build outputs
+/backend/api
+
+# Cookie/session jars from manual QA
+/admin.jar
+/csrf.jar
+/cookies.txt
+
+# Agent and browser automation artifacts
+/.omo/
+/.playwright-mcp/
+
+# Root-level QA screenshots and traces
+/*.png
+/scenario*-*.txt
+/f3-*.md
+/EOF

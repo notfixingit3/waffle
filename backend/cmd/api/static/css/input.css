@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Mobile touch optimization — prevent double-tap zoom on interactive elements */
+* {
+  touch-action: manipulation;
+}
+
+a,
+button,
+[role="button"],
+.spot-item,
+.admin-spot-item {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+.no-select,
+.spot-item,
+.admin-spot-item {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 44px minimum per Apple HIG touch target guidelines */
+button,
+a,
+[role="button"],
+.spot-item,
+.admin-spot-item {
+  min-height: 44px;
+  min-width: 44px;
+}

@@ -1,0 +1,244 @@
+<p align="center">
+  <img src="backend/cmd/api/static/img/logo.png" alt="Project Syrup logo" width="180" />
+</p>
+
+<h1 align="center">Project Syrup - The Waffle Maker</h1>
+
+<p align="center">A dead-simple spot board for Instagram waffle drops. Built for collectors, by collectors.</p>
+
+<p align="center">
+  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-Compose-blue?logo=docker" alt="Docker" /></a>
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.25-00ADD8?logo=go" alt="Go" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL" /></a>
+  <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
+</p>
+
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.0.4">v0.0.4</a></p>
+
+---
+
+## What is this?
+
+Project Syrup is a **mobile-first live spot management system** for Instagram waffle sellers. No timers. No randomizers. No payment processing. Just a clean, real-time board where buyers claim spots and admins track payments.
+
+Built to work inside Instagram's in-app browser because that's where your buyers already are.
+
+### The Flow
+
+1. **Admin creates a waffle** — sets title, price per spot, total spots, links to Instagram posts showing what's being waffled
+2. **Buyers claim spots** — tap available spots, enter Instagram handle, done (< 10 seconds)
+3. **Admin marks paid** — as payments come in via DM/CashApp/Venmo
+4. **Winner drawn** — admin enters winning spot number after external drawing
+5. **Everyone sees results** — instant WebSocket broadcast to all connected clients
+
+---
+
+## Screenshots
+
+| Screenshot | Screenshot |
+|------------|------------|
+| **Public Home**<br>![Public home page showing active waffles](docs/screenshots/homepage.png) | **Admin Login**<br>![Admin login page](docs/screenshots/admin-login.png) |
+| **Admin Dashboard**<br>![Admin dashboard with waffle cards](docs/screenshots/admin-dashboard.png) | **Waffle Management**<br>![Waffle management spot grid with mixed spot statuses](docs/screenshots/waffle-manage.png) |
+| **Admin Management**<br>![Admin management table](docs/screenshots/admins-page.png) | **Reports**<br>![Admin reports page](docs/screenshots/reports-page.png) |
+
+---
+
+## Features
+
+- **Multi-admin auth** — Role-based access control with `super_admin` and `admin` roles
+- **Admin management** — Create admins, change roles, deactivate accounts, and reset another admin's password (super_admin only)
+- **Password reset** — Self-service reset tokens plus authenticated password changes
+- **Instagram media links** — Link to posts showing what's being waffled (supports multiple items)
+- **Archive + delete controls** — Hide completed waffles by default, or type `DELETE` for permanent removal
+- **Real-time spot grid** — WebSocket-powered claim, payment, release, and winner updates
+- **Mobile-first public flow** — Built for fast spot claims inside Instagram's in-app browser
+- **Installable app shell** — Web App Manifest, app icons, and standalone display metadata are wired in
+- **Admin dashboard** — Create waffles, manage spots, track payments, enter winners
+- **Admin reports** — Drought list, power buyers, monthly activity, and spot velocity reports
+- **Buyer stats** — Track win/loss history per Instagram handle
+- **Activity history** — Record claim, payment, release, and winner events per waffle
+- **CSV exports** — Download a waffle's spot list for external reconciliation
+- **Transactional safety** — No double-claims, ever
+
+---
+
+## Quick Start
+
+**Prerequisites:** Docker and Docker Compose.
+
+```bash
+# Clone the repo
+git clone https://github.com/notfixingit3/waffle.git
+cd waffle
+
+# Start everything
+docker compose up --build
+```
+
+Docker Compose starts both the Go app and PostgreSQL, runs database migrations, and injects safe local-development defaults for the database connection, JWT secret, and admin credentials. You do not need to create a `.env` file to run the app locally.
+
+After startup, open the app and admin tools here:
+
+| Service | URL |
+|---------|-----|
+| Application | http://localhost:8383 |
+| Admin Login | http://localhost:8383/admin/login |
+| PostgreSQL | localhost:5432 |
+
+Default local admin credentials are `admin` / `admin123`. Change them before any real deployment.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Go server-side templates + Tailwind CSS (server-rendered HTML) |
+| Backend | Go (Gin), WebSocket hub |
+| Database | PostgreSQL with migrations |
+| DevOps | Docker Compose, multi-stage builds |
+| PWA | Web App Manifest, app icons, standalone display metadata |
+
+---
+
+## Project Status
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1 | ✅ Complete | Docker Compose + Postgres + Go health check + server-rendered UI |
+| 2 | ✅ Complete | Waffle schema + create endpoint + public page + spot grid + Instagram media links |
+| 3 | ✅ Complete | Spot claims + pending status + admin dashboard + mark paid/release + archive + delete |
+| 4 | ✅ Complete | WebSocket live updates + activity feed + buyer stats + admin reporting |
+| 5 | ✅ Complete | Manual winner entry + winner/loser marking + buyer stats + history |
+| 6 | ✅ Complete | Mobile polish + production Dockerfiles + deployment docs |
+| 7 | ✅ Complete | Multi-admin auth + role-based access + password reset + admin management + archive/delete |
+| 8 | ⏭️ Planned | Offline/service worker support; current build already includes Web App Manifest, icons, and install metadata |
+| Admin UI Refresh | ✅ Complete | Warm amber admin palette + screenshots added to README |
+
+---
+
+## Architecture
+
+```
+┌──────────────────┐     ┌─────────────┐
+│  Go (Gin)        │────▶│ PostgreSQL  │
+│  Server Templates │◄────│   (pgx)     │
+│  + WebSocket Hub │     └─────────────┘
+└──────────────────┘
+        │
+        ▼
+  Tailwind CSS
+  (server-rendered)
+```
+
+**Design principles:**
+- Keep it simple and boring
+- No microservices
+- WebSocket server stays inside Go backend
+- Avoid premature abstractions
+- Readable names over clever ones
+
+---
+
+## API Overview
+
+**Public Endpoints**
+- `GET /api/waffles` — List public waffles
+- `GET /api/waffles/:slug` — Get waffle details
+- `GET /api/waffles/:slug/spots` — Get spot grid
+- `GET /api/waffles/:slug/export` — Export spots as CSV
+- `POST /api/claims` — Claim spots
+- `GET /api/buyers/:handle/stats` — Buyer win/loss stats
+- `GET /api/buyers/:handle/history` — Buyer claim history
+
+**Public Pages**
+- `GET /` — Home page
+- `GET /waffles` — Waffle list
+- `GET /waffle/:slug` — Waffle detail + live spot grid
+- `GET /buyer/:handle` — Buyer stats page
+
+**Admin Auth Endpoints**
+- `POST /api/admin/login` — Username/password login
+- `POST /api/admin/forgot-password` — Request password reset
+- `POST /api/admin/reset-password` — Reset password with token
+
+**Admin Endpoints** (auth required)
+- `GET /api/admin/me` — Get current admin info
+- `POST /api/admin/change-password` — Change password
+- `GET /api/admin/waffles?archived=true|false` — List waffles
+- `POST /api/admin/waffles` — Create waffle
+- `PATCH /api/admin/waffles/:id` — Update waffle
+- `POST /api/admin/waffles/:id/archive` — Archive waffle
+- `POST /api/admin/waffles/:id/unarchive` — Unarchive waffle
+- `DELETE /api/admin/waffles/:id` — Permanently delete waffle
+- `POST /api/admin/spots/:id/pay` — Mark spot paid
+- `POST /api/admin/spots/:id/release` — Release pending spot
+- `POST /api/admin/waffles/:id/winner` — Enter winner
+- `GET /api/admin/admins` — List all admins (super_admin only)
+- `POST /api/admin/admins` — Create new admin (super_admin only)
+- `PATCH /api/admin/admins/:id` — Update admin role (super_admin only)
+- `PATCH /api/admin/admins/:id/password` — Reset another admin's password (super_admin only)
+- `DELETE /api/admin/admins/:id` — Deactivate admin (super_admin only)
+- `GET /api/admin/reports/drought` — Drought list report
+- `GET /api/admin/reports/power-buyers` — Power buyers report
+- `GET /api/admin/reports/monthly-activity` — Monthly activity report
+- `GET /api/admin/reports/spot-velocity` — Spot velocity report
+
+---
+
+## Contributing
+
+This is a personal project, but issues and PRs are welcome. The codebase prioritizes:
+
+1. **Correctness** — Server-side validation for every state change
+2. **Performance** — Sub-10-second claim flow on mobile
+3. **Simplicity** — No over-engineering, clear service boundaries
+
+---
+
+## Special Thanks
+
+Project Syrup exists because two glass artists kept running great waffles the hard way.
+
+<table>
+<tr>
+<td align="center" width="50%">
+  <a href="https://www.instagram.com/dani_boo_glass/">
+    <strong>Dani Boo Glass</strong>
+  </a>
+  <br />
+  <a href="https://www.instagram.com/dani_boo_glass/">
+    <img src="https://img.shields.io/badge/Instagram-dani__boo__glass-E4405F?logo=instagram&logoColor=white" alt="Dani Boo Glass on Instagram" />
+  </a>
+</td>
+<td align="center" width="50%">
+  <a href="https://www.instagram.com/crysis_designs/">
+    <strong>Crysis Designs</strong>
+  </a>
+  <br />
+  <a href="https://www.instagram.com/crysis_designs/">
+    <img src="https://img.shields.io/badge/Instagram-crysis__designs-E4405F?logo=instagram&logoColor=white" alt="Crysis Designs on Instagram" />
+  </a>
+</td>
+</tr>
+</table>
+
+Special shout out to [Dani Boo Glass](https://www.instagram.com/dani_boo_glass/) and [Crysis Designs](https://www.instagram.com/crysis_designs/) for creating the original Waffle and for driving me nuts watching them copy/paste spot lists over and over again in chat.
+
+---
+
+## Support
+
+If this project helps you run smoother waffles, consider buying me a coffee:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/notfixingit)
+
+---
+
+## License
+
+MIT — do whatever you want, just don't blame me when your waffle fills up in 30 seconds.
+
+---
+
+*Built with 🧇 and questionable sleep habits.*

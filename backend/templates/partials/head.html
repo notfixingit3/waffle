@@ -1,0 +1,22 @@
+{{ define "head.html" }}
+{{/*
+  Common head elements for pages.
+  Usage: {{ template "head.html" . }}
+  Where . has:
+    - CSRFToken: string (optional)
+    - Description: string (optional)
+    - OGImage: string (optional)
+*/}}
+{{ if .Description }}
+<meta name="description" content="{{ .Description }}">
+<meta property="og:description" content="{{ .Description }}">
+{{ end }}
+{{ if .OGImage }}
+<meta property="og:image" content="{{ .OGImage }}">
+{{ end }}
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+{{ if .CSRFToken }}
+<meta name="csrf-token" content="{{ .CSRFToken }}">
+{{ end }}
+{{ end }}

@@ -1,0 +1,188 @@
+package models
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type WaffleStatus string
+
+const (
+	WaffleStatusActive     WaffleStatus = "active"
+	WaffleStatusCompleted  WaffleStatus = "completed"
+)
+
+type SpotStatus string
+
+const (
+	SpotStatusAvailable SpotStatus = "available"
+	SpotStatusPending   SpotStatus = "pending"
+	SpotStatusPaid      SpotStatus = "paid"
+	SpotStatusWinner    SpotStatus = "winner"
+	SpotStatusLoser     SpotStatus = "loser"
+)
+
+type Waffle struct {
+	ID                     uuid.UUID    `json:"id" db:"id"`
+	Slug                   string       `json:"slug" db:"slug"`
+	Title                  string       `json:"title" db:"title"`
+	Description            *string      `json:"description,omitempty" db:"description"`
+	ImageURL               *string      `json:"image_url,omitempty" db:"image_url"`
+	TotalSpots             int          `json:"total_spots" db:"total_spots"`
+	SpotPrice              int          `json:"spot_price" db:"spot_price"`
+	PaymentInfo            *string      `json:"payment_info,omitempty" db:"payment_info"`
+	Status                 WaffleStatus `json:"status" db:"status"`
+	WinningSpotNumber      *int         `json:"winning_spot_number,omitempty" db:"winning_spot_number"`
+	WinningInstagramHandle *string      `json:"winning_instagram_handle,omitempty" db:"winning_instagram_handle"`
+	InstagramMediaLinks    []string     `json:"instagram_media_links,omitempty" db:"instagram_media_links"`
+	Archived               bool         `json:"archived" db:"archived"`
+	CreatedAt              time.Time    `json:"created_at" db:"created_at"`
+	CompletedAt            *time.Time   `json:"completed_at,omitempty" db:"completed_at"`
+}
+
+type Spot struct {
+	ID              uuid.UUID  `json:"id" db:"id"`
+	WaffleID        uuid.UUID  `json:"waffle_id" db:"waffle_id"`
+	Number          int        `json:"number" db:"number"`
+	Status          SpotStatus `json:"status" db:"status"`
+	ClaimedByHandle *string    `json:"claimed_by_handle,omitempty" db:"claimed_by_handle"`
+	ClaimedAt       *time.Time `json:"claimed_at,omitempty" db:"claimed_at"`
+	PaidAt          *time.Time `json:"paid_at,omitempty" db:"paid_at"`
+}
+
+type ActivityEvent struct {
+	ID              uuid.UUID `json:"id" db:"id"`
+	WaffleID        uuid.UUID `json:"waffle_id" db:"waffle_id"`
+	EventType       string    `json:"event_type" db:"event_type"`
+	Message         string    `json:"message" db:"message"`
+	InstagramHandle *string   `json:"instagram_handle,omitempty" db:"instagram_handle"`
+	SpotNumbers     []int     `json:"spot_numbers,omitempty" db:"spot_numbers"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+}
+
+type BuyerStats struct {
+	InstagramHandle      string    `json:"instagram_handle" db:"instagram_handle"`
+	TotalWafflesEntered  int       `json:"total_waffles_entered" db:"total_waffles_entered"`
+	TotalWins            int       `json:"total_wins" db:"total_wins"`
+	TotalLosses          int       `json:"total_losses" db:"total_losses"`
+	TotalSpotsClaimed    int       `json:"total_spots_claimed" db:"total_spots_claimed"`
+	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type BuyerStatsWithRank struct {
+	BuyerStats
+	Rank int `json:"rank"`
+}
+
+type BuyerWaffleHistory struct {
+	WaffleID              uuid.UUID `json:"waffle_id"`
+	Slug                  string    `json:"slug"`
+	Title                 string    `json:"title"`
+	SpotPrice             int       `json:"spot_price"`
+	Status                string    `json:"status"`
+	WinningSpotNumber     *int      `json:"winning_spot_number,omitempty"`
+	WinningInstagramHandle *string  `json:"winning_instagram_handle,omitempty"`
+	CreatedAt             time.Time `json:"created_at"`
+	CompletedAt           *time.Time `json:"completed_at,omitempty"`
+	SpotNumbers           []int     `json:"spot_numbers"`
+	IsWinner              bool      `json:"is_winner"`
+}
+
+type CreateWaffleRequest struct {
+	Title                string   `json:"title"`
+	Description          *string  `json:"description,omitempty"`
+	ImageURL             *string  `json:"image_url,omitempty"`
+	TotalSpots           int      `json:"total_spots"`
+	SpotPrice            int      `json:"spot_price"`
+	PaymentInfo          *string  `json:"payment_info,omitempty"`
+	InstagramMediaLinks  []string `json:"instagram_media_links,omitempty"`
+}
+
+type UpdateWaffleRequest struct {
+	Title                string   `json:"title"`
+	Description          *string  `json:"description,omitempty"`
+	ImageURL             *string  `json:"image_url,omitempty"`
+	SpotPrice            int      `json:"spot_price"`
+	PaymentInfo          *string  `json:"payment_info,omitempty"`
+	InstagramMediaLinks  []string `json:"instagram_media_links,omitempty"`
+	Archived             *bool    `json:"archived,omitempty"`
+}
+
+type CreateClaimRequest struct {
+	WaffleID        string `json:"waffle_id"`
+	Spots           []int  `json:"spots"`
+	InstagramHandle string `json:"instagram_handle"`
+}
+
+type Admin struct {
+	ID           uuid.UUID  `json:"id" db:"id"`
+	Username     string     `json:"username" db:"username"`
+	Email        string     `json:"email" db:"email"`
+	DisplayName  *string    `json:"display_name,omitempty" db:"display_name"`
+	Role         string     `json:"role" db:"role"`
+	Active       bool       `json:"active" db:"active"`
+	LastLoginAt  *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+type AdminLoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type CreateAdminRequest struct {
+	Username    string  `json:"username"`
+	Email       string  `json:"email"`
+	Password    string  `json:"password"`
+	DisplayName *string `json:"display_name,omitempty"`
+	Role        string  `json:"role"`
+}
+
+type UpdateAdminRequest struct {
+	DisplayName *string `json:"display_name,omitempty"`
+	Role        *string `json:"role,omitempty"`
+	Active      *bool   `json:"active,omitempty"`
+}
+
+type PasswordResetRequest struct {
+	Email string `json:"email"`
+}
+
+type PasswordResetConfirm struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
+type SetWinnerRequest struct {
+	WinningSpotNumber int `json:"winning_spot_number"`
+}
+
+type DroughtEntry struct {
+	InstagramHandle string    `json:"instagram_handle"`
+	TotalEntries    int       `json:"total_entries"`
+	LastEntryDate   time.Time `json:"last_entry_date"`
+	LongestDrought  int       `json:"longest_drought"`
+}
+
+type PowerBuyerEntry struct {
+	InstagramHandle string  `json:"instagram_handle"`
+	TotalSpots      int     `json:"total_spots_claimed"`
+	TotalSpent      int     `json:"total_spent"`
+	WinRate         float64 `json:"win_rate"`
+}
+
+type MonthlyActivity struct {
+	Month        string `json:"month"`
+	Waffles      int    `json:"waffles"`
+	SpotsClaimed int    `json:"spots_claimed"`
+	Revenue      int    `json:"revenue"`
+}
+
+type SpotVelocity struct {
+	Status             string  `json:"status"`
+	WaffleCount        int     `json:"waffle_count"`
+	AvgFirstClaimHours float64 `json:"avg_first_claim_hours"`
+	AvgCompletionHours float64 `json:"avg_completion_hours"`
+}

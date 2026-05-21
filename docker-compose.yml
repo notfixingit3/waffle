@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: syrup
+      POSTGRES_PASSWORD: syrup
+      POSTGRES_DB: syrup
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U syrup -d syrup"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8383:8383"
+    environment:
+      DATABASE_URL: postgres://syrup:syrup@postgres:5432/syrup?sslmode=disable
+      PORT: 8383
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/migrations:/app/migrations
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

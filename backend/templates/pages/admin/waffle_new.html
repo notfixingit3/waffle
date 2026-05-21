@@ -1,0 +1,173 @@
+{{ template "admin_base.html" . }}
+
+{{ define "title" }}New Waffle - Project Syrup{{ end }}
+
+{{ define "content" }}
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <form action="/admin/waffles/new" method="POST" class="bg-white rounded-xl shadow-sm p-6 space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+
+    {{ if .Error }}
+    <div class="p-4 bg-red-50 rounded-lg">
+      <p class="text-red-600 text-sm">{{ .Error }}</p>
+    </div>
+    {{ end }}
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+      <input type="text" name="title" value="{{ .Title }}" required placeholder="e.g., Vintage Sneaker Raffle"
+        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+      {{ if .Errors.Title }}
+      <p class="text-red-600 text-sm mt-1">{{ .Errors.Title }}</p>
+      {{ end }}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+      <textarea name="description" rows="3" placeholder="What's being raffled?"
+        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">{{ .Description }}</textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Template</label>
+      <div class="grid grid-cols-2 gap-2" id="template-presets">
+        {{ range .Templates }}
+        <button type="button" data-spots="{{ .TotalSpots }}" data-price="{{ .SpotPrice }}"
+          class="preset-btn px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100">
+          {{ .Name }}
+        </button>
+        {{ end }}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Total Spots *</label>
+        <input type="number" name="total_spots" id="total_spots" value="{{ .TotalSpots }}" min="2" max="1000" required
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+        {{ if .Errors.TotalSpots }}
+        <p class="text-red-600 text-sm mt-1">{{ .Errors.TotalSpots }}</p>
+        {{ end }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Price per Spot ($) *</label>
+        <input type="number" name="spot_price" id="spot_price" value="{{ .SpotPrice }}" min="1" required
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+        {{ if .Errors.SpotPrice }}
+        <p class="text-red-600 text-sm mt-1">{{ .Errors.SpotPrice }}</p>
+        {{ end }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Payment Info</label>
+      <input type="text" name="payment_info" value="{{ .PaymentInfo }}" placeholder="e.g., Venmo @username or Cash App $tag"
+        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+      <p class="text-sm text-gray-500 mt-1">Shown to buyers so they know how to pay</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Instagram Media Links</label>
+      <div class="flex gap-2">
+        <input type="url" id="media-link-input" placeholder="https://www.instagram.com/p/ABC123/"
+          class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+        <button type="button" id="add-media-link" class="px-4 py-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 font-medium">Add</button>
+      </div>
+      <p class="text-sm text-gray-500 mt-1">Links to Instagram posts showing what is being waffled</p>
+
+      <div id="media-links-list" class="mt-3 space-y-2">
+        {{ range .InstagramMediaLinks }}
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg media-link-row">
+          <a href="{{ . }}" target="_blank" rel="noopener noreferrer" class="text-sm text-amber-600 hover:underline truncate flex-1 mr-2">{{ . }}</a>
+          <input type="hidden" name="instagram_media_links[]" value="{{ . }}">
+          <button type="button" class="remove-media-link text-red-500 hover:text-red-700 p-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+
+    <div class="pt-4">
+      <button type="submit" class="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors">
+        Create Waffle
+      </button>
+    </div>
+  </form>
+</div>
+{{ end }}
+
+{{ define "scripts" }}
+<script>
+(function() {
+  var totalSpotsInput = document.getElementById('total_spots');
+  var spotPriceInput = document.getElementById('spot_price');
+  var presetBtns = document.querySelectorAll('.preset-btn');
+
+  function updatePresetStyles() {
+    var ts = parseInt(totalSpotsInput.value, 10);
+    var sp = parseInt(spotPriceInput.value, 10);
+    presetBtns.forEach(function(btn) {
+      var bts = parseInt(btn.dataset.spots, 10);
+      var bsp = parseInt(btn.dataset.price, 10);
+      if (bts === ts && bsp === sp) {
+        btn.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+        btn.classList.add('bg-amber-600', 'text-white');
+      } else {
+        btn.classList.remove('bg-amber-600', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+      }
+    });
+  }
+
+  presetBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      totalSpotsInput.value = btn.dataset.spots;
+      spotPriceInput.value = btn.dataset.price;
+      updatePresetStyles();
+    });
+  });
+
+  totalSpotsInput.addEventListener('input', updatePresetStyles);
+  spotPriceInput.addEventListener('input', updatePresetStyles);
+  updatePresetStyles();
+
+  var mediaInput = document.getElementById('media-link-input');
+  var addBtn = document.getElementById('add-media-link');
+  var mediaList = document.getElementById('media-links-list');
+
+  function addMediaLink() {
+    var url = mediaInput.value.trim();
+    if (!url) return;
+    var row = document.createElement('div');
+    row.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg media-link-row';
+    row.innerHTML = '<a href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer" class="text-sm text-amber-600 hover:underline truncate flex-1 mr-2">' + url.replace(/</g, '&lt;') + '</a>' +
+      '<input type="hidden" name="instagram_media_links[]" value="' + url.replace(/"/g, '&quot;') + '">' +
+      '<button type="button" class="remove-media-link text-red-500 hover:text-red-700 p-1">' +
+        '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+      '</button>';
+    mediaList.appendChild(row);
+    mediaInput.value = '';
+    attachRemove(row.querySelector('.remove-media-link'));
+  }
+
+  function attachRemove(btn) {
+    btn.addEventListener('click', function() {
+      btn.closest('.media-link-row').remove();
+    });
+  }
+
+  addBtn.addEventListener('click', addMediaLink);
+  mediaInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addMediaLink();
+    }
+  });
+
+  mediaList.querySelectorAll('.remove-media-link').forEach(attachRemove);
+})();
+</script>
+{{ end }}

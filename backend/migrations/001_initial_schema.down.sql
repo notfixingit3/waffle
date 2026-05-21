@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS buyer_stats;
+DROP TABLE IF EXISTS activity_events;
+DROP TABLE IF EXISTS spots;
+DROP TABLE IF EXISTS waffles;
