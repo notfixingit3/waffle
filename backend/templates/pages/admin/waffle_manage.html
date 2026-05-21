@@ -6,10 +6,10 @@
 <div class="waffle-manage max-w-4xl mx-auto" data-waffle-id="{{ .waffle.ID }}" data-waffle-slug="{{ .waffle.Slug }}">
   {{/* Winner banner */}}
   {{ if eq .waffle.Status "completed" }}
-  <div class="bg-purple-50 border-2 border-purple-400 rounded-xl p-4 mb-6 text-center">
+  <div class="card bg-secondary/10 border-2 border-secondary rounded-xl p-4 mb-6 text-center">
     <div class="text-3xl mb-1">🏆</div>
-    <p class="text-lg font-bold text-purple-800">Completed!</p>
-    <p class="text-sm text-purple-700 mt-1">
+    <p class="text-lg font-bold text-secondary">Completed!</p>
+    <p class="text-sm text-secondary/80 mt-1">
       Winner: Spot #{{ deref .waffle.WinningSpotNumber }}
       {{ if .waffle.WinningInstagramHandle }} — @{{ deref .waffle.WinningInstagramHandle }}{{ end }}
     </p>
@@ -17,24 +17,24 @@
   {{ end }}
 
   {{/* Waffle info header */}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+  <div class="card bg-base-100 shadow-sm border border-base-200 p-5 mb-4">
     <div class="flex items-center justify-between mb-2">
-      <h1 class="text-2xl font-bold text-gray-900">{{ .waffle.Title }}</h1>
-      <span class="px-3 py-1 rounded-full text-xs font-semibold
-        {{ if eq .waffle.Status "active" }}bg-green-100 text-green-800{{ else }}bg-gray-100 text-gray-600{{ end }}">
+      <h1 class="text-2xl font-bold text-base-content">{{ .waffle.Title }}</h1>
+      <span class="badge badge-sm
+        {{ if eq .waffle.Status "active" }}badge-success{{ else }}badge-ghost{{ end }}">
         {{ if eq .waffle.Status "active" }}Active{{ else }}Completed{{ end }}
       </span>
     </div>
 
     {{ if .waffle.Description }}
-    <p class="text-gray-600 text-sm mb-3">{{ deref .waffle.Description }}</p>
+    <p class="text-base-content/60 text-sm mb-3">{{ deref .waffle.Description }}</p>
     {{ end }}
 
-    <div class="flex items-center gap-4 text-sm text-gray-500 mb-3">
-      <span><span class="font-medium text-gray-700">{{ .waffle.TotalSpots }}</span> spots</span>
-      <span><span class="font-medium text-gray-700">${{ .waffle.SpotPrice }}</span> each</span>
+    <div class="flex items-center gap-4 text-sm opacity-60 mb-3">
+      <span><span class="font-medium text-base-content">{{ .waffle.TotalSpots }}</span> spots</span>
+      <span><span class="font-medium text-base-content">${{ .waffle.SpotPrice }}</span> each</span>
       <a href="/api/waffles/{{ .waffle.Slug }}/export"
-         class="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full hover:bg-amber-100 transition-colors border border-amber-200">
+         class="btn btn-xs btn-outline">
         CSV Export
       </a>
     </div>
@@ -43,7 +43,7 @@
     <div class="flex flex-wrap gap-2">
       {{ range .waffle.InstagramMediaLinks }}
       <a href="{{ . }}" target="_blank" rel="noopener noreferrer"
-         class="text-xs bg-pink-50 text-pink-700 px-3 py-1 rounded-full hover:bg-pink-100 transition-colors border border-pink-200">
+         class="btn btn-xs btn-primary btn-soft">
         IG Post
       </a>
       {{ end }}
@@ -52,40 +52,37 @@
   </div>
 
   {{/* Stats bar */}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-    <div class="grid grid-cols-4 gap-3 text-center">
-      <div>
-        <div class="text-2xl font-bold text-green-600">{{ index .stats "available" }}</div>
-        <div class="text-xs text-gray-500">Available</div>
-      </div>
-      <div>
-        <div class="text-2xl font-bold text-yellow-600">{{ index .stats "pending" }}</div>
-        <div class="text-xs text-gray-500">Pending</div>
-      </div>
-      <div>
-        <div class="text-2xl font-bold text-red-600">{{ index .stats "paid" }}</div>
-        <div class="text-xs text-gray-500">Paid</div>
-      </div>
-      <div>
-        <div class="text-2xl font-bold text-purple-600" id="total-revenue">$0</div>
-        <div class="text-xs text-gray-500">Total</div>
-      </div>
+  <div class="stats shadow border border-base-200 mb-4 w-full">
+    <div class="stat text-center">
+      <div class="stat-value text-success">{{ index .stats "available" }}</div>
+      <div class="stat-title">Available</div>
+    </div>
+    <div class="stat text-center">
+      <div class="stat-value text-warning">{{ index .stats "pending" }}</div>
+      <div class="stat-title">Pending</div>
+    </div>
+    <div class="stat text-center">
+      <div class="stat-value text-error">{{ index .stats "paid" }}</div>
+      <div class="stat-title">Paid</div>
+    </div>
+    <div class="stat text-center">
+      <div class="stat-value text-secondary" id="total-revenue">$0</div>
+      <div class="stat-title">Total</div>
     </div>
   </div>
 
   {{/* Spot grid */}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
+  <div class="card bg-base-100 shadow-sm border border-base-200 p-4 mb-4">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-lg font-semibold text-gray-900">Spot Grid</h2>
+      <h2 class="text-lg font-semibold text-base-content">Spot Grid</h2>
       <div class="flex items-center gap-2">
         <span id="ws-status" class="flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span>
-          <span class="text-xs text-gray-400">live</span>
+          <span class="w-2 h-2 rounded-full bg-base-300 inline-block"></span>
+          <span class="text-xs opacity-40">live</span>
         </span>
         {{ if eq .waffle.Status "active" }}
         <button type="button" id="bulk-mode-toggle"
-          class="text-xs px-3 py-1 rounded-lg border transition-colors
-            bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
+          class="btn btn-xs btn-ghost">
           Bulk Pay Mode
         </button>
         {{ end }}
@@ -98,15 +95,15 @@
       <button type="button"
         class="admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none
         {{ if eq $spot.Status "available" }}
-          bg-green-50 border-green-400 text-green-900 cursor-default
+          bg-success/10 border-success text-success-content cursor-default
         {{ else if eq $spot.Status "pending" }}
-          bg-yellow-50 border-yellow-400 hover:bg-yellow-100 active:bg-yellow-200 cursor-pointer text-yellow-900
+          bg-warning/10 border-warning hover:bg-warning/20 active:bg-warning/30 cursor-pointer text-warning-content
         {{ else if eq $spot.Status "paid" }}
-          bg-red-50 border-red-400 text-red-900 cursor-default
+          bg-error/10 border-error text-error-content cursor-default
         {{ else if eq $spot.Status "winner" }}
-          bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-900 cursor-default
+          bg-secondary/10 border-secondary ring-2 ring-secondary text-secondary-content cursor-default
         {{ else if eq $spot.Status "loser" }}
-          bg-gray-200 border-gray-400 text-gray-500 opacity-60 cursor-default
+          bg-base-300 border-base-content/20 text-base-content/50 opacity-60 cursor-default
         {{ end }}"
         data-spot-id="{{ $spot.ID }}"
         data-spot-number="{{ $spot.Number }}"
@@ -125,22 +122,22 @@
     </div>
 
     {{/* Legend */}}
-    <div class="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100">
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-green-100 border border-green-400 inline-block"></span> Available</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-yellow-100 border border-yellow-400 inline-block"></span> Pending</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-red-100 border border-red-400 inline-block"></span> Paid</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-purple-100 border border-purple-500 inline-block"></span> Winner</span>
-      <span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 rounded bg-gray-200 border border-gray-400 inline-block"></span> Loser</span>
+    <div class="flex flex-wrap gap-3 mt-3 pt-3 border-t border-base-200">
+      <span class="flex items-center gap-1 text-xs opacity-60"><span class="w-3 h-3 rounded bg-success/20 border border-success inline-block"></span> Available</span>
+      <span class="flex items-center gap-1 text-xs opacity-60"><span class="w-3 h-3 rounded bg-warning/20 border border-warning inline-block"></span> Pending</span>
+      <span class="flex items-center gap-1 text-xs opacity-60"><span class="w-3 h-3 rounded bg-error/20 border border-error inline-block"></span> Paid</span>
+      <span class="flex items-center gap-1 text-xs opacity-60"><span class="w-3 h-3 rounded bg-secondary/20 border border-secondary inline-block"></span> Winner</span>
+      <span class="flex items-center gap-1 text-xs opacity-60"><span class="w-3 h-3 rounded bg-base-300 border border-base-content/20 inline-block"></span> Loser</span>
     </div>
 
     {{/* Bulk pay actions bar */}}
-    <div id="bulk-actions" class="hidden mt-3 pt-3 border-t border-gray-100">
+    <div id="bulk-actions" class="hidden mt-3 pt-3 border-t border-base-200">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-600">
+        <span class="text-sm opacity-60">
           <span id="bulk-count">0</span> spots selected
         </span>
         <button type="button" id="bulk-pay-btn"
-          class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+          class="btn btn-success btn-sm"
           disabled>
           Mark Paid
         </button>
@@ -149,30 +146,30 @@
   </div>
 
   {{/* Pending claims list */}}
-  <div id="pending-claims" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-    <h2 class="text-lg font-semibold text-gray-900 mb-3">Pending Claims</h2>
+  <div id="pending-claims" class="card bg-base-100 shadow-sm border border-base-200 p-4 mb-4">
+    <h2 class="text-lg font-semibold text-base-content mb-3">Pending Claims</h2>
     <div id="pending-list" class="space-y-2">
       {{ $hasPending := false }}
       {{ range .spots }}
       {{ if eq .Status "pending" }}
       {{ $hasPending = true }}
-      <div class="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-3 pending-claim-item"
+      <div class="flex items-center justify-between bg-warning/10 border border-warning/20 rounded-lg p-3 pending-claim-item"
         data-spot-id="{{ .ID }}">
         <div>
-          <div class="font-semibold text-gray-900">Spot #{{ .Number }}</div>
+          <div class="font-semibold text-base-content">Spot #{{ .Number }}</div>
           {{ if .ClaimedByHandle }}
-          <div class="text-sm text-yellow-800">@{{ deref .ClaimedByHandle }}</div>
+          <div class="text-sm text-warning-content">@{{ deref .ClaimedByHandle }}</div>
           {{ end }}
           {{ if .ClaimedAt }}
-          <div class="text-xs text-gray-400 mt-0.5">{{ formatDate "Jan 2, 3:04 PM" .ClaimedAt }}</div>
+          <div class="text-xs opacity-40 mt-0.5">{{ formatDate "Jan 2, 3:04 PM" .ClaimedAt }}</div>
           {{ end }}
         </div>
         <div class="flex gap-2">
-          <button type="button" class="pay-single-btn text-xs bg-green-600 text-white font-semibold py-1.5 px-3 rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors"
+          <button type="button" class="pay-single-btn btn btn-success btn-xs"
             data-spot-id="{{ .ID }}" data-spot-number="{{ .Number }}">
             Mark Paid
           </button>
-          <button type="button" class="release-btn text-xs bg-gray-200 text-gray-700 font-semibold py-1.5 px-3 rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors"
+          <button type="button" class="release-btn btn btn-ghost btn-xs"
             data-spot-id="{{ .ID }}" data-spot-number="{{ .Number }}">
             Release
           </button>
@@ -181,31 +178,31 @@
       {{ end }}
       {{ end }}
       {{ if not $hasPending }}
-      <p class="text-sm text-gray-400 text-center py-4">No pending claims</p>
+      <p class="text-sm opacity-40 text-center py-4">No pending claims</p>
       {{ end }}
     </div>
   </div>
 
   {{/* Set Winner (only for active waffles with all spots paid) */}}
   {{ if eq .waffle.Status "active" }}
-  <div id="winner-section" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Set Winner</h2>
-    <p class="text-sm text-gray-500 mb-4">All spots must be paid before setting a winner.</p>
+  <div id="winner-section" class="card bg-base-100 shadow-sm border border-base-200 p-5 mb-4">
+    <h2 class="text-lg font-semibold text-base-content mb-2">Set Winner</h2>
+    <p class="text-sm opacity-60 mb-4">All spots must be paid before setting a winner.</p>
 
     <div class="flex gap-3 items-end">
       <div class="flex-1">
-        <label for="winner-spot-input" class="block text-sm font-medium text-gray-700 mb-1">Winning Spot Number</label>
+        <label for="winner-spot-input" class="label"><span class="label-text">Winning Spot Number</span></label>
         <input type="number" id="winner-spot-input" min="1" max="{{ .waffle.TotalSpots }}"
-          class="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+          class="input input-bordered w-full"
           placeholder="Enter spot number">
       </div>
       <button type="button" id="set-winner-btn"
-        class="bg-amber-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-amber-700 active:bg-amber-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-base">
+        class="btn btn-primary">
         Set Winner
       </button>
     </div>
-    <p id="winner-error" class="hidden text-red-600 text-sm mt-2"></p>
-    <p id="winner-success" class="hidden text-green-600 text-sm mt-2"></p>
+    <p id="winner-error" class="hidden text-error text-sm mt-2"></p>
+    <p id="winner-success" class="hidden text-success text-sm mt-2"></p>
   </div>
   {{ end }}
 </div>
@@ -257,15 +254,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
       var baseClasses = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ';
       if (data.status === 'available') {
-        baseClasses += 'bg-green-50 border-green-400 text-green-900 cursor-default';
+        baseClasses += 'bg-success/10 border-success text-success-content cursor-default';
       } else if (data.status === 'pending') {
-        baseClasses += 'bg-yellow-50 border-yellow-400 hover:bg-yellow-100 active:bg-yellow-200 cursor-pointer text-yellow-900';
+        baseClasses += 'bg-warning/10 border-warning hover:bg-warning/20 active:bg-warning/30 cursor-pointer text-warning-content';
       } else if (data.status === 'paid') {
-        baseClasses += 'bg-red-50 border-red-400 text-red-900 cursor-default';
+        baseClasses += 'bg-error/10 border-error text-error-content cursor-default';
       } else if (data.status === 'winner') {
-        baseClasses += 'bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-900 cursor-default';
+        baseClasses += 'bg-secondary/10 border-secondary ring-2 ring-secondary text-secondary-content cursor-default';
       } else if (data.status === 'loser') {
-        baseClasses += 'bg-gray-200 border-gray-400 text-gray-500 opacity-60 cursor-default';
+        baseClasses += 'bg-base-300 border-base-content/20 text-base-content/50 opacity-60 cursor-default';
       }
       spotEl.className = baseClasses;
 
@@ -308,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
       else if (st === 'pending') pending++;
       else if (st === 'paid' || st === 'winner' || st === 'loser') paid++;
     });
-    var statValues = document.querySelectorAll('.grid.grid-cols-4 .text-2xl');
+    var statValues = document.querySelectorAll('.stats .stat-value');
     if (statValues[0]) statValues[0].textContent = available;
     if (statValues[1]) statValues[1].textContent = pending;
     if (statValues[2]) statValues[2].textContent = paid;
@@ -317,21 +314,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function addPendingClaimItem(spotNumber, handle, spotId) {
     var list = document.getElementById('pending-list');
-    var emptyMsg = list.querySelector('.text-sm.text-gray-400');
+    var emptyMsg = list.querySelector('.text-sm.opacity-40');
     if (emptyMsg) emptyMsg.remove();
-    if (list.querySelector('[data-spot-id="' + spotId + '"]')) return;
+    if (list.querySelector('[data-spot-id="' + spotId + '"')) return;
 
     var div = document.createElement('div');
-    div.className = 'flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-3 pending-claim-item';
+    div.className = 'flex items-center justify-between bg-warning/10 border border-warning/20 rounded-lg p-3 pending-claim-item';
     div.setAttribute('data-spot-id', spotId);
     div.innerHTML = '<div>' +
-      '<div class="font-semibold text-gray-900">Spot #' + spotNumber + '</div>' +
-      (handle ? '<div class="text-sm text-yellow-800">@' + handle + '</div>' : '') +
-      '<div class="text-xs text-gray-400 mt-0.5">Just now</div>' +
+      '<div class="font-semibold text-base-content">Spot #' + spotNumber + '</div>' +
+      (handle ? '<div class="text-sm text-warning-content">@' + handle + '</div>' : '') +
+      '<div class="text-xs opacity-40 mt-0.5">Just now</div>' +
       '</div>' +
       '<div class="flex gap-2">' +
-      '<button type="button" class="pay-single-btn text-xs bg-green-600 text-white font-semibold py-1.5 px-3 rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors" data-spot-id="' + spotId + '" data-spot-number="' + spotNumber + '">Mark Paid</button>' +
-      '<button type="button" class="release-btn text-xs bg-gray-200 text-gray-700 font-semibold py-1.5 px-3 rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors" data-spot-id="' + spotId + '" data-spot-number="' + spotNumber + '">Release</button>' +
+      '<button type="button" class="pay-single-btn btn btn-success btn-xs" data-spot-id="' + spotId + '" data-spot-number="' + spotNumber + '">Mark Paid</button>' +
+      '<button type="button" class="release-btn btn btn-ghost btn-xs" data-spot-id="' + spotId + '" data-spot-number="' + spotNumber + '">Release</button>' +
       '</div>';
     list.insertBefore(div, list.firstChild);
   }
@@ -342,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var list = document.getElementById('pending-list');
     if (!list.querySelector('.pending-claim-item')) {
       var p = document.createElement('p');
-      p.className = 'text-sm text-gray-400 text-center py-4';
+      p.className = 'text-sm opacity-40 text-center py-4';
       p.textContent = 'No pending claims';
       list.appendChild(p);
     }

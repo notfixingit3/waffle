@@ -186,11 +186,13 @@
 
   function switchTab(tab) {
     state.activeTab = tab
-    $$('.tab-btn').forEach(function (btn) {
+    $$('.tab').forEach(function (btn) {
       var isActive = btn.getAttribute('data-tab') === tab
-      btn.className = isActive
-        ? 'tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-amber-600 text-amber-600 transition-colors'
-        : 'tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors'
+      if (isActive) {
+        btn.classList.add('tab-active')
+      } else {
+        btn.classList.remove('tab-active')
+      }
     })
     $$('.tab-content').forEach(function (el) { el.classList.add('hidden') })
     $('#tab-' + tab).classList.remove('hidden')
@@ -212,9 +214,13 @@
     state.datePreset = preset
     $$('.date-preset-btn').forEach(function (btn) {
       var isActive = btn.getAttribute('data-date-preset') === preset
-      btn.className = isActive
-        ? 'date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-700 text-white'
-        : 'date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100'
+      if (isActive) {
+        btn.classList.remove('btn-outline')
+        btn.classList.add('btn-primary')
+      } else {
+        btn.classList.remove('btn-primary')
+        btn.classList.add('btn-outline')
+      }
     })
 
     if (preset === 'custom') {

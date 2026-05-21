@@ -1,6 +1,6 @@
 {{ define "admin_base.html" }}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="syrup">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -16,7 +16,7 @@
   <link rel="apple-touch-icon" href="/static/img/logo.png">
   {{ block "head" . }}{{ end }}
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-dvh">
+<body class="bg-base-200 text-base-content min-h-dvh">
   {{ template "admin_nav.html" . }}
   <main class="container mx-auto px-4 py-6">
     {{ block "content" . }}{{ end }}
