@@ -139,6 +139,15 @@ docker compose exec -T postgres psql -U syrup syrup < backup.sql
 
 ---
 
+## Progressive Web App (PWA)
+
+- **HTTPS Required**: Service workers require HTTPS in production. Local development works over HTTP because `localhost` is a secure context.
+- **Offline Support**: Public pages (home, waffle list, waffle detail, buyer stats) are cached for offline viewing via a service worker.
+- **Admin Isolation**: Admin dashboard routes (`/admin/*`) are excluded from the service worker and offline cache.
+- **Cache Invalidation**: When deploying a new version, the service worker cache is automatically invalidated. Returning users will see an "Update Available" toast prompting them to reload.
+
+---
+
 ## Monitoring
 
 Health check endpoint: `GET /health`
