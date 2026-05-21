@@ -112,8 +112,7 @@ Default local admin credentials are `admin` / `admin123`. Change them before any
 | 5 | ✅ Complete | Manual winner entry + winner/loser marking + buyer stats + history |
 | 6 | ✅ Complete | Mobile polish + production Dockerfiles + deployment docs |
 | 7 | ✅ Complete | Multi-admin auth + role-based access + password reset + admin management + archive/delete |
-| 8 | ⏭️ Planned | Offline/service worker support; current build already includes Web App Manifest, icons, and install metadata |
-| Admin UI Refresh | ✅ Complete | Warm amber admin palette + screenshots added to README |
+| 8 | 🚧 In Progress | Offline/service worker support with installable app shell, offline page caching, and update notifications |
 
 ---
 

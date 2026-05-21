@@ -8,7 +8,7 @@ A mobile-first live spot board and admin tracking system. Not a payment processo
 
 ## Repository State
 
-**This project is fully built and operational.** All phases (1-7) are complete. Phase 8 (PWA support) is in progress.
+**This project is fully built and operational.** All phases (1-7) are complete. Phase 8 (PWA support) is complete.
 
 ## Tech Stack
 
@@ -70,7 +70,7 @@ project-syrup/
 5. ✅ Manual winner entry + winner/loser marking + buyer stats + history
 6. ✅ Mobile polish + production Dockerfiles + deployment docs
 7. ✅ Multi-admin auth + role-based access + password reset + admin management + archive/delete
-8. 🚧 PWA support + service worker + offline capabilities
+8. ✅ PWA support + service worker + offline capabilities
 
 ## Critical Business Rules
 
