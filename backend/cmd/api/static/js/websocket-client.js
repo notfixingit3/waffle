@@ -12,6 +12,12 @@ var WaffleWebSocket = (function() {
     currentSlug = slug;
     messageHandler = handler;
 
+    if (!navigator.onLine) {
+      console.log('WS: offline, not connecting');
+      updateStatus('disconnected');
+      return;
+    }
+
     var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     var url = protocol + '//' + window.location.host + '/ws/' + slug;
 
@@ -36,6 +42,9 @@ var WaffleWebSocket = (function() {
         var msg = JSON.parse(event.data);
         if (msg.type === 'ACTIVITY_EVENT') {
           flashActivity(msg.payload);
+        }
+        if (msg.type === 'SPOT_UPDATED' && msg.payload && currentSlug) {
+          updateCachedSpot(currentSlug, msg.payload);
         }
         if (messageHandler) {
           messageHandler(msg);
@@ -137,6 +146,29 @@ var WaffleWebSocket = (function() {
     }, 2000);
   }
 
+  function updateCachedSpot(slug, payload) {
+    if (typeof OfflineHandler === 'undefined') return;
+    var cached = OfflineHandler.getCachedData(slug);
+    if (!cached || !cached.data) return;
+    var found = false;
+    for (var i = 0; i < cached.data.length; i++) {
+      if (cached.data[i].number === payload.spot_number) {
+        cached.data[i].status = payload.status;
+        if (payload.claimed_by_handle !== undefined) {
+          cached.data[i].claimed_by_handle = payload.claimed_by_handle;
+        }
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      localStorage.setItem('waffle-data-' + slug, JSON.stringify({
+        data: cached.data,
+        timestamp: Date.now()
+      }));
+    }
+  }
+
   function disconnect() {
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
@@ -152,6 +184,27 @@ var WaffleWebSocket = (function() {
 
   window.addEventListener('beforeunload', function() {
     disconnect();
+  });
+
+  window.addEventListener('waffle:offline', function() {
+    if (ws) {
+      ws.close();
+      ws = null;
+    }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    updateStatus('disconnected');
+  });
+
+  window.addEventListener('waffle:online', function() {
+    if (currentSlug && messageHandler && !ws) {
+      reconnectDelay = 3000;
+      var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      var url = protocol + '//' + window.location.host + '/ws/' + currentSlug;
+      tryConnect(url);
+    }
   });
 
   return {
