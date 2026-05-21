@@ -41,6 +41,7 @@ func main() {
 	ws.InitHub()
 
 	r := gin.New()
+	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"})
 	r.Use(gin.Logger())
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:  []string{"*"},
@@ -146,7 +147,7 @@ func main() {
 	waffles.GET("/:slug/export", exportWaffleCSV)
 
 	claims := api.Group("/claims")
-	claims.POST("/", createClaim)
+	claims.POST("/", middleware.RateLimitClaims, createClaim)
 
 	buyers := api.Group("/buyers")
 	buyers.GET("/:handle/stats", handlers.GetBuyerStats)
