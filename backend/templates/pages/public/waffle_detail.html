@@ -161,74 +161,125 @@
 <script src="/static/js/websocket-client.js"></script>
 <script src="/static/js/spot-selection.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  var container = document.querySelector('.waffle-detail');
-  if (!container) return;
+(function() {
+  var SPOT_CLASSES = {
+    available: 'bg-green-50 border-green-400 hover:bg-green-100 active:bg-green-200 cursor-pointer text-green-900',
+    pending:   'bg-yellow-50 border-yellow-400 text-yellow-900 cursor-default',
+    paid:      'bg-red-50 border-red-400 text-red-900 cursor-default',
+    winner:    'bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-900 cursor-default',
+    loser:     'bg-gray-200 border-gray-400 text-gray-500 opacity-60 cursor-default'
+  };
 
-  var slug = container.dataset.waffleSlug;
-  var spotPrice = {{ .waffle.SpotPrice }};
+  function updateSpotElement(el, status, handle) {
+    el.dataset.spotStatus = status;
+    el.className = 'spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + (SPOT_CLASSES[status] || '');
+    el.disabled = (status !== 'available');
 
-  // Initialize WebSocket
-  if (typeof WaffleWebSocket !== 'undefined' && slug) {
-    WaffleWebSocket.connect(slug, function(msg) {
-      if (!msg || !msg.type) return;
-
-      if (msg.type === 'WAFFLE_COMPLETED') {
-        window.location.reload();
-        return;
-      }
-
-      if (msg.type !== 'SPOT_UPDATED') return;
-      var data = msg.payload;
-      if (!data) return;
-
-      var spotEl = document.querySelector('[data-spot-number="' + data.spot_number + '"]');
-      if (!spotEl) return;
-
-      // Update spot status
-      spotEl.dataset.spotStatus = data.status;
-      spotEl.className = spotEl.className.replace(/bg-\w+-\d+/g, '').replace(/border-\w+-\d+/g, '').replace(/ring-\w+-\d+/g, '').replace(/text-\w+-\d+/g, '').replace(/opacity-\d+/g, '');
-
-      var newClasses = 'spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ';
-      if (data.status === 'available') {
-        newClasses += 'bg-green-50 border-green-400 hover:bg-green-100 active:bg-green-200 cursor-pointer text-green-900';
-        spotEl.disabled = false;
-      } else if (data.status === 'pending') {
-        newClasses += 'bg-yellow-50 border-yellow-400 text-yellow-900 cursor-default';
-        spotEl.disabled = true;
-      } else if (data.status === 'paid') {
-        newClasses += 'bg-red-50 border-red-400 text-red-900 cursor-default';
-        spotEl.disabled = true;
-      } else if (data.status === 'winner') {
-        newClasses += 'bg-purple-50 border-purple-500 ring-2 ring-purple-400 text-purple-900 cursor-default';
-        spotEl.disabled = true;
-      } else if (data.status === 'loser') {
-        newClasses += 'bg-gray-200 border-gray-400 text-gray-500 opacity-60 cursor-default';
-        spotEl.disabled = true;
-      }
-
-      spotEl.className = newClasses;
-
-      // Update handle display
-      var handleSpan = spotEl.querySelector('.truncate');
-      if (!handleSpan && data.claimed_by_handle) {
+    var handleSpan = el.querySelector('.truncate');
+    if (handle) {
+      if (!handleSpan) {
         handleSpan = document.createElement('span');
         handleSpan.className = 'text-[10px] truncate w-full mt-0.5 opacity-70';
-        spotEl.appendChild(handleSpan);
+        el.appendChild(handleSpan);
       }
-      if (handleSpan && data.claimed_by_handle) {
-        handleSpan.textContent = data.claimed_by_handle;
-      }
-    });
+      handleSpan.textContent = handle;
+    } else if (handleSpan) {
+      handleSpan.remove();
+    }
   }
 
-  // Initialize spot selection
-  if (typeof SpotSelection !== 'undefined') {
-    SpotSelection.init({
-      spotPrice: spotPrice,
-      waffleId: container.dataset.waffleId
-    });
+  function loadCachedSpots(slug, container) {
+    var cached = OfflineHandler.getCachedData(slug);
+    if (!cached || !cached.data) return false;
+    var spots = cached.data;
+    for (var i = 0; i < spots.length; i++) {
+      var spot = spots[i];
+      var el = document.querySelector('[data-spot-number="' + spot.number + '"]');
+      if (el) {
+        updateSpotElement(el, spot.status, spot.claimed_by_handle || '');
+      }
+    }
+    return true;
   }
-});
+
+  function showOfflineNotice(container, slug) {
+    removeOfflineNotice(container);
+    var lastUpdated = OfflineHandler.getLastUpdated(slug) || 'unknown';
+    var notice = document.createElement('div');
+    notice.id = 'offline-cache-notice';
+    notice.className = 'bg-amber-50 border border-amber-300 rounded-lg p-3 mb-4 text-center';
+    notice.innerHTML = '<p class="text-sm text-amber-800 font-medium">Offline — showing cached data</p><p class="text-xs text-amber-600 mt-1">Last updated: ' + lastUpdated + '</p>';
+    container.insertBefore(notice, container.firstChild);
+  }
+
+  function removeOfflineNotice(container) {
+    var existing = document.getElementById('offline-cache-notice');
+    if (existing) existing.remove();
+  }
+
+  function fetchAndCache(slug) {
+    fetch('/api/waffles/' + slug + '/spots')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.spots) {
+          OfflineHandler.setCachedData(slug, data.spots);
+        }
+      })
+      .catch(function() { /* network error — silently ignore */ });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var container = document.querySelector('.waffle-detail');
+    if (!container) return;
+
+    var slug = container.dataset.waffleSlug;
+    var spotPrice = {{ .waffle.SpotPrice }};
+
+    // Offline handling: cache fresh data or restore from cache
+    if (navigator.onLine) {
+      fetchAndCache(slug);
+    } else {
+      if (loadCachedSpots(slug, container)) {
+        showOfflineNotice(container, slug);
+      }
+    }
+
+    // Refresh cache when coming back online
+    window.addEventListener('waffle:online', function() {
+      fetchAndCache(slug);
+      removeOfflineNotice(container);
+    });
+
+    // Initialize WebSocket
+    if (typeof WaffleWebSocket !== 'undefined' && slug) {
+      WaffleWebSocket.connect(slug, function(msg) {
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'WAFFLE_COMPLETED') {
+          window.location.reload();
+          return;
+        }
+
+        if (msg.type !== 'SPOT_UPDATED') return;
+        var data = msg.payload;
+        if (!data) return;
+
+        var spotEl = document.querySelector('[data-spot-number="' + data.spot_number + '"]');
+        if (!spotEl) return;
+
+        updateSpotElement(spotEl, data.status, data.claimed_by_handle || '');
+      });
+    }
+
+    // Initialize spot selection
+    if (typeof SpotSelection !== 'undefined') {
+      SpotSelection.init({
+        spotPrice: spotPrice,
+        waffleId: container.dataset.waffleId,
+        slug: slug
+      });
+    }
+  });
+})();
 </script>
 {{ end }}
