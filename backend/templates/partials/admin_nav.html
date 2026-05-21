@@ -1,49 +1,49 @@
 {{ define "admin_nav.html" }}
-<nav class="bg-amber-700 text-white shadow-md" x-data="{ open: false }">
+<nav class="bg-slate-900 text-white shadow-lg" x-data="{ open: false }">
   <div class="container mx-auto px-4">
     <div class="flex items-center justify-between h-14">
-      <a href="/admin/dashboard" class="flex items-center gap-2 font-bold text-lg no-underline text-white hover:opacity-90 transition-opacity">
+      <a href="/admin/dashboard" class="flex items-center gap-2 font-bold text-lg no-underline text-white hover:text-amber-300 transition-colors">
         <img src="/static/img/logo.png" alt="" class="w-7 h-7 rounded">
         <span class="hidden sm:inline">Syrup Admin</span>
       </a>
 
-      <button id="nav-toggle" type="button" class="md:hidden p-2 rounded-lg hover:bg-amber-600 transition-colors" aria-label="Toggle navigation" onclick="document.getElementById('nav-menu-mobile').classList.toggle('hidden')">
+      <button id="nav-toggle" type="button" class="md:hidden p-2 rounded-lg hover:bg-slate-800 transition-colors" aria-label="Toggle navigation" onclick="document.getElementById('nav-menu-mobile').classList.toggle('hidden')">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
 
       <div class="hidden md:flex items-center gap-1 text-sm font-medium">
-        <a href="/admin/dashboard" class="px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors{{ if eq .CurrentPath "/admin/dashboard" }} bg-amber-800{{ end }}">Dashboard</a>
-        <a href="/admin/waffles/new" class="px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors{{ if eq .CurrentPath "/admin/waffles/new" }} bg-amber-800{{ end }}">New Waffle</a>
-        <a href="/admin/reports" class="px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors{{ if eq .CurrentPath "/admin/reports" }} bg-amber-800{{ end }}">Reports</a>
+        <a href="/admin/dashboard" class="px-3 py-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 transition-colors{{ if eq .CurrentPath "/admin/dashboard" }} bg-slate-800 text-white{{ end }}">Dashboard</a>
+        <a href="/admin/waffles/new" class="px-3 py-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 transition-colors{{ if eq .CurrentPath "/admin/waffles/new" }} bg-slate-800 text-white{{ end }}">New Waffle</a>
+        <a href="/admin/reports" class="px-3 py-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 transition-colors{{ if eq .CurrentPath "/admin/reports" }} bg-slate-800 text-white{{ end }}">Reports</a>
         {{ if eq .Role "super_admin" }}
-        <a href="/admin/admins" class="px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors{{ if eq .CurrentPath "/admin/admins" }} bg-amber-800{{ end }}">Admins</a>
+        <a href="/admin/admins" class="px-3 py-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 transition-colors{{ if eq .CurrentPath "/admin/admins" }} bg-slate-800 text-white{{ end }}">Admins</a>
         {{ end }}
       </div>
 
       <div class="hidden md:flex items-center gap-3">
-        <span class="text-xs text-amber-200">{{ .DisplayName }}</span>
+        <span class="text-xs text-slate-400">{{ .DisplayName }}</span>
         <form action="/admin/logout" method="POST" class="inline">
           <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-          <button type="submit" class="text-xs px-3 py-1.5 bg-amber-800 hover:bg-amber-900 rounded-lg transition-colors">Logout</button>
+          <button type="submit" class="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">Logout</button>
         </form>
       </div>
     </div>
   </div>
 
-  <div id="nav-menu-mobile" class="hidden md:hidden bg-amber-800 px-4 pb-3 text-sm font-medium space-y-1">
-    <a href="/admin/dashboard" class="block px-3 py-2 rounded-lg hover:bg-amber-700 transition-colors{{ if eq .CurrentPath "/admin/dashboard" }} bg-amber-900{{ end }}">Dashboard</a>
-    <a href="/admin/waffles/new" class="block px-3 py-2 rounded-lg hover:bg-amber-700 transition-colors{{ if eq .CurrentPath "/admin/waffles/new" }} bg-amber-900{{ end }}">New Waffle</a>
-    <a href="/admin/reports" class="block px-3 py-2 rounded-lg hover:bg-amber-700 transition-colors{{ if eq .CurrentPath "/admin/reports" }} bg-amber-900{{ end }}">Reports</a>
+  <div id="nav-menu-mobile" class="hidden md:hidden bg-slate-800 px-4 pb-3 text-sm font-medium space-y-1">
+    <a href="/admin/dashboard" class="block px-3 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-slate-700 transition-colors{{ if eq .CurrentPath "/admin/dashboard" }} bg-slate-700 text-white{{ end }}">Dashboard</a>
+    <a href="/admin/waffles/new" class="block px-3 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-slate-700 transition-colors{{ if eq .CurrentPath "/admin/waffles/new" }} bg-slate-700 text-white{{ end }}">New Waffle</a>
+    <a href="/admin/reports" class="block px-3 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-slate-700 transition-colors{{ if eq .CurrentPath "/admin/reports" }} bg-slate-700 text-white{{ end }}">Reports</a>
     {{ if eq .Role "super_admin" }}
-    <a href="/admin/admins" class="block px-3 py-2 rounded-lg hover:bg-amber-700 transition-colors{{ if eq .CurrentPath "/admin/admins" }} bg-amber-900{{ end }}">Admins</a>
+    <a href="/admin/admins" class="block px-3 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-slate-700 transition-colors{{ if eq .CurrentPath "/admin/admins" }} bg-slate-700 text-white{{ end }}">Admins</a>
     {{ end }}
-    <div class="border-t border-amber-600 pt-2 mt-2 flex items-center justify-between">
-      <span class="text-xs text-amber-200">{{ .DisplayName }}</span>
+    <div class="border-t border-slate-700 pt-2 mt-2 flex items-center justify-between">
+      <span class="text-xs text-slate-400">{{ .DisplayName }}</span>
       <form action="/admin/logout" method="POST" class="inline">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-        <button type="submit" class="text-xs px-3 py-1.5 bg-amber-900 hover:bg-amber-950 rounded-lg transition-colors">Logout</button>
+        <button type="submit" class="text-xs px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg transition-colors">Logout</button>
       </form>
     </div>
   </div>

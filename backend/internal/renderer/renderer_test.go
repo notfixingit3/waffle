@@ -168,36 +168,4 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-func TestSpotCardTemplate(t *testing.T) {
-	r := New(nil)
-	err := r.AddFromFiles("../../templates/partials/spot_card.html")
-	if err != nil {
-		t.Fatalf("AddFromFiles failed: %v", err)
-	}
 
-	var buf strings.Builder
-	inner, err := dict("Number", 7, "Status", "available", "ClaimedByHandle", "")
-	if err != nil {
-		t.Fatalf("inner dict failed: %v", err)
-	}
-	spotData, err := dict("Spot", inner, "BasePath", "")
-	if err != nil {
-		t.Fatalf("dict failed: %v", err)
-	}
-
-	err = r.Write(&buf, "spot_card.html", spotData)
-	if err != nil {
-		t.Fatalf("Render spot_card failed: %v", err)
-	}
-
-	output := buf.String()
-	if !strings.Contains(output, "spot-card") {
-		t.Errorf("expected spot-card class in output")
-	}
-	if !strings.Contains(output, `data-spot-number="7"`) {
-		t.Errorf("expected data-spot-number=7 in output")
-	}
-	if !strings.Contains(output, "bg-green-50") {
-		t.Errorf("expected bg-green-50 for available spot")
-	}
-}

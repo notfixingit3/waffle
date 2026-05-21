@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Inter';
+  src: url('/static/fonts/inter-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "tailwindcss";
 
 /* Mobile touch optimization — prevent double-tap zoom on interactive elements */
