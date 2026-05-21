@@ -10,10 +10,11 @@
   <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-Compose-blue?logo=docker" alt="Docker" /></a>
   <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.25-00ADD8?logo=go" alt="Go" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL" /></a>
+  <a href="https://github.com/notfixingit3/waffle/pkgs/container/waffle"><img src="https://img.shields.io/badge/ghcr.io-notfixingit3%2Fwaffle-blue?logo=docker&label=GHCR" alt="GHCR" /></a>
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.0.4">v0.0.4</a></p>
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.0.9">v0.0.9</a></p>
 
 ---
 
@@ -89,11 +90,33 @@ Default local admin credentials are `admin` / `admin123`. Change them before any
 
 ---
 
+## Production Deployment
+
+**Prerequisites:** Docker and Docker Compose v2+.
+
+1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
+2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
+   ```bash
+   WAFFLE_VERSION=v0.0.9
+   DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
+   JWT_SECRET=your-secure-random-secret-here
+   ADMIN_PASSWORD=your-secure-admin-password
+   ```
+3. Start the services:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+4. Open `/admin/login` and change the default admin password immediately
+
+Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github.com/notfixingit3/waffle/pkgs/container/waffle) for `linux/amd64` and `linux/arm64`.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Go server-side templates + Tailwind CSS (server-rendered HTML) |
+| Frontend | Go server-side templates + Tailwind CSS + DaisyUI |
 | Backend | Go (Gin), WebSocket hub |
 | Database | PostgreSQL with migrations |
 | DevOps | Docker Compose, multi-stage builds |
@@ -113,6 +136,7 @@ Default local admin credentials are `admin` / `admin123`. Change them before any
 | 6 | ✅ Complete | Mobile polish + production Dockerfiles + deployment docs |
 | 7 | ✅ Complete | Multi-admin auth + role-based access + password reset + admin management + archive/delete |
 | 8 | ✅ Complete | Offline/service worker support with installable app shell, offline page caching, and update notifications |
+| 9 | ✅ Complete | DaisyUI migration (Halloween/syrup theme + amber primary) |
 
 ---
 
