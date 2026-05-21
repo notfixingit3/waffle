@@ -686,6 +686,11 @@ func createAdmin(c *gin.Context) {
 		return
 	}
 
+	if len(req.Password) < 8 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters"})
+		return
+	}
+
 	admin, err := services.CreateAdmin(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
