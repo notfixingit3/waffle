@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="syrup">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -15,13 +15,15 @@
   <link rel="apple-touch-icon" href="/static/img/logo.png">
   {{ block "head" . }}{{ end }}
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-dvh">
-  <div id="offline-banner" class="hidden bg-red-500 text-white text-center py-2 text-sm font-medium fixed top-0 left-0 right-0 z-50">
-    You are offline. Some features may be unavailable.
+<body class="bg-base-200 text-base-content min-h-dvh">
+  <div id="offline-banner" class="hidden alert alert-warning py-2 fixed top-0 left-0 right-0 z-50 rounded-none">
+    <span class="text-sm font-medium">You are offline. Some features may be unavailable.</span>
   </div>
-  <div id="update-toast" class="hidden bg-blue-600 text-white text-center py-2 text-sm font-medium fixed top-0 left-0 right-0 z-50">
-    A new version is available. Reload to update.
-    <button onclick="window.location.reload()" class="ml-2 underline">Reload</button>
+  <div id="update-toast" class="hidden toast toast-top toast-center z-50">
+    <div class="alert alert-info">
+      <span class="text-sm font-medium">A new version is available. Reload to update.</span>
+      <button onclick="window.location.reload()" class="btn btn-sm">Reload</button>
+    </div>
   </div>
   {{ template "header.html" . }}
   <main class="container mx-auto px-4 py-4">
@@ -56,8 +58,6 @@
 
     if ('serviceWorker' in navigator && !window.location.pathname.startsWith('/admin/')) {
       navigator.serviceWorker.register('/static/js/sw.js').then(function(reg) {
-        console.log('SW registered');
-
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
           if (!newWorker) return;
@@ -69,7 +69,7 @@
             }
           });
         });
-      }).catch(function(err) { console.error('SW registration failed:', err); });
+      }).catch(function() { /* SW registration failed */ });
     }
   })();
   </script>
