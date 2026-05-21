@@ -55,13 +55,14 @@ var SpotSelection = (function() {
   }
 
   function toggleSpot(num, el) {
+    var selectedClasses = SPOT_SELECTION_CLASSES.selected.split(' ');
     if (selectedSpots.has(num)) {
       selectedSpots.delete(num);
-      el.classList.remove('ring-2', 'ring-blue-500', 'bg-green-200');
+      selectedClasses.forEach(function(cls) { el.classList.remove(cls); });
       el.setAttribute('aria-checked', 'false');
     } else {
       selectedSpots.add(num);
-      el.classList.add('ring-2', 'ring-blue-500', 'bg-green-200');
+      selectedClasses.forEach(function(cls) { el.classList.add(cls); });
       el.setAttribute('aria-checked', 'true');
     }
 
@@ -147,10 +148,8 @@ var SpotSelection = (function() {
         var el = document.querySelector('[data-spot-number="' + num + '"]');
         if (el) {
           el.dataset.spotStatus = 'pending';
-          el.className = el.className.replace(/ring-\w+-\d+/g, '').replace(/bg-green-\w+/g, 'bg-yellow-50');
-          el.className = el.className.replace(/border-green-\w+/g, 'border-yellow-400');
-          el.className = el.className.replace(/cursor-pointer/g, 'cursor-default');
-          el.classList.add('text-yellow-900');
+          var pendingClasses = SPOT_STATUS_CLASSES.pending;
+          el.className = 'spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + pendingClasses.bg + ' ' + pendingClasses.border + ' ' + pendingClasses.text + ' cursor-default';
           el.disabled = true;
           el.setAttribute('aria-checked', 'false');
 

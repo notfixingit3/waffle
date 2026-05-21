@@ -13,7 +13,6 @@ var WaffleWebSocket = (function() {
     messageHandler = handler;
 
     if (!navigator.onLine) {
-      console.log('WS: offline, not connecting');
       updateStatus('disconnected');
       return;
     }
@@ -99,25 +98,25 @@ var WaffleWebSocket = (function() {
 
     switch (status) {
       case 'connected':
-        dot.className += ' bg-green-500';
+        dot.className += ' bg-success';
         label.textContent = 'live';
-        label.className = 'text-xs text-green-600';
+        label.className = 'text-xs text-success';
         break;
       case 'connecting':
-        dot.className += ' bg-yellow-500 animate-pulse';
+        dot.className += ' bg-warning animate-pulse';
         label.textContent = 'connecting';
-        label.className = 'text-xs text-yellow-600';
+        label.className = 'text-xs text-warning';
         break;
       case 'reconnecting':
-        dot.className += ' bg-yellow-500 animate-pulse';
+        dot.className += ' bg-warning animate-pulse';
         label.textContent = 'reconnecting';
-        label.className = 'text-xs text-yellow-600';
+        label.className = 'text-xs text-warning';
         break;
       case 'disconnected':
       default:
-        dot.className += ' bg-gray-300';
+        dot.className += ' bg-base-300';
         label.textContent = 'offline';
-        label.className = 'text-xs text-gray-400';
+        label.className = 'text-xs text-base-content/40';
         break;
     }
   }
@@ -130,9 +129,9 @@ var WaffleWebSocket = (function() {
     var label = container.querySelector('span:last-child');
     if (!dot || !label) return;
 
-    dot.className = 'w-2 h-2 rounded-full inline-block bg-blue-500 animate-pulse';
+    dot.className = 'w-2 h-2 rounded-full inline-block bg-info animate-pulse';
     label.textContent = payload.message || 'activity';
-    label.className = 'text-xs text-blue-600';
+    label.className = 'text-xs text-info';
 
     if (activityFlashTimer) {
       clearTimeout(activityFlashTimer);

@@ -75,11 +75,13 @@ var AdminSpotActions = (function() {
 
     if (bulkMode) {
       btn.textContent = 'Exit Bulk Mode';
-      btn.className = btn.className.replace('bg-white', 'bg-yellow-100').replace('border-gray-300', 'border-yellow-400').replace('text-gray-700', 'text-yellow-800').replace('hover:bg-gray-50', 'hover:bg-yellow-200');
+      btn.classList.remove('btn-outline');
+      btn.classList.add('btn-warning');
       document.getElementById('bulk-actions').classList.remove('hidden');
     } else {
       btn.textContent = 'Bulk Pay Mode';
-      btn.className = btn.className.replace('bg-yellow-100', 'bg-white').replace('border-yellow-400', 'border-gray-300').replace('text-yellow-800', 'text-gray-700').replace('hover:bg-yellow-200', 'hover:bg-gray-50');
+      btn.classList.remove('btn-warning');
+      btn.classList.add('btn-outline');
       document.getElementById('bulk-actions').classList.add('hidden');
       clearBulkSelection();
     }
@@ -87,23 +89,25 @@ var AdminSpotActions = (function() {
 
   function toggleBulkSelect(spot) {
     var spotId = spot.dataset.spotId;
+    var bulkClasses = SPOT_SELECTION_CLASSES.bulk_selected.split(' ');
 
     if (selectedForBulk.has(spotId)) {
       selectedForBulk.delete(spotId);
-      spot.classList.remove('ring-2', 'ring-green-500', 'bg-yellow-200');
+      bulkClasses.forEach(function(cls) { spot.classList.remove(cls); });
     } else {
       selectedForBulk.add(spotId);
-      spot.classList.add('ring-2', 'ring-green-500', 'bg-yellow-200');
+      bulkClasses.forEach(function(cls) { spot.classList.add(cls); });
     }
 
     updateBulkUI();
   }
 
   function clearBulkSelection() {
+    var bulkClasses = SPOT_SELECTION_CLASSES.bulk_selected.split(' ');
     selectedForBulk.forEach(function(spotId) {
       var el = document.querySelector('[data-spot-id="' + spotId + '"]');
       if (el) {
-        el.classList.remove('ring-2', 'ring-green-500', 'bg-yellow-200');
+        bulkClasses.forEach(function(cls) { el.classList.remove(cls); });
       }
     });
     selectedForBulk.clear();
@@ -149,7 +153,7 @@ var AdminSpotActions = (function() {
           var el = document.querySelector('[data-spot-id="' + r.spotId + '"]');
           if (el) {
             el.dataset.spotStatus = 'paid';
-            el.className = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none bg-red-50 border-red-400 text-red-900 cursor-default';
+            el.className = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + SPOT_STATUS_CLASSES.paid.bg + ' ' + SPOT_STATUS_CLASSES.paid.border + ' ' + SPOT_STATUS_CLASSES.paid.text + ' cursor-default';
           }
           var listItem = document.querySelector('#pending-list [data-spot-id="' + r.spotId + '"]');
           if (listItem) {
@@ -200,7 +204,7 @@ var AdminSpotActions = (function() {
       var gridSpot = document.querySelector('#spot-grid [data-spot-id="' + spotId + '"]');
       if (gridSpot) {
         gridSpot.dataset.spotStatus = 'paid';
-        gridSpot.className = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none bg-red-50 border-red-400 text-red-900 cursor-default';
+        gridSpot.className = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + SPOT_STATUS_CLASSES.paid.bg + ' ' + SPOT_STATUS_CLASSES.paid.border + ' ' + SPOT_STATUS_CLASSES.paid.text + ' cursor-default';
       }
 
       if (isListItem && el) {
@@ -323,7 +327,7 @@ var AdminSpotActions = (function() {
     var list = document.getElementById('pending-list');
     if (!list.querySelector('.pending-claim-item')) {
       var p = document.createElement('p');
-      p.className = 'text-sm text-gray-400 text-center py-4';
+      p.className = 'text-sm text-base-content/40 text-center py-4';
       p.textContent = 'No pending claims';
       list.appendChild(p);
     }
