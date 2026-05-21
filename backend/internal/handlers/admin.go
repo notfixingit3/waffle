@@ -381,6 +381,22 @@ func AdminManagementPage(c *gin.Context) {
 	renderers["admins.html"].Render(c, "admins.html", data)
 }
 
+func validateCreateAdminForm(username, email, password string) []string {
+	var errors []string
+	if username == "" {
+		errors = append(errors, "Username is required")
+	}
+	if email == "" {
+		errors = append(errors, "Email is required")
+	}
+	if password == "" {
+		errors = append(errors, "Password is required")
+	} else if len(password) < 8 {
+		errors = append(errors, "Password must be at least 8 characters")
+	}
+	return errors
+}
+
 func CreateAdminPost(c *gin.Context) {
 	if !validateCSRF(c) {
 		renderAdminManagementWithError(c, "Invalid or missing CSRF token. Please try again.", nil)
@@ -393,16 +409,7 @@ func CreateAdminPost(c *gin.Context) {
 	displayName := strings.TrimSpace(c.PostForm("display_name"))
 	role := c.PostForm("role")
 
-	var errors []string
-	if username == "" {
-		errors = append(errors, "Username is required")
-	}
-	if email == "" {
-		errors = append(errors, "Email is required")
-	}
-	if password == "" {
-		errors = append(errors, "Password is required")
-	}
+	errors := validateCreateAdminForm(username, email, password)
 	if role != "admin" && role != "super_admin" {
 		role = "admin"
 	}
