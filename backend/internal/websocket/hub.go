@@ -93,6 +93,16 @@ func (h *Hub) Broadcast(room string, msgType string, payload interface{}) {
 	}
 }
 
+func (h *Hub) TotalClients() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	total := 0
+	for _, clients := range h.clients {
+		total += len(clients)
+	}
+	return total
+}
+
 func InitHub() {
 	hub = NewHub()
 	go hub.Run()
@@ -154,5 +164,19 @@ func BroadcastActivityEvent(slug string, eventType string, message string, insta
 		"message":          message,
 		"instagram_handle": instagramHandle,
 		"spot_numbers":     spotNumbers,
+	})
+}
+
+func BroadcastWinnerCleared(slug string) {
+	room := "waffle:" + slug
+	hub.Broadcast(room, "WINNER_CLEARED", map[string]interface{}{
+		"slug": slug,
+	})
+}
+
+func BroadcastWinnerChanged(slug string, winningSpotNumber int) {
+	room := "waffle:" + slug
+	hub.Broadcast(room, "WINNER_CHANGED", map[string]interface{}{
+		"winning_spot_number": winningSpotNumber,
 	})
 }

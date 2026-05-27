@@ -1,0 +1,83 @@
+{{ template "admin_base.html" . }}
+
+{{ define "title" }}Login History - Project Syrup{{ end }}
+
+{{ define "content" }}
+<div class="max-w-5xl mx-auto">
+  <h1 class="text-2xl font-bold text-base-content mb-6">Login History</h1>
+
+  <div class="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th class="text-left">Admin</th>
+            <th class="text-left">IP Address</th>
+            <th class="text-left">Browser</th>
+            <th class="text-left">OS</th>
+            <th class="text-left">Device</th>
+            <th class="text-left">Location</th>
+            <th class="text-left">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Records }}
+          <tr class="hover:bg-base-200/50 transition-colors">
+            <td class="px-4 py-3">
+              <span class="font-medium text-base-content">{{ index $.AdminMap .AdminID.String }}</span>
+            </td>
+            <td class="px-4 py-3 font-mono text-sm">{{ if .IPAddress }}{{ .IPAddress }}{{ else }}-{{ end }}</td>
+            <td class="px-4 py-3">{{ if .Browser }}{{ .Browser }}{{ else }}-{{ end }}</td>
+            <td class="px-4 py-3">{{ if .OS }}{{ .OS }}{{ else }}-{{ end }}</td>
+            <td class="px-4 py-3">{{ if .DeviceType }}{{ .DeviceType }}{{ else }}-{{ end }}</td>
+            <td class="px-4 py-3">{{ if .Location }}{{ .Location }}{{ else }}-{{ end }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ formatDate "Jan 2, 2006 3:04 PM" .CreatedAt }}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    {{ if not .Records }}
+    <div class="text-center py-8">
+      <p class="opacity-60 text-sm">No login history found</p>
+    </div>
+    {{ end }}
+
+    {{ if gt .TotalPages 1 }}
+    <div class="p-4 border-t border-base-200 flex items-center justify-between">
+      <span class="text-sm opacity-60">Page {{ .Page }} of {{ .TotalPages }}</span>
+      <div class="join">
+        {{ if gt .Page 1 }}
+        <a href="/admin/login-history?page={{ sub .Page 1 }}&limit={{ .Limit }}" class="join-item btn btn-sm">Previous</a>
+        {{ else }}
+        <button class="join-item btn btn-sm" disabled>Previous</button>
+        {{ end }}
+
+        {{ range $i := iterate 1 .TotalPages }}
+          {{ if eq $i $.Page }}
+          <button class="join-item btn btn-sm btn-active">{{ $i }}</button>
+          {{ else }}
+          <a href="/admin/login-history?page={{ $i }}&limit={{ $.Limit }}" class="join-item btn btn-sm">{{ $i }}</a>
+          {{ end }}
+        {{ end }}
+
+        {{ if lt .Page .TotalPages }}
+        <a href="/admin/login-history?page={{ add .Page 1 }}&limit={{ .Limit }}" class="join-item btn btn-sm">Next</a>
+        {{ else }}
+        <button class="join-item btn btn-sm" disabled>Next</button>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
+
+{{ define "scripts" }}
+<script>
+(function() {
+  'use strict';
+})();
+</script>
+{{ end }}

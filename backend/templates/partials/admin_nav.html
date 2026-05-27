@@ -18,26 +18,46 @@
         <a href="/admin/dashboard" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
         <a href="/admin/waffles/new" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
         <a href="/admin/reports" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
-        <a href="/admin/settings" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Settings</a>
         {{ if eq .Role "super_admin" }}
         <a href="/admin/admins" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
         {{ end }}
       </div>
 
-      <div class="hidden md:flex items-center gap-3">
-        <button type="button" class="btn btn-ghost btn-sm btn-square theme-toggle" onclick="ThemeToggle.toggle()" aria-label="Toggle theme">
-          <svg class="w-5 h-5 theme-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-          </svg>
-          <svg class="w-5 h-5 hidden theme-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-          </svg>
-        </button>
-        <span class="text-sm text-neutral-content/60">{{ .DisplayName }}</span>
-        <form action="/admin/logout" method="POST" class="inline">
-          <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-          <button type="submit" class="btn btn-primary btn-sm">Logout</button>
-        </form>
+      <div class="hidden md:flex items-center gap-2">
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm flex items-center gap-2">
+            <span>{{ .DisplayName }}</span>
+            <span class="badge badge-sm badge-ghost">{{ .Role }}</span>
+            <svg class="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-[1] w-52 p-2 shadow mt-2">
+            <li><a href="/admin/settings" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">Settings</a></li>
+            <li><a href="/admin/settings#login-history" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">My Login History</a></li>
+            <li><a href="/about">About</a></li>
+            <li>
+              <button type="button" class="theme-toggle" onclick="ThemeToggle.toggle()" aria-label="Toggle theme">
+                <span class="flex items-center gap-2">
+                  <svg class="w-4 h-4 theme-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                  </svg>
+                  <svg class="w-4 h-4 hidden theme-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                  </svg>
+                  <span>Toggle theme</span>
+                </span>
+              </button>
+            </li>
+            <li class="menu-divider"></li>
+            <li>
+              <form action="/admin/logout" method="POST" class="inline w-full">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <button type="submit" class="w-full text-left">Logout</button>
+              </form>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -47,27 +67,31 @@
     <a href="/admin/dashboard" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
     <a href="/admin/waffles/new" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
     <a href="/admin/reports" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
-    <a href="/admin/settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Settings</a>
     {{ if eq .Role "super_admin" }}
     <a href="/admin/admins" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
     {{ end }}
-    <button type="button" class="btn btn-ghost btn-sm w-full text-left theme-toggle" onclick="ThemeToggle.toggle()" aria-label="Toggle theme">
-      <span class="flex items-center gap-2">
-        <svg class="w-5 h-5 theme-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-        </svg>
-        <svg class="w-5 h-5 hidden theme-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-        </svg>
-        <span>Toggle theme</span>
-      </span>
-    </button>
-    <div class="border-t border-neutral-focus pt-2 mt-2 flex items-center justify-between">
-      <span class="text-sm text-neutral-content/60">{{ .DisplayName }}</span>
-      <form action="/admin/logout" method="POST" class="inline">
-        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-        <button type="submit" class="btn btn-primary btn-sm">Logout</button>
-      </form>
+    <div class="border-t border-neutral-focus pt-2 mt-2 space-y-1">
+      <a href="/admin/settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Settings</a>
+      <a href="/admin/settings#login-history" class="btn btn-ghost btn-sm w-full text-left">My Login History</a>
+      <a href="/about" class="btn btn-ghost btn-sm w-full text-left">About</a>
+      <button type="button" class="btn btn-ghost btn-sm w-full text-left theme-toggle" onclick="ThemeToggle.toggle()" aria-label="Toggle theme">
+        <span class="flex items-center gap-2">
+          <svg class="w-5 h-5 theme-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg class="w-5 h-5 hidden theme-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <span>Toggle theme</span>
+        </span>
+      </button>
+      <div class="flex items-center justify-between pt-2">
+        <span class="text-sm text-neutral-content/60">{{ .DisplayName }} <span class="badge badge-sm badge-ghost">{{ .Role }}</span></span>
+        <form action="/admin/logout" method="POST" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+          <button type="submit" class="btn btn-primary btn-sm">Logout</button>
+        </form>
+      </div>
     </div>
   </div>
 </nav>

@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/models"
 	"github.com/syrup/backend/internal/renderer"
 	"github.com/syrup/backend/internal/services"
+	ws "github.com/syrup/backend/internal/websocket"
 )
 
 var renderers map[string]*renderer.Renderer
@@ -14,6 +17,48 @@ var renderers map[string]*renderer.Renderer
 // InitRenderers sets the per-page template renderers used by all handlers.
 func InitRenderers(r map[string]*renderer.Renderer) {
 	renderers = r
+}
+
+func AboutPage(c *gin.Context) {
+	data := mergeMaps(pageData(), gin.H{
+		"title": "About - Project Syrup",
+	})
+
+	if _, exists := c.Get("admin_id"); exists {
+		var dbStatus string
+		if err := db.Pool.Ping(c.Request.Context()); err != nil {
+			dbStatus = "disconnected"
+		} else {
+			dbStatus = "connected"
+		}
+
+		totalWaffles, _, _ := services.CountWaffles()
+
+		var totalAdmins int
+		_ = db.Pool.QueryRow(c.Request.Context(), `SELECT COUNT(*) FROM admins WHERE active = true`).Scan(&totalAdmins)
+
+		var wsClients int
+		if hub := ws.GetHub(); hub != nil {
+			wsClients = hub.TotalClients()
+		}
+
+		var startTime time.Time
+		if err := db.Pool.QueryRow(c.Request.Context(), `SELECT pg_postmaster_start_time()`).Scan(&startTime); err != nil {
+			startTime = time.Now()
+		}
+		uptime := time.Since(startTime)
+
+		data = mergeMaps(data, gin.H{
+			"IsAdmin":      true,
+			"DBStatus":     dbStatus,
+			"TotalWaffles": totalWaffles,
+			"TotalAdmins":  totalAdmins,
+			"WSClients":    wsClients,
+			"Uptime":       uptime.Round(time.Second).String(),
+		})
+	}
+
+	renderers["about.html"].Render(c, "about.html", data)
 }
 
 // HomePage renders the public home page.

@@ -3,7 +3,7 @@
 {{ define "title" }}Settings - Project Syrup{{ end }}
 
 {{ define "content" }}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-4xl mx-auto">
   <h1 class="text-2xl font-bold text-base-content mb-6">Settings</h1>
 
   <div id="success-banner" class="alert alert-success mb-4 hidden">
@@ -14,7 +14,12 @@
     <span id="error-text"></span>
   </div>
 
-  <div class="card bg-base-100 shadow-sm border border-base-200 p-6">
+  <div class="tabs tabs-bordered mb-6">
+    <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Timezone</a>
+    <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">Login History</a>
+  </div>
+
+  <div id="panel-timezone" class="card bg-base-100 shadow-sm border border-base-200 p-6">
     <h2 class="text-lg font-semibold text-base-content mb-4">Timezone</h2>
     <p class="text-sm opacity-60 mb-4">Select your timezone for accurate time display.</p>
 
@@ -150,11 +155,66 @@
       </div>
     </form>
   </div>
+
+  <div id="panel-login-history" class="hidden card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+    <div class="p-6 border-b border-base-200">
+      <h2 class="text-lg font-semibold text-base-content">Login History</h2>
+      <p class="text-sm opacity-60">Recent logins for your account.</p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th class="text-left">Time</th>
+            <th class="text-left">IP Address</th>
+            <th class="text-left">Browser</th>
+            <th class="text-left">OS</th>
+            <th class="text-left">Device</th>
+            <th class="text-left">Location</th>
+          </tr>
+        </thead>
+        <tbody id="login-history-body">
+          <tr>
+            <td colspan="6" class="text-center py-8 opacity-60">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="login-history-pagination" class="p-4 border-t border-base-200 flex items-center justify-between">
+      <span id="login-history-info" class="text-sm opacity-60"></span>
+      <div class="join">
+        <button id="login-history-prev" class="join-item btn btn-sm" onclick="LoginHistory.prev()">Previous</button>
+        <button id="login-history-next" class="join-item btn btn-sm" onclick="LoginHistory.next()">Next</button>
+      </div>
+    </div>
+  </div>
 </div>
 {{ end }}
 
 {{ define "scripts" }}
 <script>
+function switchTab(tabName) {
+  var timezonePanel = document.getElementById('panel-timezone');
+  var historyPanel = document.getElementById('panel-login-history');
+  var timezoneTab = document.getElementById('tab-timezone');
+  var historyTab = document.getElementById('tab-login-history');
+
+  if (tabName === 'timezone') {
+    timezonePanel.classList.remove('hidden');
+    historyPanel.classList.add('hidden');
+    timezoneTab.classList.add('tab-active');
+    historyTab.classList.remove('tab-active');
+  } else {
+    timezonePanel.classList.add('hidden');
+    historyPanel.classList.remove('hidden');
+    timezoneTab.classList.remove('tab-active');
+    historyTab.classList.add('tab-active');
+    LoginHistory.load(1);
+  }
+}
+
 document.getElementById('timezone-form').addEventListener('submit', function(e) {
   e.preventDefault();
   var select = document.getElementById('timezone-select');
@@ -182,7 +242,7 @@ document.getElementById('timezone-form').addEventListener('submit', function(e) 
     return res.json().then(function(data) {
       if (res.ok) {
         successBanner.classList.remove('hidden');
-        currentTz.textContent = 'Current: ' + (data.timezone || 'UTC');
+        currentTzSpan.textContent = 'Current: ' + (data.timezone || 'UTC');
       } else {
         errorText.textContent = data.error || 'Failed to update timezone';
         errorBanner.classList.remove('hidden');
@@ -198,5 +258,130 @@ document.getElementById('timezone-form').addEventListener('submit', function(e) 
     btn.textContent = 'Save';
   });
 });
+
+var LoginHistory = (function() {
+  'use strict';
+
+  var currentPage = 1;
+  var totalPages = 1;
+  var limit = 20;
+
+  function formatDateTime(isoString) {
+    if (!isoString) return '-';
+    var d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var month = months[d.getMonth()];
+    var day = d.getDate();
+    var year = d.getFullYear();
+    var hours = d.getHours();
+    var minutes = d.getMinutes();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    var minStr = minutes < 10 ? '0' + minutes : minutes;
+    return month + ' ' + day + ', ' + year + ' ' + hours + ':' + minStr + ' ' + ampm;
+  }
+
+  function buildLocation(record) {
+    var parts = [];
+    if (record.ip_city) parts.push(record.ip_city);
+    if (record.ip_country) parts.push(record.ip_country);
+    if (record.ip_org) parts.push(record.ip_org);
+    if (record.ip_asn) parts.push('ASN ' + record.ip_asn);
+    if (parts.length === 0) return '-';
+    return parts.join(', ');
+  }
+
+  function renderRow(record) {
+    var location = buildLocation(record);
+    return '<tr class="hover:bg-base-200/50 transition-colors">' +
+      '<td class="px-4 py-3 whitespace-nowrap">' + formatDateTime(record.created_at) + '</td>' +
+      '<td class="px-4 py-3 font-mono text-sm">' + (record.ip_address || '-') + '</td>' +
+      '<td class="px-4 py-3">' + (record.browser || '-') + '</td>' +
+      '<td class="px-4 py-3">' + (record.os || '-') + '</td>' +
+      '<td class="px-4 py-3">' + (record.device_type || '-') + '</td>' +
+      '<td class="px-4 py-3">' + location + '</td>' +
+      '</tr>';
+  }
+
+  function updatePagination() {
+    var info = document.getElementById('login-history-info');
+    var prevBtn = document.getElementById('login-history-prev');
+    var nextBtn = document.getElementById('login-history-next');
+
+    if (totalPages === 0) {
+      info.textContent = 'No records';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    info.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+  }
+
+  function load(page) {
+    currentPage = page;
+    var tbody = document.getElementById('login-history-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">Loading...</td></tr>';
+
+    fetch('/api/admin/me/login-history?page=' + page + '&limit=' + limit, {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (!res.ok) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">Failed to load login history</td></tr>';
+          totalPages = 0;
+          updatePagination();
+          return;
+        }
+
+        var records = data.records || [];
+        var total = data.total || 0;
+        totalPages = Math.ceil(total / limit);
+        if (totalPages < 1) totalPages = 1;
+
+        if (records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">No login history found</td></tr>';
+        } else {
+          var html = '';
+          var i;
+          for (i = 0; i < records.length; i++) {
+            html += renderRow(records[i]);
+          }
+          tbody.innerHTML = html;
+        }
+
+        updatePagination();
+      });
+    })
+    .catch(function() {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">Failed to load login history</td></tr>';
+      totalPages = 0;
+      updatePagination();
+    });
+  }
+
+  function prev() {
+    if (currentPage > 1) {
+      load(currentPage - 1);
+    }
+  }
+
+  function next() {
+    if (currentPage < totalPages) {
+      load(currentPage + 1);
+    }
+  }
+
+  return {
+    load: load,
+    prev: prev,
+    next: next
+  };
+})();
 </script>
 {{ end }}

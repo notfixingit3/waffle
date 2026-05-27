@@ -42,8 +42,11 @@ func New(funcs template.FuncMap) *Renderer {
 	fm := template.FuncMap{
 		"dict":       dict,
 		"seq":        seq,
+		"iterate":    seq,
 		"formatDate": formatDate,
 		"deref":      deref,
+		"add":        add,
+		"sub":        sub,
 	}
 
 	for k, v := range funcs {
@@ -214,6 +217,14 @@ func deref(v interface{}) interface{} {
 	default:
 		return v
 	}
+}
+
+func add(a, b int) int {
+	return a + b
+}
+
+func sub(a, b int) int {
+	return a - b
 }
 
 // NewFromFiles creates a Renderer, parses the given template files, and returns it.

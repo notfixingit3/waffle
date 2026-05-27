@@ -69,6 +69,7 @@ func main() {
 		"templates/pages/public/waffles.html",
 		"templates/pages/public/waffle_detail.html",
 		"templates/pages/public/buyer_stats.html",
+		"templates/pages/public/about.html",
 		"templates/pages/admin/login.html",
 		"templates/pages/admin/reset_password.html",
 		"templates/pages/admin/dashboard.html",
@@ -78,6 +79,7 @@ func main() {
 		"templates/pages/admin/waffle_manage.html",
 		"templates/pages/admin/reports.html",
 		"templates/pages/admin/settings.html",
+		"templates/pages/admin/login_history.html",
 	}
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
@@ -112,6 +114,7 @@ func main() {
 	r.GET("/waffles", handlers.WaffleListPage)
 	r.GET("/waffle/:slug", handlers.WaffleDetailPage)
 	r.GET("/buyer/:handle", handlers.BuyerStatsPage)
+	r.GET("/about", handlers.AboutPage)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -138,6 +141,7 @@ func main() {
 	adminPages.POST("/waffles/new", handlers.CreateWafflePost)
 	adminPages.GET("/reports", handlers.ReportsPage)
 	adminPages.GET("/settings", handlers.SettingsPage)
+	adminPages.GET("/login-history", handlers.LoginHistoryPage)
 
 	adminSuperPages := adminPages.Group("", middleware.RequireSuperAdmin)
 	adminSuperPages.GET("/admins", handlers.AdminManagementPage)
@@ -165,8 +169,14 @@ func main() {
 
 	adminAuth := admin.Group("", middleware.RequireAuth)
 	adminAuth.GET("/me", getCurrentAdmin)
+	adminAuth.GET("/me/login-history", handlers.GetMyLoginHistoryAPI)
 	adminAuth.POST("/change-password", changePassword)
 	adminAuth.PATCH("/me/timezone", handlers.UpdateTimezoneAPI)
+	adminAuth.GET("/login-history", handlers.GetAllLoginHistoryAPI)
+	adminAuth.GET("/settings/whois-server", handlers.GetWhoisSettingsAPI)
+
+	adminSuperSettings := admin.Group("/settings", middleware.RequireAuth, middleware.RequireSuperAdmin)
+	adminSuperSettings.PATCH("/whois-server", handlers.UpdateWhoisSettingsAPI)
 
 	adminUsers := admin.Group("/admins", middleware.RequireAuth, middleware.RequireSuperAdmin)
 	adminUsers.GET("/", listAdmins)
@@ -185,6 +195,8 @@ func main() {
 	adminManagerAPI.POST("/:id/archive", archiveWaffle)
 	adminManagerAPI.POST("/:id/unarchive", unarchiveWaffle)
 	adminManagerAPI.DELETE("/:id", deleteWaffle)
+	adminManagerAPI.POST("/:id/clear-winner", handlers.ClearWinnerAPI)
+	adminManagerAPI.POST("/:id/change-winner", handlers.ChangeWinnerAPI)
 
 	adminReports := admin.Group("/reports", middleware.RequireAuth)
 	adminReports.GET("/drought", getDroughtList)
@@ -565,7 +577,21 @@ func adminLogin(c *gin.Context) {
 		return
 	}
 
-	services.RecordLogin(admin.ID)
+	loginID, err := services.RecordLogin(admin.ID.String(), c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		log.Printf("RecordLogin error: %v", err)
+	} else if !services.IsPrivateIP(c.ClientIP()) {
+		go func(id uuid.UUID) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("WHOIS enrichment panic: %v", r)
+				}
+			}()
+			if enrichErr := services.EnrichLoginWithWHOIS(id); enrichErr != nil {
+				log.Printf("WHOIS enrichment error: %v", enrichErr)
+			}
+		}(loginID)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,

@@ -301,6 +301,52 @@ func SetWinnerAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "winner set successfully"})
 }
 
+func ClearWinnerAPI(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	if err := services.ClearWinner(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	waffle, err := services.GetWaffleByID(id)
+	if err == nil {
+		ws.BroadcastWinnerCleared(waffle.Slug)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "winner cleared successfully"})
+}
+
+func ChangeWinnerAPI(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req models.SetWinnerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := services.ChangeWinner(id, req.WinningSpotNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	waffle, err := services.GetWaffleByID(id)
+	if err == nil {
+		ws.BroadcastWinnerChanged(waffle.Slug, req.WinningSpotNumber)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "winner changed successfully"})
+}
+
 func NewWafflePage(c *gin.Context) {
 	data := adminNavData(c)
 	data["title"] = "New Waffle - Project Syrup"

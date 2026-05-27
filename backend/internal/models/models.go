@@ -135,6 +135,29 @@ type Admin struct {
 	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
 }
 
+type SystemSetting struct {
+	Key       string     `json:"key" db:"key"`
+	Value     string     `json:"value" db:"value"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
+	UpdatedBy *uuid.UUID `json:"updated_by,omitempty" db:"updated_by"`
+}
+
+type LoginHistory struct {
+	ID          uuid.UUID `json:"id" db:"id"`
+	AdminID     uuid.UUID `json:"admin_id" db:"admin_id"`
+	IPAddress   string    `json:"ip_address" db:"ip_address"`
+	UserAgent   string    `json:"user_agent" db:"user_agent"`
+	Browser     string    `json:"browser" db:"browser"`
+	OS          string    `json:"os" db:"os"`
+	DeviceType  string    `json:"device_type" db:"device_type"`
+	IPOrg       string    `json:"ip_org" db:"ip_org"`
+	IPCountry   string    `json:"ip_country" db:"ip_country"`
+	IPCity      string    `json:"ip_city" db:"ip_city"`
+	IPASN       string    `json:"ip_asn" db:"ip_asn"`
+	WhoisServer string    `json:"whois_server" db:"whois_server"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+}
+
 type AdminLoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -193,4 +216,12 @@ type SpotVelocity struct {
 	WaffleCount        int     `json:"waffle_count"`
 	AvgFirstClaimHours float64 `json:"avg_first_claim_hours"`
 	AvgCompletionHours float64 `json:"avg_completion_hours"`
+}
+
+type WHOISResult struct {
+	Organization *string `json:"organization,omitempty"`
+	Country      *string `json:"country,omitempty"`
+	City         *string `json:"city,omitempty"`
+	ASN          *string `json:"asn,omitempty"`
+	Raw          string  `json:"-"`
 }

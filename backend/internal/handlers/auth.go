@@ -5,12 +5,14 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/syrup/backend/internal/services"
 )
 
@@ -108,7 +110,21 @@ func LoginPost(c *gin.Context) {
 		return
 	}
 
-	_ = services.RecordLogin(admin.ID)
+	loginID, err := services.RecordLogin(admin.ID.String(), c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		log.Printf("RecordLogin error: %v", err)
+	} else if !services.IsPrivateIP(c.ClientIP()) {
+		go func(id uuid.UUID) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("WHOIS enrichment panic: %v", r)
+				}
+			}()
+			if enrichErr := services.EnrichLoginWithWHOIS(id); enrichErr != nil {
+				log.Printf("WHOIS enrichment error: %v", enrichErr)
+			}
+		}(loginID)
+	}
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "admin_token",

@@ -10,6 +10,7 @@ backend/cmd/api/static/css/package-lock.json
 
 # Local build outputs
 /backend/api
+/backend/*.test
 
 # Cookie/session jars from manual QA
 /admin.jar

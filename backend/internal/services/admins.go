@@ -154,13 +154,6 @@ func UpdateAdminTimezone(id uuid.UUID, timezone string) (*models.Admin, error) {
 	return GetAdminByID(id)
 }
 
-func RecordLogin(id uuid.UUID) error {
-	_, err := db.Pool.Exec(context.Background(), `
-		UPDATE admins SET last_login_at = $1 WHERE id = $2
-	`, time.Now(), id)
-	return err
-}
-
 func AuthenticateAdmin(username, password string) (*models.Admin, error) {
 	var hash string
 	admin := &models.Admin{}

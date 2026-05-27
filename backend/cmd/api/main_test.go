@@ -59,11 +59,12 @@ func setupTestRouter() *gin.Engine {
 	adminWaffles.PATCH("/:id", func(c *gin.Context) { c.JSON(200, gin.H{"updated": true}) })
 	adminWaffles.POST("/:id/winner", func(c *gin.Context) { c.JSON(200, gin.H{"winner_set": true}) })
 
-	// Archive/delete/unarchive (RequireRole admin/super_admin) — NOT accessible to waffle_manager
 	adminManagerAPI := admin.Group("/waffles", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin))
 	adminManagerAPI.POST("/:id/archive", func(c *gin.Context) { c.JSON(200, gin.H{"archived": true}) })
 	adminManagerAPI.POST("/:id/unarchive", func(c *gin.Context) { c.JSON(200, gin.H{"unarchived": true}) })
 	adminManagerAPI.DELETE("/:id", func(c *gin.Context) { c.JSON(200, gin.H{"deleted": true}) })
+	adminManagerAPI.POST("/:id/clear-winner", func(c *gin.Context) { c.JSON(200, gin.H{"winner_cleared": true}) })
+	adminManagerAPI.POST("/:id/change-winner", func(c *gin.Context) { c.JSON(200, gin.H{"winner_changed": true}) })
 
 	// Reports (RequireAuth only) — accessible to waffle_manager
 	adminReports := admin.Group("/reports", middleware.RequireAuth)
@@ -250,5 +251,69 @@ func TestUnauthenticated_ListWaffles_Unauthorized(t *testing.T) {
 	w := doRequest(r, "GET", "/api/admin/waffles/", "")
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401 for unauthenticated waffle list request, got %d", w.Code)
+	}
+}
+
+func TestWaffleManager_ClearWinner_Forbidden(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/clear-winner", models.RoleWaffleManager)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for waffle_manager on clear-winner API, got %d", w.Code)
+	}
+}
+
+func TestWaffleManager_ChangeWinner_Forbidden(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/change-winner", models.RoleWaffleManager)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for waffle_manager on change-winner API, got %d", w.Code)
+	}
+}
+
+func TestAdmin_ClearWinner_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/clear-winner", models.RoleAdmin)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for admin on clear-winner API, got %d", w.Code)
+	}
+}
+
+func TestAdmin_ChangeWinner_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/change-winner", models.RoleAdmin)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for admin on change-winner API, got %d", w.Code)
+	}
+}
+
+func TestSuperAdmin_ClearWinner_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/clear-winner", models.RoleSuperAdmin)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for super_admin on clear-winner API, got %d", w.Code)
+	}
+}
+
+func TestSuperAdmin_ChangeWinner_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/change-winner", models.RoleSuperAdmin)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for super_admin on change-winner API, got %d", w.Code)
+	}
+}
+
+func TestUnauthenticated_ClearWinner_Unauthorized(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/clear-winner", "")
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthenticated clear-winner request, got %d", w.Code)
+	}
+}
+
+func TestUnauthenticated_ChangeWinner_Unauthorized(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/change-winner", "")
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthenticated change-winner request, got %d", w.Code)
 	}
 }
