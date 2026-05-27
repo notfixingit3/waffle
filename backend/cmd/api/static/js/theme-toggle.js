@@ -21,23 +21,24 @@ var ThemeToggle = (function() {
 
   function updateIcons() {
     var current = document.documentElement.getAttribute('data-theme');
-    var sunEl = document.getElementById('theme-sun');
-    var moonEl = document.getElementById('theme-moon');
     var isDark = current !== LIGHT_THEME;
+    var sunEls = document.querySelectorAll('.theme-sun');
+    var moonEls = document.querySelectorAll('.theme-moon');
+    var i;
 
-    if (sunEl) {
+    for (i = 0; i < sunEls.length; i++) {
       if (isDark) {
-        sunEl.classList.remove('hidden');
+        sunEls[i].classList.remove('hidden');
       } else {
-        sunEl.classList.add('hidden');
+        sunEls[i].classList.add('hidden');
       }
     }
 
-    if (moonEl) {
+    for (i = 0; i < moonEls.length; i++) {
       if (isDark) {
-        moonEl.classList.add('hidden');
+        moonEls[i].classList.add('hidden');
       } else {
-        moonEl.classList.remove('hidden');
+        moonEls[i].classList.remove('hidden');
       }
     }
   }
