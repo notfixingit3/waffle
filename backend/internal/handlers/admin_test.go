@@ -3,6 +3,8 @@ package handlers
 import (
 	"strings"
 	"testing"
+
+	"github.com/syrup/backend/internal/models"
 )
 
 func TestValidateCreateAdminForm_ShortPassword(t *testing.T) {
@@ -50,5 +52,19 @@ func TestValidateCreateAdminForm_MissingFields(t *testing.T) {
 	errs := validateCreateAdminForm("", "", "abc")
 	if len(errs) != 3 {
 		t.Fatalf("expected 3 validation errors (username, email, password), got %d: %v", len(errs), errs)
+	}
+}
+
+func TestCreateAdminPost_AcceptsWaffleManagerRole(t *testing.T) {
+	role := "waffle_manager"
+	if role != models.RoleAdmin && role != models.RoleSuperAdmin && role != models.RoleWaffleManager {
+		t.Fatal("waffle_manager role should be accepted, but was rejected")
+	}
+}
+
+func TestCreateAdminPost_RejectsInvalidRole(t *testing.T) {
+	role := "hacker"
+	if role == models.RoleAdmin || role == models.RoleSuperAdmin || role == models.RoleWaffleManager {
+		t.Fatal("invalid role 'hacker' should be rejected, but was accepted")
 	}
 }

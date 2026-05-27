@@ -18,6 +18,7 @@
         <a href="/admin/dashboard" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
         <a href="/admin/waffles/new" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
         <a href="/admin/reports" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
+        <a href="/admin/settings" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Settings</a>
         {{ if eq .Role "super_admin" }}
         <a href="/admin/admins" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
         {{ end }}
@@ -46,6 +47,7 @@
     <a href="/admin/dashboard" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
     <a href="/admin/waffles/new" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
     <a href="/admin/reports" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
+    <a href="/admin/settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Settings</a>
     {{ if eq .Role "super_admin" }}
     <a href="/admin/admins" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
     {{ end }}

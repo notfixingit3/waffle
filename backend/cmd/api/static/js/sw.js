@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `waffle-${CACHE_VERSION}-static`;
 const PAGES_CACHE = `waffle-${CACHE_VERSION}-pages`;
 
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   '/static/js/reports.js',
   '/static/js/admin-spot-actions.js',
   '/static/js/theme-toggle.js',
+  '/static/js/footer-clock.js',
 ];
 
 const PUBLIC_PAGES = [
@@ -40,6 +41,7 @@ self.addEventListener('activate', (event) => {
           if (cacheName.startsWith('waffle-') && cacheName !== STATIC_CACHE && cacheName !== PAGES_CACHE) {
             return caches.delete(cacheName);
           }
+          return Promise.resolve();
         })
       );
     }).then(() => self.clients.claim())

@@ -77,6 +77,7 @@ func main() {
 		"templates/pages/admin/waffle_edit.html",
 		"templates/pages/admin/waffle_manage.html",
 		"templates/pages/admin/reports.html",
+		"templates/pages/admin/settings.html",
 	}
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
@@ -135,10 +136,8 @@ func main() {
 	adminPages.POST("/waffles/:slug/edit", handlers.EditWafflePost)
 	adminPages.GET("/waffles/new", handlers.NewWafflePage)
 	adminPages.POST("/waffles/new", handlers.CreateWafflePost)
-	adminPages.POST("/waffles/:slug/archive", handlers.ArchiveWafflePost)
-	adminPages.POST("/waffles/:slug/unarchive", handlers.UnarchiveWafflePost)
-	adminPages.POST("/waffles/:slug/delete", handlers.DeleteWafflePost)
 	adminPages.GET("/reports", handlers.ReportsPage)
+	adminPages.GET("/settings", handlers.SettingsPage)
 
 	adminSuperPages := adminPages.Group("", middleware.RequireSuperAdmin)
 	adminSuperPages.GET("/admins", handlers.AdminManagementPage)
@@ -167,6 +166,7 @@ func main() {
 	adminAuth := admin.Group("", middleware.RequireAuth)
 	adminAuth.GET("/me", getCurrentAdmin)
 	adminAuth.POST("/change-password", changePassword)
+	adminAuth.PATCH("/me/timezone", handlers.UpdateTimezoneAPI)
 
 	adminUsers := admin.Group("/admins", middleware.RequireAuth, middleware.RequireSuperAdmin)
 	adminUsers.GET("/", listAdmins)
@@ -180,9 +180,11 @@ func main() {
 	adminWaffles.GET("/", listWaffles)
 	adminWaffles.PATCH("/:id", updateWaffle)
 	adminWaffles.POST("/:id/winner", handlers.SetWinnerAPI)
-	adminWaffles.POST("/:id/archive", archiveWaffle)
-	adminWaffles.POST("/:id/unarchive", unarchiveWaffle)
-	adminWaffles.DELETE("/:id", deleteWaffle)
+
+	adminManagerAPI := admin.Group("/waffles", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin))
+	adminManagerAPI.POST("/:id/archive", archiveWaffle)
+	adminManagerAPI.POST("/:id/unarchive", unarchiveWaffle)
+	adminManagerAPI.DELETE("/:id", deleteWaffle)
 
 	adminReports := admin.Group("/reports", middleware.RequireAuth)
 	adminReports.GET("/drought", getDroughtList)

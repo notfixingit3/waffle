@@ -27,6 +27,8 @@
     {{ block "content" . }}{{ end }}
   </main>
   {{ template "footer.html" . }}
+  <script src="/static/js/footer-clock.js"></script>
+  <script>FooterClock.init();</script>
   {{ block "scripts" . }}{{ end }}
 </body>
 </html>

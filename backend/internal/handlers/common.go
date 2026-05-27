@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/syrup/backend/internal/services"
@@ -10,7 +11,6 @@ import (
 // AppVersion is set from main.go via ldflags injection.
 var AppVersion string
 
-// pageData returns common template data including version info and waffle counts.
 func pageData() gin.H {
 	total, active, _ := services.CountWaffles()
 	return gin.H{
@@ -18,6 +18,7 @@ func pageData() gin.H {
 		"DevMode":       strings.Contains(strings.ToLower(AppVersion), "dev"),
 		"TotalWaffles":  total,
 		"ActiveWaffles": active,
+		"ServerTime":    time.Now().UTC().Format("3:04 PM"),
 	}
 }
 

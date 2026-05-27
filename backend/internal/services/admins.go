@@ -144,6 +144,16 @@ func UpdateAdminPassword(id uuid.UUID, password string) error {
 	return nil
 }
 
+func UpdateAdminTimezone(id uuid.UUID, timezone string) (*models.Admin, error) {
+	_, err := db.Pool.Exec(context.Background(), `
+		UPDATE admins SET timezone = $1, updated_at = $2 WHERE id = $3
+	`, timezone, time.Now(), id)
+	if err != nil {
+		return nil, fmt.Errorf("update admin timezone: %w", err)
+	}
+	return GetAdminByID(id)
+}
+
 func RecordLogin(id uuid.UUID) error {
 	_, err := db.Pool.Exec(context.Background(), `
 		UPDATE admins SET last_login_at = $1 WHERE id = $2

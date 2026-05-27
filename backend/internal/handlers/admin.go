@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -40,6 +41,15 @@ func adminNavData(c *gin.Context) gin.H {
 
 	total, active, _ := services.CountWaffles()
 
+	timezone := "UTC"
+	if idStr, ok := adminIDStr.(string); ok {
+		if id, err := uuid.Parse(idStr); err == nil {
+			if admin, err := services.GetAdminByID(id); err == nil && admin.Timezone != "" {
+				timezone = admin.Timezone
+			}
+		}
+	}
+
 	return gin.H{
 		"Role":          roleStr,
 		"DisplayName":   displayName,
@@ -49,6 +59,8 @@ func adminNavData(c *gin.Context) gin.H {
 		"DevMode":       strings.Contains(strings.ToLower(AppVersion), "dev"),
 		"TotalWaffles":  total,
 		"ActiveWaffles": active,
+		"ServerTime":    time.Now().UTC().Format("3:04 PM"),
+		"Timezone":      timezone,
 	}
 }
 
@@ -532,8 +544,8 @@ func CreateAdminPost(c *gin.Context) {
 	role := c.PostForm("role")
 
 	errors := validateCreateAdminForm(username, email, password)
-	if role != "admin" && role != "super_admin" {
-		role = "admin"
+	if role != models.RoleAdmin && role != models.RoleSuperAdmin && role != models.RoleWaffleManager {
+		role = models.RoleAdmin
 	}
 
 	if len(errors) > 0 {
