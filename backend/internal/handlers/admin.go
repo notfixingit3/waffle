@@ -38,13 +38,17 @@ func adminNavData(c *gin.Context) gin.H {
 		csrfToken = t
 	}
 
+	total, active, _ := services.CountWaffles()
+
 	return gin.H{
-		"Role":        roleStr,
-		"DisplayName": displayName,
-		"CurrentPath": c.Request.URL.Path,
-		"CSRFToken":   csrfToken,
-		"Version":     AppVersion,
-		"DevMode":     strings.Contains(strings.ToLower(AppVersion), "dev"),
+		"Role":          roleStr,
+		"DisplayName":   displayName,
+		"CurrentPath":   c.Request.URL.Path,
+		"CSRFToken":     csrfToken,
+		"Version":       AppVersion,
+		"DevMode":       strings.Contains(strings.ToLower(AppVersion), "dev"),
+		"TotalWaffles":  total,
+		"ActiveWaffles": active,
 	}
 }
 

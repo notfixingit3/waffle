@@ -23,6 +23,13 @@ const (
 	SpotStatusLoser     SpotStatus = "loser"
 )
 
+// Role constants (string constants, not enum type)
+const (
+	RoleSuperAdmin    = "super_admin"
+	RoleAdmin         = "admin"
+	RoleWaffleManager = "waffle_manager"
+)
+
 type Waffle struct {
 	ID                     uuid.UUID    `json:"id" db:"id"`
 	Slug                   string       `json:"slug" db:"slug"`
@@ -121,6 +128,7 @@ type Admin struct {
 	Email        string     `json:"email" db:"email"`
 	DisplayName  *string    `json:"display_name,omitempty" db:"display_name"`
 	Role         string     `json:"role" db:"role"`
+	Timezone     string     `json:"timezone" db:"timezone"`
 	Active       bool       `json:"active" db:"active"`
 	LastLoginAt  *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`

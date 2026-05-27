@@ -27,15 +27,16 @@ func CreateAdmin(req models.CreateAdminRequest) (*models.Admin, error) {
 		Email:       req.Email,
 		DisplayName: req.DisplayName,
 		Role:        req.Role,
+		Timezone:    "UTC",
 		Active:      true,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
 
 	_, err = db.Pool.Exec(context.Background(), `
-		INSERT INTO admins (id, username, email, password_hash, display_name, role, active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, admin.ID, admin.Username, admin.Email, hash, admin.DisplayName, admin.Role, admin.Active, admin.CreatedAt, admin.UpdatedAt)
+		INSERT INTO admins (id, username, email, password_hash, display_name, role, active, timezone, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`, admin.ID, admin.Username, admin.Email, hash, admin.DisplayName, admin.Role, admin.Active, admin.Timezone, admin.CreatedAt, admin.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("insert admin: %w", err)
 	}

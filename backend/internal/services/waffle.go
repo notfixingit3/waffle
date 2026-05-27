@@ -424,6 +424,20 @@ func ListWaffles(includeArchived bool) ([]models.Waffle, error) {
 	return waffles, nil
 }
 
+func CountWaffles() (total int, active int, err error) {
+	err = db.Pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM waffles`).Scan(&total)
+	if err != nil {
+		return 0, 0, fmt.Errorf("count total waffles: %w", err)
+	}
+
+	err = db.Pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM waffles WHERE status = $1 AND archived = false`, models.WaffleStatusActive).Scan(&active)
+	if err != nil {
+		return 0, 0, fmt.Errorf("count active waffles: %w", err)
+	}
+
+	return total, active, nil
+}
+
 func GetWaffleStats(waffleID uuid.UUID) (map[string]interface{}, error) {
 	var totalSpots, availableSpots, pendingSpots, paidSpots int
 	err := db.Pool.QueryRow(context.Background(), `

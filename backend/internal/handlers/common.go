@@ -4,16 +4,20 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/syrup/backend/internal/services"
 )
 
 // AppVersion is set from main.go via ldflags injection.
 var AppVersion string
 
-// pageData returns common template data including version info.
+// pageData returns common template data including version info and waffle counts.
 func pageData() gin.H {
+	total, active, _ := services.CountWaffles()
 	return gin.H{
-		"Version": AppVersion,
-		"DevMode": strings.Contains(strings.ToLower(AppVersion), "dev"),
+		"Version":       AppVersion,
+		"DevMode":       strings.Contains(strings.ToLower(AppVersion), "dev"),
+		"TotalWaffles":  total,
+		"ActiveWaffles": active,
 	}
 }
 
