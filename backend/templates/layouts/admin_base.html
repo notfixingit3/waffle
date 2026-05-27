@@ -2,10 +2,15 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="syrup">
 <head>
+  <script>
+  (function(){var t=localStorage.getItem('syrup-theme')||'syrup';document.documentElement.setAttribute('data-theme',t)})();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
   <title>{{ block "title" . }}Project Syrup{{ end }}</title>
   <link rel="stylesheet" href="/static/css/output.css">
+  <script src="/static/js/theme-toggle.js"></script>
+  <script>ThemeToggle.init();</script>
   <link rel="manifest" href="/static/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="The Waffle Maker">
