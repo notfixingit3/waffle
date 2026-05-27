@@ -14,7 +14,7 @@
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.0.9">v0.0.9</a></p>
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.0">v0.1.0</a></p>
 
 ---
 
@@ -46,8 +46,10 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 
 ## Features
 
-- **Multi-admin auth** — Role-based access control with `super_admin` and `admin` roles
+- **Multi-admin auth** — Role-based access control with `super_admin`, `admin`, and `waffle_manager` roles
 - **Admin management** — Create admins, change roles, deactivate accounts, and reset another admin's password (super_admin only)
+- **waffle_manager role** — Create and manage waffles + view reports, without archive/delete/user-management access
+- **Timezone settings** — Per-admin timezone preference with IANA timezone dropdown in settings page
 - **Password reset** — Self-service reset tokens plus authenticated password changes
 - **Instagram media links** — Link to posts showing what's being waffled (supports multiple items)
 - **Archive + delete controls** — Hide completed waffles by default, or type `DELETE` for permanent removal
@@ -60,6 +62,8 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 - **Activity history** — Record claim, payment, release, and winner events per waffle
 - **CSV exports** — Download a waffle's spot list for external reconciliation
 - **Transactional safety** — No double-claims, ever
+- **Light/dark mode** — Manual theme toggle with persisted preference
+- **Dual clock footer** — Server UTC time + local browser time with waffle counter
 
 ---
 
@@ -97,7 +101,7 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
 2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
    ```bash
-   WAFFLE_VERSION=v0.0.9
+   WAFFLE_VERSION=v0.1.0
    DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
    JWT_SECRET=your-secure-random-secret-here
    ADMIN_PASSWORD=your-secure-admin-password
@@ -187,6 +191,7 @@ Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github
 
 **Admin Endpoints** (auth required)
 - `GET /api/admin/me` — Get current admin info
+- `PATCH /api/admin/me/timezone` — Update timezone preference
 - `POST /api/admin/change-password` — Change password
 - `GET /api/admin/waffles?archived=true|false` — List waffles
 - `POST /api/admin/waffles` — Create waffle
