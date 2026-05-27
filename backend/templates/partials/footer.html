@@ -1,7 +1,7 @@
 {{ define "footer.html" }}
 <footer class="bg-base-100 border-t border-base-300 mt-8">
   <div class="container mx-auto px-4 py-4 text-center text-xs text-base-content/40">
-    <p>The Waffle Maker · Project Syrup{{ if .Version }} · {{ .Version }}{{ end }}{{ if .DevMode }} <span class="badge badge-warning badge-sm">DEV</span>{{ end }} · <a href="https://github.com/notfixingit3/waffle" target="_blank" rel="noopener noreferrer" class="link link-primary">GitHub</a></p>
+    <p>The Waffle Maker · Project Syrup{{ if .DevMode }} <span class="badge badge-warning badge-sm">DEV</span>{{ else if .Version }} · {{ .Version }}{{ end }} · <a href="https://github.com/notfixingit3/waffle" target="_blank" rel="noopener noreferrer" class="link link-primary">GitHub</a></p>
   </div>
 </footer>
 {{ end }}
