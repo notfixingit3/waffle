@@ -1,0 +1,111 @@
+# Changelog
+
+All notable changes to Project Syrup will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [v0.1.5] - 2026-05-27
+
+### Added
+- **Login History** — Audit trail tracking admin logins with IP, browser, OS, and device type parsing
+- **WHOIS Enrichment** — Async WHOIS lookups on login to capture org, country, city, and ASN (10s timeout, non-blocking)
+- **Private IP Detection** — Skip WHOIS lookups for RFC1918 addresses (10.x, 172.16-31.x, 192.168.x)
+- **System Settings** — Configurable WHOIS server (default: whois.pwhois.org), super_admin only
+- **Winner Management** — Admin-only endpoints to clear winner (reset to active) and change winner (reassign winning spot)
+- **Buyer Stats Recalculation** — Automatic win/loss stat updates when winners are changed or cleared
+- **Settings Dropdown** — Consolidated admin nav menu under username with Settings, My Login History, About, Theme, Logout
+- **About Page** — Public about page with admin-only system extras section
+- **Login History Pages** — My Login History tab on settings page + full admin login history page with role-based filtering
+- **Role-Based History Visibility** — waffle_manager sees self only, admin sees self + waffle_managers, super_admin sees all
+
+### Changed
+- Updated admin navigation to use dropdown menu instead of separate nav items
+- Screenshots updated to show v0.1.5 features
+
+## [v0.1.0] - 2026-05-26
+
+### Added
+- **Multi-Admin Auth** — Role-based access control with super_admin, admin, and waffle_manager roles
+- **Admin Management** — Create admins, change roles, deactivate accounts, reset passwords (super_admin only)
+- **waffle_manager Role** — Create and manage waffles + view reports, without archive/delete/user-management access
+- **Timezone Settings** — Per-admin timezone preference with IANA timezone dropdown
+- **Password Reset** — Self-service reset tokens plus authenticated password changes
+- **Instagram Media Links** — Link to posts showing what's being waffled (supports multiple items)
+- **Archive + Delete Controls** — Hide completed waffles by default, or type DELETE for permanent removal
+- **Version Footer** — App version injected at build time via ldflags
+- **Theme Toggle** — Light/dark mode with persisted preference
+
+### Changed
+- Migrated all UI to DaisyUI components with syrup theme
+- Redesigned navigation with Inter font and unified brand colors
+- Updated admin auth pages to DaisyUI card/input/btn/alert components
+- Converted public pages to DaisyUI card/btn/badge components
+- Added spot status class map for consistent styling
+
+### Fixed
+- Corrected default admin password from admin123 to syrup
+- Fixed duplicate IDs for theme toggle icons (now uses classes)
+- Removed redundant version text in dev mode footer
+
+## [v0.0.9] - 2026-05-26
+
+### Added
+- **DaisyUI Migration** — Complete UI overhaul with DaisyUI component library and syrup color theme
+- **Production Deployment** — docker-compose.prod.yml, .env.example, and GHCR image workflow
+- **PWA Service Worker** — Offline caching with service worker registration
+- **Offline Handling** — Offline banners and toast notifications for public pages
+- **Rate Limiting** — Request rate limiting for public endpoints
+- **Commit Message Guidelines** — Scooby-Doo quote convention documented
+
+### Changed
+- Migrated 5 admin templates to DaisyUI with syrup theme
+- Converted layout templates and partials to DaisyUI components
+- Updated JavaScript files to use DaisyUI theme tokens and shared status class map
+- Rebuilt output.css via Docker Tailwind stage
+
+### Fixed
+- Added spot-status-classes.js to go:embed directive (was causing 404s)
+- Added spot-status-classes script tag to waffle manage template
+
+## [v0.0.8] - 2026-05-25
+
+### Added
+- **Seed Data** — Demo waffle and admin data for fresh installs
+- **Navigation Redesign** — Cleaner admin nav with role-based visibility
+- **Inter Font** — Modern typography across all pages
+- **Brand Color Unification** — Consistent amber/brown color scheme
+
+### Fixed
+- Renamed Admin Management to User Management for clarity
+- Fixed template bug in admin management page
+
+## [v0.0.5] - 2026-05-24
+
+### Added
+- **PWA Support** — Web App Manifest, app icons, standalone display metadata
+- **Offline Page** — Cached offline.html for when network is unavailable
+- **Phase 8 Complete** — Offline/service worker support with installable app shell
+
+## [v0.0.1] - 2026-05-20
+
+### Added
+- **Initial Public Release** — Project Syrup v0.1.0 foundation
+- Docker Compose setup with PostgreSQL
+- Go backend with Gin framework
+- Server-rendered templates with Tailwind CSS
+- WebSocket hub for real-time updates
+- Basic waffle CRUD operations
+- Spot claim and payment tracking
+- Admin authentication system
+
+---
+
+[v0.1.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.5
+[v0.1.0]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.0
+[v0.0.9]: https://github.com/notfixingit3/waffle/releases/tag/v0.0.9
+[v0.0.8]: https://github.com/notfixingit3/waffle/releases/tag/v0.0.8
+[v0.0.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.0.5
+[v0.0.1]: https://github.com/notfixingit3/waffle/releases/tag/v0.0.1
