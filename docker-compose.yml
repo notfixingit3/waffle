@@ -25,7 +25,7 @@ services:
       DATABASE_URL: postgres://syrup:syrup@postgres:5432/syrup?sslmode=disable
       PORT: 8383
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-syrup}
     depends_on:
       postgres:
         condition: service_healthy

@@ -86,7 +86,7 @@ After startup, open the app and admin tools here:
 | Admin Login | http://localhost:8383/admin/login |
 | PostgreSQL | localhost:5432 |
 
-Default local admin credentials are `admin` / `admin123`. Change them before any real deployment.
+Default local admin credentials are `admin` / `syrup`. Change them before any real deployment.
 
 ---
 

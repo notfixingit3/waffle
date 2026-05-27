@@ -7,7 +7,7 @@ docker compose up --build
 ```
 
 - Application: http://localhost:8383
-- Admin password: `admin123` (change with `ADMIN_PASSWORD` env var)
+- Admin password: `syrup` (change with `ADMIN_PASSWORD` env var)
 
 ---
 
