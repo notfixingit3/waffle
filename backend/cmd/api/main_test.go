@@ -14,6 +14,25 @@ import (
 	"github.com/syrup/backend/internal/models"
 )
 
+func TestHealth_Returns200(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "GET", "/health", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for /health, got %d", w.Code)
+	}
+	if w.Body.String() != `{"status":"ok"}` {
+		t.Fatalf("unexpected body: %s", w.Body.String())
+	}
+}
+
+func TestReady_Returns503_WhenNoDB(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "GET", "/ready", "")
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503 for /ready (no DB), got %d", w.Code)
+	}
+}
+
 func TestMain(m *testing.M) {
 	os.Setenv("JWT_SECRET", "test-secret")
 	gin.SetMode(gin.TestMode)
@@ -36,6 +55,15 @@ func setupTestRouter() *gin.Engine {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
+
+	// Public health/readiness endpoints
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+	r.GET("/ready", func(c *gin.Context) {
+		// No DB in test context — simulate failure
+		c.JSON(503, gin.H{"status": "error", "db": "disconnected"})
+	})
 
 	// Simulate the production route groups with the same middleware chains.
 	// The goal is to test route-level access control, not the actual handlers.

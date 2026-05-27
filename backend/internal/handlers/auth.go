@@ -4,24 +4,24 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
-	"fmt"
-	"log"
+	"errors"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/syrup/backend/internal/services"
 )
 
-func generateCSRFToken() string {
+func generateCSRFToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("%x", time.Now().UnixNano())
+		slog.Error("Failed to generate CSRF token", "error", err)
+		return "", errors.New("failed to generate CSRF token")
 	}
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(b), nil
 }
 
 func setCSRFCookie(c *gin.Context, token string) {
@@ -30,7 +30,8 @@ func setCSRFCookie(c *gin.Context, token string) {
 		Value:    token,
 		MaxAge:   3600,
 		Path:     "/",
-		Secure:   false,
+		Secure:   useSecureCookie(c),
+		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -38,7 +39,11 @@ func setCSRFCookie(c *gin.Context, token string) {
 func getCSRFToken(c *gin.Context) string {
 	token, err := c.Cookie("csrf_token")
 	if err != nil || token == "" {
-		token = generateCSRFToken()
+		token, err = generateCSRFToken()
+		if err != nil {
+			slog.Error("Failed to generate CSRF token", "error", err, "request_id", c.GetString("request_id"))
+			token = ""
+		}
 	}
 	setCSRFCookie(c, token)
 	return token
@@ -90,6 +95,7 @@ func LoginPost(c *gin.Context) {
 
 	admin, err := services.AuthenticateAdmin(username, password)
 	if err != nil {
+		services.RecordFailedLoginAttempt(c.ClientIP(), username)
 		tok := getCSRFToken(c)
 		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
@@ -98,6 +104,8 @@ func LoginPost(c *gin.Context) {
 		}))
 		return
 	}
+
+	services.ResetLoginAttempts(c.ClientIP(), username)
 
 	token, err := services.GenerateAdminToken(admin)
 	if err != nil {
@@ -112,16 +120,16 @@ func LoginPost(c *gin.Context) {
 
 	loginID, err := services.RecordLogin(admin.ID.String(), c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
-		log.Printf("RecordLogin error: %v", err)
+		slog.Error("RecordLogin error", "error", err, "request_id", c.GetString("request_id"))
 	} else if !services.IsPrivateIP(c.ClientIP()) {
 		go func(id uuid.UUID) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("WHOIS enrichment panic: %v", r)
+					slog.Error("WHOIS enrichment panic", "error", r)
 				}
 			}()
 			if enrichErr := services.EnrichLoginWithWHOIS(id); enrichErr != nil {
-				log.Printf("WHOIS enrichment error: %v", enrichErr)
+				slog.Error("WHOIS enrichment error", "error", enrichErr)
 			}
 		}(loginID)
 	}

@@ -26,6 +26,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      GIN_MODE: release
+      COOKIE_SECURE: "true"
     depends_on:
       postgres:
         condition: service_healthy

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -20,7 +21,18 @@ func Connect() (*pgxpool.Pool, error) {
 		databaseURL = "postgres://syrup:syrup@localhost:5432/syrup?sslmode=disable"
 	}
 
-	pool, err := pgxpool.New(context.Background(), databaseURL)
+	cfg, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse database config: %w", err)
+	}
+
+	cfg.MaxConns = 25
+	cfg.MinConns = 5
+	cfg.MaxConnLifetime = 30 * time.Minute
+	cfg.MaxConnIdleTime = 5 * time.Minute
+	cfg.HealthCheckPeriod = 1 * time.Minute
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create connection pool: %w", err)
 	}
@@ -31,6 +43,10 @@ func Connect() (*pgxpool.Pool, error) {
 
 	Pool = pool
 	return pool, nil
+}
+
+func Ping(ctx context.Context) error {
+	return Pool.Ping(ctx)
 }
 
 func RunMigrations(pool *pgxpool.Pool) error {

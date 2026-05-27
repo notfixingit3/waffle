@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -270,13 +270,13 @@ func SetWinner(waffleID uuid.UUID, winningSpotNumber int) error {
 
 	spots, err := GetSpotsByWaffleID(waffleID)
 	if err != nil {
-		log.Printf("Failed to get spots for buyer stats update: %v", err)
+		slog.Error("Failed to get spots for buyer stats update", "error", err)
 	} else {
 		for _, spot := range spots {
 			if spot.ClaimedByHandle != nil {
 				isWin := spot.Status == models.SpotStatusWinner
 				if err := UpdateBuyerStats(*spot.ClaimedByHandle, isWin); err != nil {
-					log.Printf("Failed to update buyer stats for %s: %v", *spot.ClaimedByHandle, err)
+					slog.Error("Failed to update buyer stats", "handle", *spot.ClaimedByHandle, "error", err)
 				}
 			}
 		}

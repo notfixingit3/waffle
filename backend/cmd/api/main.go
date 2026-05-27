@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -22,9 +26,19 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "dev"
+var Version = "v0.1.6"
+
+func initLogger() {
+	if strings.ToLower(os.Getenv("GIN_MODE")) == "release" {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	} else {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	}
+}
 
 func main() {
+	initLogger()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8383"
@@ -32,18 +46,23 @@ func main() {
 
 	database, err := db.Connect()
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 	defer database.Close()
 
 	if err := db.RunMigrations(database); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		slog.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
 	}
 
 	ws.InitHub()
 
 	r := gin.New()
 	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"})
+	r.Use(middleware.RequestID())
+	r.Use(middleware.Recovery())
+	r.Use(middleware.SecurityHeaders())
 	r.Use(gin.Logger())
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:  []string{"*"},
@@ -59,7 +78,8 @@ func main() {
 		"templates/layouts/admin_base.html",
 		"templates/partials/*.html",
 	); err != nil {
-		log.Fatalf("Failed to load base templates: %v", err)
+		slog.Error("Failed to load base templates", "error", err)
+		os.Exit(1)
 	}
 
 	// Create per-page renderers by cloning base and adding page template
@@ -84,10 +104,12 @@ func main() {
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
 		if err != nil {
-			log.Fatalf("Failed to clone renderer: %v", err)
+			slog.Error("Failed to clone renderer", "error", err)
+			os.Exit(1)
 		}
 		if err := clone.AddFromFiles(page); err != nil {
-			log.Fatalf("Failed to load page template %s: %v", page, err)
+			slog.Error("Failed to load page template", "template", page, "error", err)
+			os.Exit(1)
 		}
 		name := filepath.Base(page)
 		pageRenderers[name] = clone
@@ -95,7 +117,8 @@ func main() {
 	// Clone base for direct base.html rendering (e.g., buyer stats page)
 	baseClone, err := baseTmpl.Clone()
 	if err != nil {
-		log.Fatalf("Failed to clone base renderer: %v", err)
+		slog.Error("Failed to clone base renderer", "error", err)
+		os.Exit(1)
 	}
 	pageRenderers["base.html"] = baseClone
 	handlers.InitRenderers(pageRenderers)
@@ -104,7 +127,8 @@ func main() {
 	// Serve embedded static files (CSS, JS, images, manifest)
 	staticSub, err := fs.Sub(staticFS, "static")
 	if err != nil {
-		log.Fatalf("Failed to create static sub-filesystem: %v", err)
+		slog.Error("Failed to create static sub-filesystem", "error", err)
+		os.Exit(1)
 	}
 	r.StaticFS("/static", http.FS(staticSub))
 
@@ -116,7 +140,23 @@ func main() {
 	r.GET("/buyer/:handle", handlers.BuyerStatsPage)
 	r.GET("/about", handlers.AboutPage)
 
-	r.GET("/health", func(c *gin.Context) {
+	r.GET("/health", middleware.RequestID(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
+
+	r.GET("/ready", middleware.RequestID(), func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		if err := db.Ping(ctx); err != nil {
+			slog.Warn("Readiness check failed", "error", err, "request_id", c.GetString("request_id"))
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status": "error",
+				"db":     "disconnected",
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 			"db":     "connected",
@@ -124,7 +164,7 @@ func main() {
 	})
 
 	r.GET("/admin/login", handlers.LoginPage)
-	r.POST("/admin/login", handlers.LoginPost)
+	r.POST("/admin/login", middleware.AuthRateLimit, handlers.LoginPost)
 	r.GET("/admin/forgot-password", handlers.ForgotPasswordPage)
 	r.POST("/admin/forgot-password", handlers.ForgotPasswordPost)
 	r.POST("/admin/logout", handlers.LogoutPost)
@@ -163,7 +203,7 @@ func main() {
 	buyers.GET("/:handle/history", handlers.GetBuyerHistory)
 
 	admin := api.Group("/admin")
-	admin.POST("/login", adminLogin)
+	admin.POST("/login", middleware.AuthRateLimit, adminLogin)
 	admin.POST("/forgot-password", forgotPassword)
 	admin.POST("/reset-password", resetPassword)
 
@@ -208,10 +248,35 @@ func main() {
 	adminSpots.POST("/:id/pay", handlers.MarkSpotPaidAPI)
 	adminSpots.POST("/:id/release", handlers.ReleaseSpotAPI)
 
-	log.Printf("Server starting on port %s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
+
+	go func() {
+		slog.Info("Server starting", "port", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("shutting down")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
+	}
+
+	ws.GetHub().Stop()
+
+	slog.Info("server stopped")
 }
 
 func listPublicWaffles(c *gin.Context) {
@@ -316,7 +381,7 @@ func createClaim(c *gin.Context) {
 
 	waffle, err := services.GetWaffleByID(waffleID)
 	if err != nil {
-		log.Printf("Failed to get waffle for broadcast: %v", err)
+		slog.Error("Failed to get waffle for broadcast", "error", err, "request_id", c.GetString("request_id"))
 	} else {
 		handle := services.NormalizeInstagramHandle(req.InstagramHandle)
 		for _, spotNum := range req.Spots {
@@ -567,9 +632,12 @@ func adminLogin(c *gin.Context) {
 
 	admin, err := services.AuthenticateAdmin(req.Username, req.Password)
 	if err != nil {
+		services.RecordFailedLoginAttempt(c.ClientIP(), req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+
+	services.ResetLoginAttempts(c.ClientIP(), req.Username)
 
 	token, err := services.GenerateAdminToken(admin)
 	if err != nil {
@@ -579,16 +647,16 @@ func adminLogin(c *gin.Context) {
 
 	loginID, err := services.RecordLogin(admin.ID.String(), c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
-		log.Printf("RecordLogin error: %v", err)
+		slog.Error("RecordLogin error", "error", err, "request_id", c.GetString("request_id"))
 	} else if !services.IsPrivateIP(c.ClientIP()) {
 		go func(id uuid.UUID) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("WHOIS enrichment panic: %v", r)
+					slog.Error("WHOIS enrichment panic", "error", r)
 				}
 			}()
 			if enrichErr := services.EnrichLoginWithWHOIS(id); enrichErr != nil {
-				log.Printf("WHOIS enrichment error: %v", enrichErr)
+				slog.Error("WHOIS enrichment error", "error", enrichErr)
 			}
 		}(loginID)
 	}

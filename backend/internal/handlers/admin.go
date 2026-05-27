@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -482,7 +482,7 @@ func ArchiveWafflePost(c *gin.Context) {
 	}
 
 	if err := services.ArchiveWaffle(id, true); err != nil {
-		log.Printf("Failed to archive waffle: %v", err)
+		slog.Error("Failed to archive waffle", "error", err, "request_id", c.GetString("request_id"))
 	}
 
 	referer := c.Request.Header.Get("Referer")
@@ -500,7 +500,7 @@ func UnarchiveWafflePost(c *gin.Context) {
 	}
 
 	if err := services.ArchiveWaffle(id, false); err != nil {
-		log.Printf("Failed to unarchive waffle: %v", err)
+		slog.Error("Failed to unarchive waffle", "error", err, "request_id", c.GetString("request_id"))
 	}
 
 	referer := c.Request.Header.Get("Referer")
@@ -527,7 +527,7 @@ func DeleteWafflePost(c *gin.Context) {
 	}
 
 	if err := services.DeleteWaffle(id); err != nil {
-		log.Printf("Failed to delete waffle: %v", err)
+		slog.Error("Failed to delete waffle", "error", err, "request_id", c.GetString("request_id"))
 	}
 
 	referer := c.Request.Header.Get("Referer")

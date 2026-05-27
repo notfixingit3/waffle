@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 
@@ -20,6 +20,7 @@ type Hub struct {
 	broadcast  chan Message
 	Register   chan Subscription
 	Unregister chan Subscription
+	done       chan struct{}
 	mu         sync.RWMutex
 }
 
@@ -42,12 +43,15 @@ func NewHub() *Hub {
 		broadcast:  make(chan Message),
 		Register:   make(chan Subscription),
 		Unregister: make(chan Subscription),
+		done:       make(chan struct{}),
 	}
 }
 
 func (h *Hub) Run() {
 	for {
 		select {
+		case <-h.done:
+			return
 		case sub := <-h.Register:
 			h.mu.Lock()
 			if h.clients[sub.Room] == nil {
@@ -55,7 +59,7 @@ func (h *Hub) Run() {
 			}
 			h.clients[sub.Room][sub.Conn] = true
 			h.mu.Unlock()
-			log.Printf("Client registered to room: %s", sub.Room)
+			slog.Info("Client registered to room", "room", sub.Room)
 
 		case sub := <-h.Unregister:
 			h.mu.Lock()
@@ -67,7 +71,7 @@ func (h *Hub) Run() {
 			}
 			h.mu.Unlock()
 			sub.Conn.Close()
-			log.Printf("Client unregistered from room: %s", sub.Room)
+			slog.Info("Client unregistered from room", "room", sub.Room)
 
 		case msg := <-h.broadcast:
 			h.mu.RLock()
@@ -76,13 +80,27 @@ func (h *Hub) Run() {
 
 			for client := range clients {
 				if err := client.WriteJSON(msg); err != nil {
-					log.Printf("Error writing to client: %v", err)
+					slog.Error("Error writing to client", "error", err)
 					client.Close()
 					h.Unregister <- Subscription{Conn: client, Room: msg.Room}
 				}
 			}
 		}
 	}
+}
+
+func (h *Hub) Stop() {
+	h.mu.Lock()
+	for _, clients := range h.clients {
+		for client := range clients {
+			closeMsg := gorillaWs.FormatCloseMessage(gorillaWs.CloseGoingAway, "server shutting down")
+			client.WriteMessage(gorillaWs.CloseMessage, closeMsg)
+			client.Close()
+		}
+	}
+	h.mu.Unlock()
+
+	close(h.done)
 }
 
 func (h *Hub) Broadcast(room string, msgType string, payload interface{}) {
@@ -119,7 +137,7 @@ func HandleWebSocketUpgrade(c *gin.Context) {
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade error: %v", err)
+		slog.Error("WebSocket upgrade error", "error", err)
 		return
 	}
 
@@ -134,7 +152,7 @@ func HandleWebSocketUpgrade(c *gin.Context) {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			if gorillaWs.IsUnexpectedCloseError(err, gorillaWs.CloseGoingAway, gorillaWs.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
+				slog.Error("WebSocket error", "error", err)
 			}
 			return
 		}
