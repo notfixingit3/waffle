@@ -41,6 +41,7 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 | **Public Home**<br>![Public home page showing active waffles](docs/screenshots/homepage.png) | **Admin Login**<br>![Admin login page](docs/screenshots/admin-login.png) |
 | **Admin Dashboard**<br>![Admin dashboard with waffle cards](docs/screenshots/admin-dashboard.png) | **Waffle Management**<br>![Waffle management spot grid with mixed spot statuses](docs/screenshots/waffle-manage.png) |
 | **Admin Management**<br>![Admin management table](docs/screenshots/admins-page.png) | **Reports**<br>![Admin reports page](docs/screenshots/reports-page.png) |
+| **About Page**<br>![Public about page with admin extras](docs/screenshots/about-page.png) | |
 
 ---
 
@@ -64,6 +65,11 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 - **Transactional safety** — No double-claims, ever
 - **Light/dark mode** — Manual theme toggle with persisted preference
 - **Dual clock footer** — Server UTC time + local browser time with waffle counter
+- **Winner management** — Admin-only clear/change winner with buyer stats recalculation
+- **Login history** — Audit trail with async WHOIS IP enrichment (org, country, city, ASN)
+- **Settings dropdown** — Consolidated admin menu under username (Settings, History, About, Theme, Logout)
+- **About page** — Public about page with admin-only system extras
+- **Configurable WHOIS** — Super_admin can configure WHOIS server for IP lookups
 
 ---
 
