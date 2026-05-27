@@ -15,6 +15,11 @@ services:
 
   app:
     image: ghcr.io/notfixingit3/waffle:${WAFFLE_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${WAFFLE_VERSION:-latest}
     ports:
       - "8383:8383"
     environment:

@@ -28,7 +28,11 @@ func TestAddFromFiles(t *testing.T) {
 	}
 
 	var buf strings.Builder
-	err = r.Write(&buf, "base.html", gin.H{"Title": "Test Page"})
+	err = r.Write(&buf, "base.html", gin.H{
+		"Title":   "Test Page",
+		"Version": "test",
+		"DevMode": false,
+	})
 	if err != nil {
 		t.Fatalf("Render failed: %v", err)
 	}
@@ -120,7 +124,10 @@ func TestRenderString(t *testing.T) {
 		t.Fatalf("AddFromFiles failed: %v", err)
 	}
 
-	output, err := r.RenderString("base.html", gin.H{})
+	output, err := r.RenderString("base.html", gin.H{
+		"Version": "test",
+		"DevMode": false,
+	})
 	if err != nil {
 		t.Fatalf("RenderString failed: %v", err)
 	}
@@ -159,7 +166,10 @@ func TestWrite(t *testing.T) {
 	}
 
 	var buf strings.Builder
-	err = r.Write(&buf, "base.html", gin.H{})
+	err = r.Write(&buf, "base.html", gin.H{
+		"Version": "test",
+		"DevMode": false,
+	})
 	if err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}

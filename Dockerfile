@@ -8,12 +8,13 @@ RUN npm install tailwindcss @tailwindcss/cli daisyui && \
 
 # Stage 2: Build Go binary
 FROM golang:1.25-alpine AS builder
+ARG VERSION=dev
 WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ .
 COPY --from=tailwind /app/cmd/api/static/css/output.css ./cmd/api/static/css/
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/waffle ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Version=${VERSION}" -o bin/waffle ./cmd/api
 
 # Stage 3: Runtime
 FROM alpine:latest

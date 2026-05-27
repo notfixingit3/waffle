@@ -19,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VERSION: ${WAFFLE_VERSION:-dev}
     ports:
       - "8383:8383"
     environment:

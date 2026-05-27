@@ -22,6 +22,8 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
+var Version = "dev"
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -94,6 +96,7 @@ func main() {
 	}
 	pageRenderers["base.html"] = baseClone
 	handlers.InitRenderers(pageRenderers)
+	handlers.AppVersion = Version
 
 	// Serve embedded static files (CSS, JS, images, manifest)
 	staticSub, err := fs.Sub(staticFS, "static")

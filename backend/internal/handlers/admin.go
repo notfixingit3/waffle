@@ -43,6 +43,8 @@ func adminNavData(c *gin.Context) gin.H {
 		"DisplayName": displayName,
 		"CurrentPath": c.Request.URL.Path,
 		"CSRFToken":   csrfToken,
+		"Version":     AppVersion,
+		"DevMode":     strings.Contains(strings.ToLower(AppVersion), "dev"),
 	}
 }
 

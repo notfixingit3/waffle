@@ -18,9 +18,9 @@ func InitRenderers(r map[string]*renderer.Renderer) {
 
 // HomePage renders the public home page.
 func HomePage(c *gin.Context) {
-	renderers["home.html"].Render(c, "home.html", gin.H{
+	renderers["home.html"].Render(c, "home.html", mergeMaps(pageData(), gin.H{
 		"title": "Project Syrup - The Waffle Maker",
-	})
+	}))
 }
 
 // WaffleListPage renders the public waffle list page.
@@ -31,10 +31,10 @@ func WaffleListPage(c *gin.Context) {
 		return
 	}
 
-	renderers["waffles.html"].Render(c, "waffles.html", gin.H{
+	renderers["waffles.html"].Render(c, "waffles.html", mergeMaps(pageData(), gin.H{
 		"title":   "Active Waffles - Project Syrup",
 		"waffles": waffles,
-	})
+	}))
 }
 
 // WaffleDetailPage renders the public waffle detail page with an interactive spot grid.
@@ -58,12 +58,12 @@ func WaffleDetailPage(c *gin.Context) {
 		stats = map[string]interface{}{}
 	}
 
-	renderers["waffle_detail.html"].Render(c, "waffle_detail.html", gin.H{
+	renderers["waffle_detail.html"].Render(c, "waffle_detail.html", mergeMaps(pageData(), gin.H{
 		"title":     waffle.Title + " - Project Syrup",
 		"waffle":    waffle,
 		"spots":     spots,
 		"stats":     stats,
-	})
+	}))
 }
 
 // BuyerStatsPage renders the public buyer stats page.
@@ -86,13 +86,13 @@ func BuyerStatsPage(c *gin.Context) {
 		winRate = (stats.TotalWins * 100) / (stats.TotalWins + stats.TotalLosses)
 	}
 
-	renderers["buyer_stats.html"].Render(c, "buyer_stats.html", gin.H{
+	renderers["buyer_stats.html"].Render(c, "buyer_stats.html", mergeMaps(pageData(), gin.H{
 		"title":       "@" + handle + " - Project Syrup",
 		"handle":      handle,
 		"stats":       stats,
 		"history":     history,
 		"winRate":     winRate,
-	})
+	}))
 }
 
 // GetBuyerStats returns buyer stats as JSON.

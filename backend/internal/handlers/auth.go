@@ -67,19 +67,19 @@ func useSecureCookie(c *gin.Context) bool {
 
 func LoginPage(c *gin.Context) {
 	tok := getCSRFToken(c)
-	renderers["login.html"].Render(c, "login.html", gin.H{
+	renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 		"CSRFToken": tok,
-	})
+	}))
 }
 
 func LoginPost(c *gin.Context) {
 	if !validateCSRF(c) {
 		tok := getCSRFToken(c)
-		renderers["login.html"].Render(c, "login.html", gin.H{
+		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Invalid or missing CSRF token. Please try again.",
 			"Username":  c.PostForm("username"),
-		})
+		}))
 		return
 	}
 
@@ -89,22 +89,22 @@ func LoginPost(c *gin.Context) {
 	admin, err := services.AuthenticateAdmin(username, password)
 	if err != nil {
 		tok := getCSRFToken(c)
-		renderers["login.html"].Render(c, "login.html", gin.H{
+		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Invalid username or password",
 			"Username":  username,
-		})
+		}))
 		return
 	}
 
 	token, err := services.GenerateAdminToken(admin)
 	if err != nil {
 		tok := getCSRFToken(c)
-		renderers["login.html"].Render(c, "login.html", gin.H{
+		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Internal error. Please try again.",
 			"Username":  username,
-		})
+		}))
 		return
 	}
 
@@ -125,20 +125,20 @@ func LoginPost(c *gin.Context) {
 
 func ForgotPasswordPage(c *gin.Context) {
 	tok := getCSRFToken(c)
-	renderers["login.html"].Render(c, "login.html", gin.H{
+	renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 		"CSRFToken": tok,
 		"ShowReset": true,
-	})
+	}))
 }
 
 func ForgotPasswordPost(c *gin.Context) {
 	if !validateCSRF(c) {
 		tok := getCSRFToken(c)
-		renderers["login.html"].Render(c, "login.html", gin.H{
+		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Invalid or missing CSRF token. Please try again.",
 			"ShowReset": true,
-		})
+		}))
 		return
 	}
 
@@ -149,11 +149,11 @@ func ForgotPasswordPost(c *gin.Context) {
 	}
 
 	tok := getCSRFToken(c)
-	renderers["login.html"].Render(c, "login.html", gin.H{
+	renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 		"CSRFToken": tok,
 		"ShowReset": true,
 		"ResetSent": true,
-	})
+	}))
 }
 
 func LogoutPost(c *gin.Context) {
@@ -174,28 +174,28 @@ func ResetPasswordPage(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Missing reset token. Please request a new password reset.",
-		})
+		}))
 		return
 	}
 
 	tok := getCSRFToken(c)
-	renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+	renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 		"CSRFToken": tok,
 		"Token":     token,
-	})
+	}))
 }
 
 func ResetPasswordPost(c *gin.Context) {
 	if !validateCSRF(c) {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Token":     c.PostForm("token"),
 			"Error":     "Invalid or missing CSRF token. Please try again.",
-		})
+		}))
 		return
 	}
 
@@ -205,58 +205,58 @@ func ResetPasswordPost(c *gin.Context) {
 
 	if token == "" {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Missing reset token. Please request a new password reset.",
-		})
+		}))
 		return
 	}
 
 	if len(password) < 8 {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Token":     token,
 			"Error":     "Password must be at least 8 characters.",
-		})
+		}))
 		return
 	}
 
 	if password != confirm {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Token":     token,
 			"Error":     "Passwords do not match.",
-		})
+		}))
 		return
 	}
 
 	adminID, err := services.ValidatePasswordResetToken(token)
 	if err != nil {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Error":     "Invalid or expired reset token. Please request a new password reset.",
-		})
+		}))
 		return
 	}
 
 	if err := services.UpdateAdminPassword(adminID, password); err != nil {
 		tok := getCSRFToken(c)
-		renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Token":     token,
 			"Error":     "Failed to update password. Please try again.",
-		})
+		}))
 		return
 	}
 
 	services.MarkResetTokenUsed(token)
 
 	tok := getCSRFToken(c)
-	renderers["reset_password.html"].Render(c, "reset_password.html", gin.H{
+	renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 		"CSRFToken": tok,
 		"Success":   "Your password has been reset successfully.",
-	})
+	}))
 }
