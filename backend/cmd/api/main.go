@@ -72,6 +72,7 @@ func main() {
 		"templates/pages/admin/dashboard.html",
 		"templates/pages/admin/admins.html",
 		"templates/pages/admin/waffle_new.html",
+		"templates/pages/admin/waffle_edit.html",
 		"templates/pages/admin/waffle_manage.html",
 		"templates/pages/admin/reports.html",
 	}
@@ -127,11 +128,13 @@ func main() {
 	adminPages := r.Group("/admin", middleware.RequireAuth)
 	adminPages.GET("/dashboard", handlers.AdminDashboard)
 	adminPages.GET("/waffles/:slug", handlers.ManageWafflePage)
+	adminPages.GET("/waffles/:slug/edit", handlers.EditWafflePage)
+	adminPages.POST("/waffles/:slug/edit", handlers.EditWafflePost)
 	adminPages.GET("/waffles/new", handlers.NewWafflePage)
 	adminPages.POST("/waffles/new", handlers.CreateWafflePost)
-	adminPages.POST("/waffles/:id/archive", handlers.ArchiveWafflePost)
-	adminPages.POST("/waffles/:id/unarchive", handlers.UnarchiveWafflePost)
-	adminPages.POST("/waffles/:id/delete", handlers.DeleteWafflePost)
+	adminPages.POST("/waffles/:slug/archive", handlers.ArchiveWafflePost)
+	adminPages.POST("/waffles/:slug/unarchive", handlers.UnarchiveWafflePost)
+	adminPages.POST("/waffles/:slug/delete", handlers.DeleteWafflePost)
 	adminPages.GET("/reports", handlers.ReportsPage)
 
 	adminSuperPages := adminPages.Group("", middleware.RequireSuperAdmin)

@@ -90,6 +90,122 @@ func ManageWafflePage(c *gin.Context) {
 	renderers["waffle_manage.html"].Render(c, "waffle_manage.html", data)
 }
 
+func EditWafflePage(c *gin.Context) {
+	slug := c.Param("slug")
+
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.String(http.StatusNotFound, "Waffle not found")
+		return
+	}
+
+	data := adminNavData(c)
+	data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
+	data["waffle"] = waffle
+	data["Slug"] = slug
+
+	renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
+}
+
+func EditWafflePost(c *gin.Context) {
+	if !validateCSRF(c) {
+		c.String(http.StatusBadRequest, "Invalid or missing CSRF token")
+		return
+	}
+
+	slug := c.Param("slug")
+
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.String(http.StatusNotFound, "Waffle not found")
+		return
+	}
+
+	title := strings.TrimSpace(c.PostForm("title"))
+	description := strings.TrimSpace(c.PostForm("description"))
+	paymentInfo := strings.TrimSpace(c.PostForm("payment_info"))
+	spotPriceStr := c.PostForm("spot_price")
+
+	var errors gin.H
+	var hasError bool
+
+	if title == "" {
+		errors = gin.H{"Title": "Title is required"}
+		hasError = true
+	}
+
+	spotPrice, err := strconv.Atoi(spotPriceStr)
+	if err != nil || spotPrice <= 0 {
+		if errors == nil {
+			errors = gin.H{}
+		}
+		errors["SpotPrice"] = "Price per spot must be greater than 0"
+		hasError = true
+	}
+
+	mediaLinks := c.PostFormArray("instagram_media_links[]")
+	var cleanLinks []string
+	for _, link := range mediaLinks {
+		link = strings.TrimSpace(link)
+		if link != "" {
+			cleanLinks = append(cleanLinks, link)
+		}
+	}
+
+	if hasError {
+		if errors == nil {
+			errors = gin.H{}
+		}
+		data := adminNavData(c)
+		data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
+		data["waffle"] = waffle
+		data["Slug"] = slug
+		data["Error"] = "Please fix the errors below"
+		data["Errors"] = errors
+		data["Title"] = title
+		data["Description"] = description
+		data["SpotPrice"] = spotPriceStr
+		data["PaymentInfo"] = paymentInfo
+		data["InstagramMediaLinks"] = cleanLinks
+		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
+		return
+	}
+
+	var descPtr, paymentPtr *string
+	if description != "" {
+		descPtr = &description
+	}
+	if paymentInfo != "" {
+		paymentPtr = &paymentInfo
+	}
+
+	req := models.UpdateWaffleRequest{
+		Title:               title,
+		Description:         descPtr,
+		SpotPrice:           spotPrice,
+		PaymentInfo:         paymentPtr,
+		InstagramMediaLinks: cleanLinks,
+	}
+
+	_, err = services.UpdateWaffle(waffle.ID, req)
+	if err != nil {
+		data := adminNavData(c)
+		data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
+		data["waffle"] = waffle
+		data["Slug"] = slug
+		data["Error"] = "Failed to update waffle: " + err.Error()
+		data["Title"] = title
+		data["Description"] = description
+		data["SpotPrice"] = spotPriceStr
+		data["PaymentInfo"] = paymentInfo
+		data["InstagramMediaLinks"] = cleanLinks
+		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/waffles/"+slug)
+}
+
 func MarkSpotPaidAPI(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

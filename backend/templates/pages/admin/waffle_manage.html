@@ -37,6 +37,12 @@
          class="btn btn-xs btn-outline">
         CSV Export
       </a>
+      {{ if eq .waffle.Status "active" }}
+      <a href="/admin/waffles/{{ .waffle.Slug }}/edit"
+         class="btn btn-xs btn-primary">
+        Edit
+      </a>
+      {{ end }}
     </div>
 
     {{ if .waffle.InstagramMediaLinks }}
