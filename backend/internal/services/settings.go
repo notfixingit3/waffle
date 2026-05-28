@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,7 +15,9 @@ import (
 
 // allowedSettings is the whitelist of keys that SetSetting accepts.
 var allowedSettings = map[string]bool{
-	"whois_server": true,
+	"whois_server":         true,
+	"jwt_expiration_hours": true,
+	"password_min_length":  true,
 }
 
 // GetSetting retrieves the value for the given key from system_settings.
@@ -48,6 +51,28 @@ func validateHostname(value string) error {
 	return nil
 }
 
+func validatePositiveInteger(value string) error {
+	n, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return fmt.Errorf("value must be an integer")
+	}
+	if n <= 0 {
+		return fmt.Errorf("value must be greater than zero")
+	}
+	return nil
+}
+
+func validateSettingValue(key, value string) error {
+	switch key {
+	case "whois_server":
+		return validateHostname(value)
+	case "jwt_expiration_hours", "password_min_length":
+		return validatePositiveInteger(value)
+	default:
+		return fmt.Errorf("invalid setting key: %q", key)
+	}
+}
+
 // SetSetting upserts a system setting after validating the key is in the
 // allowed whitelist and the value is a valid hostname.
 func SetSetting(key, value string, updatedBy uuid.UUID) error {
@@ -55,7 +80,7 @@ func SetSetting(key, value string, updatedBy uuid.UUID) error {
 		return fmt.Errorf("invalid setting key: %q", key)
 	}
 
-	if err := validateHostname(value); err != nil {
+	if err := validateSettingValue(key, value); err != nil {
 		return fmt.Errorf("invalid value for %q: %w", key, err)
 	}
 
