@@ -93,6 +93,16 @@ func LoginPost(c *gin.Context) {
 	username := strings.TrimSpace(c.PostForm("username"))
 	password := c.PostForm("password")
 
+	if services.IsLoginLockedOut(c.ClientIP(), username) {
+		tok := getCSRFToken(c)
+		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
+			"CSRFToken": tok,
+			"Error":     "Account temporarily locked due to too many failed attempts. Please try again later.",
+			"Username":  username,
+		}))
+		return
+	}
+
 	admin, err := services.AuthenticateAdmin(username, password)
 	if err != nil {
 		services.RecordFailedLoginAttempt(c.ClientIP(), username)
@@ -137,7 +147,7 @@ func LoginPost(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "admin_token",
 		Value:    token,
-		MaxAge:   7 * 24 * 3600,
+		MaxAge:   services.GetJWTExpirationHours() * 3600,
 		Path:     "/",
 		Secure:   useSecureCookie(c),
 		HttpOnly: true,
@@ -236,12 +246,12 @@ func ResetPasswordPost(c *gin.Context) {
 		return
 	}
 
-	if len(password) < 8 {
+	if err := services.ValidatePassword(password); err != nil {
 		tok := getCSRFToken(c)
 		renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{
 			"CSRFToken": tok,
 			"Token":     token,
-			"Error":     "Password must be at least 8 characters.",
+			"Error":     err.Error(),
 		}))
 		return
 	}
@@ -277,6 +287,8 @@ func ResetPasswordPost(c *gin.Context) {
 	}
 
 	services.MarkResetTokenUsed(token)
+
+	recordAudit(c, "reset_password", "admin", adminID.String(), "password reset via token")
 
 	tok := getCSRFToken(c)
 	renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{

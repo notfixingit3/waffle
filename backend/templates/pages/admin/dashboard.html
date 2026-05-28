@@ -96,6 +96,16 @@
                 placeholder="DELETE"
                 class="delete-input input input-bordered w-full max-w-sm"
               >
+              <label class="label text-sm mt-2">
+                Enter your current password:
+              </label>
+              <input
+                type="password"
+                name="current_password"
+                data-password-id="{{ .ID }}"
+                placeholder="Current password"
+                class="delete-password input input-bordered w-full max-w-sm"
+              >
               <div class="flex gap-2 mt-3">
                 <button type="submit" data-submit-id="{{ .ID }}" disabled class="delete-submit btn btn-error btn-sm">
                   Permanently Delete
@@ -158,8 +168,22 @@
     input.addEventListener('input', function() {
       var id = input.getAttribute('data-input-id');
       var submit = document.querySelector('[data-submit-id="' + id + '"]');
+      var passwordInput = document.querySelector('[data-password-id="' + id + '"]');
+      var hasPassword = passwordInput && passwordInput.value.trim() !== '';
       if (submit) {
-        submit.disabled = input.value !== 'DELETE';
+        submit.disabled = input.value !== 'DELETE' || !hasPassword;
+      }
+    });
+  });
+
+  document.querySelectorAll('.delete-password').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var id = input.getAttribute('data-password-id');
+      var submit = document.querySelector('[data-submit-id="' + id + '"]');
+      var confirmInput = document.querySelector('[data-input-id="' + id + '"]');
+      var hasConfirm = confirmInput && confirmInput.value === 'DELETE';
+      if (submit) {
+        submit.disabled = !hasConfirm || input.value.trim() === '';
       }
     });
   });

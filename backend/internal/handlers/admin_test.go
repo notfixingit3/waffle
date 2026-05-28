@@ -59,7 +59,7 @@ func TestValidateCreateAdminForm_ShortPassword(t *testing.T) {
 	}
 	found := false
 	for _, e := range errs {
-		if strings.Contains(e, "Password must be at least 8 characters") {
+		if strings.Contains(e, "password must be at least") {
 			found = true
 			break
 		}

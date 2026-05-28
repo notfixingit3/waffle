@@ -120,5 +120,7 @@ func UpdateWhoisSettingsAPI(c *gin.Context) {
 		return
 	}
 
+	recordAudit(c, "update_whois_settings", "settings", "", "WHOIS server updated to "+req.WhoisServer)
+
 	c.JSON(http.StatusOK, gin.H{"whois_server": req.WhoisServer})
 }
