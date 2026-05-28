@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -47,11 +48,11 @@ func CreateAdmin(req models.CreateAdminRequest) (*models.Admin, error) {
 func GetAdminByUsername(username string) (*models.Admin, error) {
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, created_at, updated_at
+		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins WHERE username = $1
 	`, username).Scan(
 		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
-		&admin.Active, &admin.LastLoginAt, &admin.CreatedAt, &admin.UpdatedAt,
+		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get admin: %w", err)
@@ -62,11 +63,11 @@ func GetAdminByUsername(username string) (*models.Admin, error) {
 func GetAdminByID(id uuid.UUID) (*models.Admin, error) {
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, created_at, updated_at
+		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins WHERE id = $1
 	`, id).Scan(
 		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
-		&admin.Active, &admin.LastLoginAt, &admin.CreatedAt, &admin.UpdatedAt,
+		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get admin: %w", err)
@@ -77,11 +78,11 @@ func GetAdminByID(id uuid.UUID) (*models.Admin, error) {
 func GetAdminByEmail(email string) (*models.Admin, error) {
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, created_at, updated_at
+		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins WHERE email = $1
 	`, email).Scan(
 		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
-		&admin.Active, &admin.LastLoginAt, &admin.CreatedAt, &admin.UpdatedAt,
+		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get admin: %w", err)
@@ -91,7 +92,7 @@ func GetAdminByEmail(email string) (*models.Admin, error) {
 
 func ListAdmins() ([]models.Admin, error) {
 	rows, err := db.Pool.Query(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, created_at, updated_at
+		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -104,7 +105,7 @@ func ListAdmins() ([]models.Admin, error) {
 		var a models.Admin
 		err := rows.Scan(
 			&a.ID, &a.Username, &a.Email, &a.DisplayName, &a.Role,
-			&a.Active, &a.LastLoginAt, &a.CreatedAt, &a.UpdatedAt,
+			&a.Active, &a.LastLoginAt, &a.LastLoginIP, &a.CreatedAt, &a.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan admin: %w", err)
@@ -158,11 +159,11 @@ func AuthenticateAdmin(username, password string) (*models.Admin, error) {
 	var hash string
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, created_at, updated_at, password_hash
+		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at, password_hash
 		FROM admins WHERE username = $1
 	`, username).Scan(
 		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
-		&admin.Active, &admin.LastLoginAt, &admin.CreatedAt, &admin.UpdatedAt, &hash,
+		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt, &hash,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
@@ -179,12 +180,28 @@ func AuthenticateAdmin(username, password string) (*models.Admin, error) {
 	return admin, nil
 }
 
+func GetJWTExpirationHours() int {
+	if db.Pool == nil {
+		return 24
+	}
+	value, err := GetSetting("jwt_expiration_hours")
+	if err != nil || value == "" {
+		return 24
+	}
+	hours, err := strconv.Atoi(value)
+	if err != nil || hours <= 0 {
+		return 24
+	}
+	return hours
+}
+
 func GenerateAdminToken(admin *models.Admin) (string, error) {
+	expiresIn := time.Duration(GetJWTExpirationHours()) * time.Hour
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"admin_id": admin.ID.String(),
 		"username": admin.Username,
 		"role":     admin.Role,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(),
+		"exp":      time.Now().Add(expiresIn).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(GetJWTSecret()))
@@ -243,6 +260,17 @@ func MarkResetTokenUsed(token string) error {
 		UPDATE password_reset_tokens SET used_at = $1 WHERE token_hash = $2
 	`, time.Now(), tokenHash)
 	return err
+}
+
+func GetAdminPasswordHash(id uuid.UUID) (string, error) {
+	var hash string
+	err := db.Pool.QueryRow(context.Background(), `
+		SELECT password_hash FROM admins WHERE id = $1
+	`, id).Scan(&hash)
+	if err != nil {
+		return "", fmt.Errorf("get admin password hash: %w", err)
+	}
+	return hash, nil
 }
 
 func hashToken(token string) string {

@@ -105,6 +105,9 @@ func RecordLogin(adminIDStr, ipAddress, userAgent string) (uuid.UUID, error) {
 		return uuid.UUID{}, fmt.Errorf("update last login: %w", err)
 	}
 
+	_, _ = db.Pool.Exec(context.Background(),
+		`UPDATE admins SET last_login_ip = $1 WHERE id = $2`, ipAddress, adminID)
+
 	return id, nil
 }
 
