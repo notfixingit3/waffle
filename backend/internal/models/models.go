@@ -9,8 +9,8 @@ import (
 type WaffleStatus string
 
 const (
-	WaffleStatusActive     WaffleStatus = "active"
-	WaffleStatusCompleted  WaffleStatus = "completed"
+	WaffleStatusActive    WaffleStatus = "active"
+	WaffleStatusCompleted WaffleStatus = "completed"
 )
 
 type SpotStatus string
@@ -69,12 +69,12 @@ type ActivityEvent struct {
 }
 
 type BuyerStats struct {
-	InstagramHandle      string    `json:"instagram_handle" db:"instagram_handle"`
-	TotalWafflesEntered  int       `json:"total_waffles_entered" db:"total_waffles_entered"`
-	TotalWins            int       `json:"total_wins" db:"total_wins"`
-	TotalLosses          int       `json:"total_losses" db:"total_losses"`
-	TotalSpotsClaimed    int       `json:"total_spots_claimed" db:"total_spots_claimed"`
-	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
+	InstagramHandle     string    `json:"instagram_handle" db:"instagram_handle"`
+	TotalWafflesEntered int       `json:"total_waffles_entered" db:"total_waffles_entered"`
+	TotalWins           int       `json:"total_wins" db:"total_wins"`
+	TotalLosses         int       `json:"total_losses" db:"total_losses"`
+	TotalSpotsClaimed   int       `json:"total_spots_claimed" db:"total_spots_claimed"`
+	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type BuyerStatsWithRank struct {
@@ -83,37 +83,37 @@ type BuyerStatsWithRank struct {
 }
 
 type BuyerWaffleHistory struct {
-	WaffleID              uuid.UUID `json:"waffle_id"`
-	Slug                  string    `json:"slug"`
-	Title                 string    `json:"title"`
-	SpotPrice             int       `json:"spot_price"`
-	Status                string    `json:"status"`
-	WinningSpotNumber     *int      `json:"winning_spot_number,omitempty"`
-	WinningInstagramHandle *string  `json:"winning_instagram_handle,omitempty"`
-	CreatedAt             time.Time `json:"created_at"`
-	CompletedAt           *time.Time `json:"completed_at,omitempty"`
-	SpotNumbers           []int     `json:"spot_numbers"`
-	IsWinner              bool      `json:"is_winner"`
+	WaffleID               uuid.UUID  `json:"waffle_id"`
+	Slug                   string     `json:"slug"`
+	Title                  string     `json:"title"`
+	SpotPrice              int        `json:"spot_price"`
+	Status                 string     `json:"status"`
+	WinningSpotNumber      *int       `json:"winning_spot_number,omitempty"`
+	WinningInstagramHandle *string    `json:"winning_instagram_handle,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	CompletedAt            *time.Time `json:"completed_at,omitempty"`
+	SpotNumbers            []int      `json:"spot_numbers"`
+	IsWinner               bool       `json:"is_winner"`
 }
 
 type CreateWaffleRequest struct {
-	Title                string   `json:"title"`
-	Description          *string  `json:"description,omitempty"`
-	ImageURL             *string  `json:"image_url,omitempty"`
-	TotalSpots           int      `json:"total_spots"`
-	SpotPrice            int      `json:"spot_price"`
-	PaymentInfo          *string  `json:"payment_info,omitempty"`
-	InstagramMediaLinks  []string `json:"instagram_media_links,omitempty"`
+	Title               string   `json:"title"`
+	Description         *string  `json:"description,omitempty"`
+	ImageURL            *string  `json:"image_url,omitempty"`
+	TotalSpots          int      `json:"total_spots"`
+	SpotPrice           int      `json:"spot_price"`
+	PaymentInfo         *string  `json:"payment_info,omitempty"`
+	InstagramMediaLinks []string `json:"instagram_media_links,omitempty"`
 }
 
 type UpdateWaffleRequest struct {
-	Title                string   `json:"title"`
-	Description          *string  `json:"description,omitempty"`
-	ImageURL             *string  `json:"image_url,omitempty"`
-	SpotPrice            int      `json:"spot_price"`
-	PaymentInfo          *string  `json:"payment_info,omitempty"`
-	InstagramMediaLinks  []string `json:"instagram_media_links,omitempty"`
-	Archived             *bool    `json:"archived,omitempty"`
+	Title               string   `json:"title"`
+	Description         *string  `json:"description,omitempty"`
+	ImageURL            *string  `json:"image_url,omitempty"`
+	SpotPrice           int      `json:"spot_price"`
+	PaymentInfo         *string  `json:"payment_info,omitempty"`
+	InstagramMediaLinks []string `json:"instagram_media_links,omitempty"`
+	Archived            *bool    `json:"archived,omitempty"`
 }
 
 type CreateClaimRequest struct {
@@ -123,16 +123,28 @@ type CreateClaimRequest struct {
 }
 
 type Admin struct {
-	ID           uuid.UUID  `json:"id" db:"id"`
-	Username     string     `json:"username" db:"username"`
-	Email        string     `json:"email" db:"email"`
-	DisplayName  *string    `json:"display_name,omitempty" db:"display_name"`
-	Role         string     `json:"role" db:"role"`
-	Timezone     string     `json:"timezone" db:"timezone"`
-	Active       bool       `json:"active" db:"active"`
-	LastLoginAt  *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
-	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+	ID          uuid.UUID  `json:"id" db:"id"`
+	Username    string     `json:"username" db:"username"`
+	Email       string     `json:"email" db:"email"`
+	DisplayName *string    `json:"display_name,omitempty" db:"display_name"`
+	Role        string     `json:"role" db:"role"`
+	Timezone    string     `json:"timezone" db:"timezone"`
+	Active      bool       `json:"active" db:"active"`
+	LastLoginAt *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
+	LastLoginIP *string    `json:"last_login_ip,omitempty" db:"last_login_ip"`
+	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+type AuditLog struct {
+	ID         uuid.UUID `json:"id" db:"id"`
+	AdminID    uuid.UUID `json:"admin_id" db:"admin_id"`
+	Action     string    `json:"action" db:"action"`
+	TargetType string    `json:"target_type" db:"target_type"`
+	TargetID   string    `json:"target_id" db:"target_id"`
+	Details    string    `json:"details" db:"details"`
+	IPAddress  string    `json:"ip_address" db:"ip_address"`
+	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 }
 
 type SystemSetting struct {
