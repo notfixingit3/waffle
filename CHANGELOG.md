@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.7] - 2026-05-27
+
+### Added
+- **Admin Audit Log** — Full audit trail with `audit_log` table, service layer, JSON API (list + single entry), and dedicated admin UI page at `/admin/audit`
+- **Last Login IP Tracking** — Login history records and displays the IP address of each admin session
+- **Brute-Force Lockout** — Rate-limited login endpoints with configurable failed attempt threshold and lockout duration
+- **Configurable JWT Expiration** — System setting to control JWT token lifetime
+- **Password Policy Enforcement** — Server-side validation enforcing minimum length and rejecting common/weak passwords
+- **Destructive Action Confirmation** — Delete, deactivate, and role-demotion operations require current password confirmation before proceeding
+
 ## [v0.1.5] - 2026-05-27
 
 ### Added
@@ -103,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[v0.1.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.7
 [v0.1.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.5
 [v0.1.0]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.0
 [v0.0.9]: https://github.com/notfixingit3/waffle/releases/tag/v0.0.9

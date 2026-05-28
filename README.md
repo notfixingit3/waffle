@@ -8,13 +8,13 @@
 
 <p align="center">
   <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-Compose-blue?logo=docker" alt="Docker" /></a>
-  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.25-00ADD8?logo=go" alt="Go" /></a>
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.23-00ADD8?logo=go" alt="Go" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL" /></a>
   <a href="https://github.com/notfixingit3/waffle/pkgs/container/waffle"><img src="https://img.shields.io/badge/ghcr.io-notfixingit3%2Fwaffle-blue?logo=docker&label=GHCR" alt="GHCR" /></a>
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.5">v0.1.5</a></p>
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.7">v0.1.7</a></p>
 
 ---
 
@@ -70,6 +70,8 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 - **Settings dropdown** — Consolidated admin menu under username (Settings, History, About, Theme, Logout)
 - **About page** — Public about page with admin-only system extras
 - **Configurable WHOIS** — Super_admin can configure WHOIS server for IP lookups
+- **Admin audit log** — Admin and super_admin users can review audited state changes with filters and pagination
+- **Security hardening** — Structured logging, health/readiness probes, secure cookies, login lockout, password policy, and destructive action password confirmation
 
 ---
 
@@ -107,7 +109,7 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
 2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
    ```bash
-   WAFFLE_VERSION=v0.1.5
+   WAFFLE_VERSION=v0.1.7
    DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
    JWT_SECRET=your-secure-random-secret-here
    ADMIN_PASSWORD=your-secure-admin-password
@@ -147,6 +149,8 @@ Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github
 | 7 | ✅ Complete | Multi-admin auth + role-based access + password reset + admin management + archive/delete |
 | 8 | ✅ Complete | Offline/service worker support with installable app shell, offline page caching, and update notifications |
 | 9 | ✅ Complete | DaisyUI migration (Halloween/syrup theme + amber primary) |
+| 10 | ✅ Complete | Production hardening (structured logging, health probes, graceful shutdown, rate limiting, Docker hardening) |
+| 11 | ✅ Complete | Admin audit/security polish (audit log, password policy, lockout, destructive confirmations) |
 
 ---
 
