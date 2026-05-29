@@ -230,6 +230,7 @@ func main() {
 	adminAuth.GET("/login-history", handlers.GetAllLoginHistoryAPI)
 	adminAuth.GET("/audit", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogAPI)
 	adminAuth.GET("/audit/:id", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogEntryAPI)
+	adminAuth.GET("/audit/export", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), exportAuditCSV)
 	adminAuth.GET("/settings/whois-server", handlers.GetWhoisSettingsAPI)
 
 	adminSuperSettings := admin.Group("/settings", middleware.RequireAuth, middleware.RequireSuperAdmin)
@@ -339,6 +340,65 @@ func exportWaffleCSV(c *gin.Context) {
 		}
 		fmt.Fprintf(c.Writer, "%d,%s,%s,%s,%s\n",
 			spot.Number, spot.Status, handle, claimedAt, paidAt)
+	}
+}
+
+func exportAuditCSV(c *gin.Context) {
+	var filters services.AuditLogFilters
+	filters.Action = c.Query("action")
+	filters.TargetType = c.Query("target_type")
+
+	if adminIDStr := c.Query("admin_id"); adminIDStr != "" {
+		if adminID, err := uuid.Parse(adminIDStr); err == nil {
+			filters.AdminID = &adminID
+		}
+	}
+
+	if fromStr := c.Query("from"); fromStr != "" {
+		if fromTime, err := time.Parse(time.RFC3339, fromStr); err == nil {
+			filters.From = &fromTime
+		}
+	}
+
+	if toStr := c.Query("to"); toStr != "" {
+		if toTime, err := time.Parse(time.RFC3339, toStr); err == nil {
+			filters.To = &toTime
+		}
+	}
+
+	filters.Page = 1
+	filters.Limit = 10000
+
+	entries, _, err := services.QueryAudit(filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query audit log"})
+		return
+	}
+
+	timestamp := time.Now().Format("20060102-150405")
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"audit-log-%s.csv\"", timestamp))
+
+	c.Writer.WriteString("id,admin_id,action,target_type,target_id,details,ip_address,created_at\n") // #nosec G104
+	for _, entry := range entries {
+		details := entry.Details
+		if strings.Contains(details, ",") || strings.Contains(details, "\"") {
+			details = fmt.Sprintf("\"%s\"", strings.ReplaceAll(details, "\"", "\"\""))
+		}
+		ipAddress := entry.IPAddress
+		if strings.Contains(ipAddress, ",") || strings.Contains(ipAddress, "\"") {
+			ipAddress = fmt.Sprintf("\"%s\"", strings.ReplaceAll(ipAddress, "\"", "\"\""))
+		}
+		fmt.Fprintf(c.Writer, "%s,%s,%s,%s,%s,%s,%s,%s\n",
+			entry.ID.String(),
+			entry.AdminID.String(),
+			entry.Action,
+			entry.TargetType,
+			entry.TargetID,
+			details,
+			ipAddress,
+			entry.CreatedAt.Format(time.RFC3339),
+		)
 	}
 }
 
