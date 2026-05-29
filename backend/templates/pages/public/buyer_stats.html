@@ -5,60 +5,70 @@
 {{ define "content" }}
 <div class="max-w-lg mx-auto">
   <div class="flex items-center gap-4 mb-6">
-    <a href="/" class="text-gray-600 hover:text-gray-900">
+    <a href="/" class="text-base-content/70 hover:text-base-content">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
     </a>
-    <h1 class="text-xl font-bold text-gray-900">@{{ .handle }}</h1>
+    <h1 class="text-xl font-bold text-base-content">@{{ .handle }}</h1>
   </div>
 
   <div class="grid grid-cols-2 gap-4 mb-6">
-    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-      <p class="text-2xl font-bold text-gray-900">{{ .stats.TotalWafflesEntered }}</p>
-      <p class="text-sm text-gray-500">Waffles Entered</p>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-base-content">{{ .stats.TotalWafflesEntered }}</p>
+        <p class="text-sm text-base-content/60">Waffles Entered</p>
+      </div>
     </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-      <p class="text-2xl font-bold text-gray-900">{{ .stats.TotalSpotsClaimed }}</p>
-      <p class="text-sm text-gray-500">Spots Claimed</p>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-base-content">{{ .stats.TotalSpotsClaimed }}</p>
+        <p class="text-sm text-base-content/60">Spots Claimed</p>
+      </div>
     </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-      <p class="text-2xl font-bold text-green-600">{{ .stats.TotalWins }}</p>
-      <p class="text-sm text-gray-500">Wins</p>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-success">{{ .stats.TotalWins }}</p>
+        <p class="text-sm text-base-content/60">Wins</p>
+      </div>
     </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
-      <p class="text-2xl font-bold text-purple-600">{{ .winRate }}%</p>
-      <p class="text-sm text-gray-500">Win Rate</p>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4 text-center">
+        <p class="text-2xl font-bold text-secondary">{{ .winRate }}%</p>
+        <p class="text-sm text-base-content/60">Win Rate</p>
+      </div>
     </div>
   </div>
 
-  <h2 class="text-lg font-semibold text-gray-900 mb-4">Waffle History</h2>
+  <h2 class="text-lg font-semibold text-base-content mb-4">Waffle History</h2>
 
   {{ if eq (len .history) 0 }}
   <div class="text-center py-12">
-    <p class="text-gray-500">No waffle history yet</p>
+    <p class="text-base-content/60">No waffle history yet</p>
   </div>
   {{ else }}
   <div class="space-y-3">
     {{ range .history }}
-    <a href="/waffle/{{ .Slug }}" class="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow border border-gray-100">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="font-semibold text-gray-900">{{ .Title }}</h3>
-        {{ if .IsWinner }}
-        <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">Winner</span>
-        {{ else if eq .Status "completed" }}
-        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">Completed</span>
-        {{ else }}
-        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Active</span>
+    <a href="/waffle/{{ .Slug }}" class="block card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-base-200">
+      <div class="card-body p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold text-base-content">{{ .Title }}</h3>
+          {{ if .IsWinner }}
+          <span class="badge badge-secondary">Winner</span>
+          {{ else if eq .Status "completed" }}
+          <span class="badge badge-ghost">Completed</span>
+          {{ else }}
+          <span class="badge badge-success">Active</span>
+          {{ end }}
+        </div>
+        <div class="flex items-center gap-4 text-sm text-base-content/60">
+          <span>Spots: {{ range $i, $n := .SpotNumbers }}{{ if $i }}, {{ end }}{{ $n }}{{ end }}</span>
+          <span>${{ .SpotPrice }} each</span>
+        </div>
+        {{ if .CompletedAt }}
+        <p class="text-xs text-base-content/40 mt-2">Completed: {{ formatDate "January 2, 2006" .CompletedAt }}</p>
         {{ end }}
       </div>
-      <div class="flex items-center gap-4 text-sm text-gray-500">
-        <span>Spots: {{ range $i, $n := .SpotNumbers }}{{ if $i }}, {{ end }}{{ $n }}{{ end }}</span>
-        <span>${{ .SpotPrice }} each</span>
-      </div>
-      {{ if .CompletedAt }}
-      <p class="text-xs text-gray-400 mt-2">Completed: {{ formatDate "January 2, 2006" .CompletedAt }}</p>
-      {{ end }}
     </a>
     {{ end }}
   </div>

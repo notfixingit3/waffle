@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -22,7 +26,32 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
+var Version = "v0.1.10"
+
+func recordAudit(c *gin.Context, action, targetType, targetID, details string) {
+	adminIDStr, _ := c.Get("admin_id")
+	if idStr, ok := adminIDStr.(string); ok {
+		if adminID, err := uuid.Parse(idStr); err == nil {
+			go func() {
+				if err := services.RecordAudit(adminID, action, targetType, targetID, details, c.ClientIP()); err != nil {
+					slog.Error("Failed to record audit", "error", err, "action", action)
+				}
+			}()
+		}
+	}
+}
+
+func initLogger() {
+	if strings.ToLower(os.Getenv("GIN_MODE")) == "release" {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	} else {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	}
+}
+
 func main() {
+	initLogger()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8383"
@@ -30,17 +59,25 @@ func main() {
 
 	database, err := db.Connect()
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 	defer database.Close()
 
 	if err := db.RunMigrations(database); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		slog.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
 	}
+
+	services.PurgeOldEntries()
 
 	ws.InitHub()
 
 	r := gin.New()
+	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}) // #nosec G104 — SetTrustedProxies failure is fatal to startup; logged by Gin and exits on next error
+	r.Use(middleware.RequestID())
+	r.Use(middleware.Recovery())
+	r.Use(middleware.SecurityHeaders())
 	r.Use(gin.Logger())
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:  []string{"*"},
@@ -56,7 +93,8 @@ func main() {
 		"templates/layouts/admin_base.html",
 		"templates/partials/*.html",
 	); err != nil {
-		log.Fatalf("Failed to load base templates: %v", err)
+		slog.Error("Failed to load base templates", "error", err)
+		os.Exit(1)
 	}
 
 	// Create per-page renderers by cloning base and adding page template
@@ -66,21 +104,28 @@ func main() {
 		"templates/pages/public/waffles.html",
 		"templates/pages/public/waffle_detail.html",
 		"templates/pages/public/buyer_stats.html",
+		"templates/pages/public/about.html",
 		"templates/pages/admin/login.html",
 		"templates/pages/admin/reset_password.html",
 		"templates/pages/admin/dashboard.html",
 		"templates/pages/admin/admins.html",
 		"templates/pages/admin/waffle_new.html",
+		"templates/pages/admin/waffle_edit.html",
 		"templates/pages/admin/waffle_manage.html",
 		"templates/pages/admin/reports.html",
+		"templates/pages/admin/settings.html",
+		"templates/pages/admin/login_history.html",
+		"templates/pages/admin/audit_log.html",
 	}
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
 		if err != nil {
-			log.Fatalf("Failed to clone renderer: %v", err)
+			slog.Error("Failed to clone renderer", "error", err)
+			os.Exit(1)
 		}
 		if err := clone.AddFromFiles(page); err != nil {
-			log.Fatalf("Failed to load page template %s: %v", page, err)
+			slog.Error("Failed to load page template", "template", page, "error", err)
+			os.Exit(1)
 		}
 		name := filepath.Base(page)
 		pageRenderers[name] = clone
@@ -88,15 +133,18 @@ func main() {
 	// Clone base for direct base.html rendering (e.g., buyer stats page)
 	baseClone, err := baseTmpl.Clone()
 	if err != nil {
-		log.Fatalf("Failed to clone base renderer: %v", err)
+		slog.Error("Failed to clone base renderer", "error", err)
+		os.Exit(1)
 	}
 	pageRenderers["base.html"] = baseClone
 	handlers.InitRenderers(pageRenderers)
+	handlers.AppVersion = Version
 
 	// Serve embedded static files (CSS, JS, images, manifest)
 	staticSub, err := fs.Sub(staticFS, "static")
 	if err != nil {
-		log.Fatalf("Failed to create static sub-filesystem: %v", err)
+		slog.Error("Failed to create static sub-filesystem", "error", err)
+		os.Exit(1)
 	}
 	r.StaticFS("/static", http.FS(staticSub))
 
@@ -106,8 +154,25 @@ func main() {
 	r.GET("/waffles", handlers.WaffleListPage)
 	r.GET("/waffle/:slug", handlers.WaffleDetailPage)
 	r.GET("/buyer/:handle", handlers.BuyerStatsPage)
+	r.GET("/about", handlers.AboutPage)
 
-	r.GET("/health", func(c *gin.Context) {
+	r.GET("/health", middleware.RequestID(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
+
+	r.GET("/ready", middleware.RequestID(), func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		if err := db.Ping(ctx); err != nil {
+			slog.Warn("Readiness check failed", "error", err, "request_id", c.GetString("request_id"))
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status": "error",
+				"db":     "disconnected",
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 			"db":     "connected",
@@ -115,7 +180,7 @@ func main() {
 	})
 
 	r.GET("/admin/login", handlers.LoginPage)
-	r.POST("/admin/login", handlers.LoginPost)
+	r.POST("/admin/login", middleware.AuthRateLimit, handlers.LoginPost)
 	r.GET("/admin/forgot-password", handlers.ForgotPasswordPage)
 	r.POST("/admin/forgot-password", handlers.ForgotPasswordPost)
 	r.POST("/admin/logout", handlers.LogoutPost)
@@ -126,12 +191,14 @@ func main() {
 	adminPages := r.Group("/admin", middleware.RequireAuth)
 	adminPages.GET("/dashboard", handlers.AdminDashboard)
 	adminPages.GET("/waffles/:slug", handlers.ManageWafflePage)
+	adminPages.GET("/waffles/:slug/edit", handlers.EditWafflePage)
+	adminPages.POST("/waffles/:slug/edit", handlers.EditWafflePost)
 	adminPages.GET("/waffles/new", handlers.NewWafflePage)
 	adminPages.POST("/waffles/new", handlers.CreateWafflePost)
-	adminPages.POST("/waffles/:id/archive", handlers.ArchiveWafflePost)
-	adminPages.POST("/waffles/:id/unarchive", handlers.UnarchiveWafflePost)
-	adminPages.POST("/waffles/:id/delete", handlers.DeleteWafflePost)
 	adminPages.GET("/reports", handlers.ReportsPage)
+	adminPages.GET("/settings", handlers.SettingsPage)
+	adminPages.GET("/login-history", handlers.LoginHistoryPage)
+	adminPages.GET("/audit", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.AuditLogPage)
 
 	adminSuperPages := adminPages.Group("", middleware.RequireSuperAdmin)
 	adminSuperPages.GET("/admins", handlers.AdminManagementPage)
@@ -146,20 +213,30 @@ func main() {
 	waffles.GET("/:slug/export", exportWaffleCSV)
 
 	claims := api.Group("/claims")
-	claims.POST("/", createClaim)
+	claims.POST("/", middleware.RateLimitClaims, createClaim)
 
 	buyers := api.Group("/buyers")
 	buyers.GET("/:handle/stats", handlers.GetBuyerStats)
 	buyers.GET("/:handle/history", handlers.GetBuyerHistory)
 
 	admin := api.Group("/admin")
-	admin.POST("/login", adminLogin)
+	admin.POST("/login", middleware.AuthRateLimit, adminLogin)
 	admin.POST("/forgot-password", forgotPassword)
 	admin.POST("/reset-password", resetPassword)
 
 	adminAuth := admin.Group("", middleware.RequireAuth)
 	adminAuth.GET("/me", getCurrentAdmin)
+	adminAuth.GET("/me/login-history", handlers.GetMyLoginHistoryAPI)
 	adminAuth.POST("/change-password", changePassword)
+	adminAuth.PATCH("/me/timezone", handlers.UpdateTimezoneAPI)
+	adminAuth.GET("/login-history", handlers.GetAllLoginHistoryAPI)
+	adminAuth.GET("/audit", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogAPI)
+	adminAuth.GET("/audit/:id", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogEntryAPI)
+	adminAuth.GET("/audit/export", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), exportAuditCSV)
+	adminAuth.GET("/settings/whois-server", handlers.GetWhoisSettingsAPI)
+
+	adminSuperSettings := admin.Group("/settings", middleware.RequireAuth, middleware.RequireSuperAdmin)
+	adminSuperSettings.PATCH("/whois-server", handlers.UpdateWhoisSettingsAPI)
 
 	adminUsers := admin.Group("/admins", middleware.RequireAuth, middleware.RequireSuperAdmin)
 	adminUsers.GET("/", listAdmins)
@@ -173,9 +250,13 @@ func main() {
 	adminWaffles.GET("/", listWaffles)
 	adminWaffles.PATCH("/:id", updateWaffle)
 	adminWaffles.POST("/:id/winner", handlers.SetWinnerAPI)
-	adminWaffles.POST("/:id/archive", archiveWaffle)
-	adminWaffles.POST("/:id/unarchive", unarchiveWaffle)
-	adminWaffles.DELETE("/:id", deleteWaffle)
+
+	adminManagerAPI := admin.Group("/waffles", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin))
+	adminManagerAPI.POST("/:id/archive", archiveWaffle)
+	adminManagerAPI.POST("/:id/unarchive", unarchiveWaffle)
+	adminManagerAPI.DELETE("/:id", deleteWaffle)
+	adminManagerAPI.POST("/:id/clear-winner", handlers.ClearWinnerAPI)
+	adminManagerAPI.POST("/:id/change-winner", handlers.ChangeWinnerAPI)
 
 	adminReports := admin.Group("/reports", middleware.RequireAuth)
 	adminReports.GET("/drought", getDroughtList)
@@ -187,10 +268,36 @@ func main() {
 	adminSpots.POST("/:id/pay", handlers.MarkSpotPaidAPI)
 	adminSpots.POST("/:id/release", handlers.ReleaseSpotAPI)
 
-	log.Printf("Server starting on port %s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
+
+	go func() {
+		slog.Info("Server starting", "port", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("shutting down")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
+	}
+
+	ws.GetHub().Stop()
+
+	slog.Info("server stopped")
 }
 
 func listPublicWaffles(c *gin.Context) {
@@ -219,7 +326,7 @@ func exportWaffleCSV(c *gin.Context) {
 	c.Header("Content-Type", "text/csv")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s-spots.csv\"", slug))
 
-	c.Writer.WriteString("spot_number,status,instagram_handle,claimed_at,paid_at\n")
+	c.Writer.WriteString("spot_number,status,instagram_handle,claimed_at,paid_at\n") // #nosec G104 — CSV header write failure will cascade to HTTP response error; no recovery possible
 	for _, spot := range spots {
 		claimedAt := ""
 		if spot.ClaimedAt != nil {
@@ -235,6 +342,73 @@ func exportWaffleCSV(c *gin.Context) {
 		}
 		fmt.Fprintf(c.Writer, "%d,%s,%s,%s,%s\n",
 			spot.Number, spot.Status, handle, claimedAt, paidAt)
+	}
+}
+
+func exportAuditCSV(c *gin.Context) {
+	var filters services.AuditLogFilters
+	filters.Action = c.Query("action")
+	filters.TargetType = c.Query("target_type")
+
+	if adminIDStr := c.Query("admin_id"); adminIDStr != "" {
+		if adminID, err := uuid.Parse(adminIDStr); err == nil {
+			filters.AdminID = &adminID
+		}
+	}
+
+	if fromStr := c.Query("from"); fromStr != "" {
+		fromTime, err := time.Parse(time.RFC3339, fromStr)
+		if err != nil {
+			fromTime, err = time.Parse("2006-01-02", fromStr)
+		}
+		if err == nil {
+			filters.From = &fromTime
+		}
+	}
+
+	if toStr := c.Query("to"); toStr != "" {
+		toTime, err := time.Parse(time.RFC3339, toStr)
+		if err != nil {
+			toTime, err = time.Parse("2006-01-02", toStr)
+		}
+		if err == nil {
+			filters.To = &toTime
+		}
+	}
+
+	filters.Page = 1
+	filters.Limit = 10000
+
+	entries, _, err := services.QueryAudit(filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query audit log"})
+		return
+	}
+
+	timestamp := time.Now().Format("20060102-150405")
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"audit-log-%s.csv\"", timestamp))
+
+	c.Writer.WriteString("id,admin_id,action,target_type,target_id,details,ip_address,created_at\n") // #nosec G104
+	for _, entry := range entries {
+		details := entry.Details
+		if strings.Contains(details, ",") || strings.Contains(details, "\"") {
+			details = fmt.Sprintf("\"%s\"", strings.ReplaceAll(details, "\"", "\"\""))
+		}
+		ipAddress := entry.IPAddress
+		if strings.Contains(ipAddress, ",") || strings.Contains(ipAddress, "\"") {
+			ipAddress = fmt.Sprintf("\"%s\"", strings.ReplaceAll(ipAddress, "\"", "\"\""))
+		}
+		fmt.Fprintf(c.Writer, "%s,%s,%s,%s,%s,%s,%s,%s\n",
+			entry.ID.String(),
+			entry.AdminID.String(),
+			entry.Action,
+			entry.TargetType,
+			entry.TargetID,
+			details,
+			ipAddress,
+			entry.CreatedAt.Format(time.RFC3339),
+		)
 	}
 }
 
@@ -295,7 +469,7 @@ func createClaim(c *gin.Context) {
 
 	waffle, err := services.GetWaffleByID(waffleID)
 	if err != nil {
-		log.Printf("Failed to get waffle for broadcast: %v", err)
+		slog.Error("Failed to get waffle for broadcast", "error", err, "request_id", c.GetString("request_id"))
 	} else {
 		handle := services.NormalizeInstagramHandle(req.InstagramHandle)
 		for _, spotNum := range req.Spots {
@@ -324,6 +498,8 @@ func createWaffle(c *gin.Context) {
 		return
 	}
 
+	recordAudit(c, "create_waffle", "waffle", waffle.ID.String(), "created waffle '"+waffle.Title+"'")
+
 	c.JSON(http.StatusCreated, waffle)
 }
 
@@ -345,6 +521,8 @@ func updateWaffle(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "update_waffle", "waffle", id.String(), "updated waffle '"+waffle.Title+"'")
 
 	c.JSON(http.StatusOK, waffle)
 }
@@ -374,6 +552,8 @@ func archiveWaffle(c *gin.Context) {
 		return
 	}
 
+	recordAudit(c, "archive_waffle", "waffle", id.String(), "waffle archived")
+
 	c.JSON(http.StatusOK, gin.H{"message": "waffle archived"})
 }
 
@@ -389,6 +569,8 @@ func unarchiveWaffle(c *gin.Context) {
 		return
 	}
 
+	recordAudit(c, "unarchive_waffle", "waffle", id.String(), "waffle unarchived")
+
 	c.JSON(http.StatusOK, gin.H{"message": "waffle unarchived"})
 }
 
@@ -399,10 +581,23 @@ func deleteWaffle(c *gin.Context) {
 		return
 	}
 
+	if err := verifyPasswordConfirmation(c); err != nil {
+		if err.Error() == "password confirmation required" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
+		} else if err.Error() == "invalid password" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
 	if err := services.DeleteWaffle(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "delete_waffle", "waffle", id.String(), "waffle deleted permanently")
 
 	c.JSON(http.StatusOK, gin.H{"message": "waffle deleted permanently"})
 }
@@ -428,6 +623,7 @@ func setWinner(c *gin.Context) {
 	waffle, err := services.GetWaffleByID(id)
 	if err == nil {
 		ws.BroadcastWaffleCompleted(waffle.Slug, req.WinningSpotNumber)
+		recordAudit(c, "set_winner", "waffle", id.String(), "winner set to spot #"+strconv.Itoa(req.WinningSpotNumber))
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "winner set successfully"})
@@ -455,6 +651,7 @@ func markPaid(c *gin.Context) {
 			}
 			ws.BroadcastSpotUpdate(waffle.Slug, spot.Number, string(spot.Status), handle)
 		}
+		recordAudit(c, "mark_paid", "spot", id.String(), "spot #"+strconv.Itoa(spot.Number)+" marked paid")
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "spot marked as paid"})
@@ -471,6 +668,8 @@ func releaseSpot(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "release_spot", "spot", id.String(), "spot released")
 
 	c.JSON(http.StatusOK, gin.H{"message": "spot released"})
 }
@@ -489,7 +688,7 @@ func parseDateRange(c *gin.Context) (time.Time, time.Time) {
 	}
 	if toStr != "" {
 		if parsed, err := time.Parse("2006-01-02", toStr); err == nil {
-			to = parsed
+			to = parsed.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 		}
 	}
 
@@ -544,11 +743,19 @@ func adminLogin(c *gin.Context) {
 		return
 	}
 
+	if services.IsLoginLockedOut(c.ClientIP(), req.Username) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many failed attempts, please try again later"})
+		return
+	}
+
 	admin, err := services.AuthenticateAdmin(req.Username, req.Password)
 	if err != nil {
+		services.RecordFailedLoginAttempt(c.ClientIP(), req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+
+	services.ResetLoginAttempts(c.ClientIP(), req.Username)
 
 	token, err := services.GenerateAdminToken(admin)
 	if err != nil {
@@ -556,7 +763,21 @@ func adminLogin(c *gin.Context) {
 		return
 	}
 
-	services.RecordLogin(admin.ID)
+	loginID, err := services.RecordLogin(admin.ID.String(), c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		slog.Error("RecordLogin error", "error", err, "request_id", c.GetString("request_id"))
+	} else if !services.IsPrivateIP(c.ClientIP()) {
+		go func(id uuid.UUID) {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("WHOIS enrichment panic", "error", r)
+				}
+			}()
+			if enrichErr := services.EnrichLoginWithWHOIS(id); enrichErr != nil {
+				slog.Error("WHOIS enrichment error", "error", enrichErr)
+			}
+		}(loginID)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
@@ -602,12 +823,17 @@ func resetPassword(c *gin.Context) {
 		return
 	}
 
+	if err := services.ValidatePassword(req.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	if err := services.UpdateAdminPassword(adminID, req.Password); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	services.MarkResetTokenUsed(req.Token)
+	services.MarkResetTokenUsed(req.Token) // #nosec G104 — MarkResetTokenUsed is best-effort cleanup after successful password reset
 
 	c.JSON(http.StatusOK, gin.H{"message": "password reset successfully"})
 }
@@ -656,10 +882,23 @@ func changePassword(c *gin.Context) {
 		return
 	}
 
+	if err := services.ValidatePassword(req.NewPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	hash, err := services.GetAdminPasswordHash(adminID)
+	if err != nil || !services.CheckPassword(req.CurrentPassword, hash) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "current password is incorrect"})
+		return
+	}
+
 	if err := services.UpdateAdminPassword(adminID, req.NewPassword); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "change_password", "admin", adminID.String(), "password changed")
 
 	c.JSON(http.StatusOK, gin.H{"message": "password changed successfully"})
 }
@@ -685,11 +924,18 @@ func createAdmin(c *gin.Context) {
 		return
 	}
 
+	if err := services.ValidatePassword(req.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	admin, err := services.CreateAdmin(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "create_admin", "admin", admin.ID.String(), "created admin '"+admin.Username+"' with role "+admin.Role)
 
 	c.JSON(http.StatusCreated, admin)
 }
@@ -707,11 +953,40 @@ func updateAdmin(c *gin.Context) {
 		return
 	}
 
+	if req.Role != nil {
+		targetAdmin, err := services.GetAdminByID(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "admin not found"})
+			return
+		}
+		roleHierarchy := map[string]int{
+			"super_admin":     3,
+			"admin":           2,
+			"waffle_manager":  1,
+		}
+		targetLevel := roleHierarchy[targetAdmin.Role]
+		newLevel := roleHierarchy[*req.Role]
+		if newLevel < targetLevel {
+			if err := verifyPasswordConfirmation(c); err != nil {
+				if err.Error() == "password confirmation required" {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
+				} else if err.Error() == "invalid password" {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
+				} else {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+				}
+				return
+			}
+		}
+	}
+
 	admin, err := services.UpdateAdmin(id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "update_admin", "admin", id.String(), "updated admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
 }
@@ -723,15 +998,67 @@ func deactivateAdmin(c *gin.Context) {
 		return
 	}
 
+	if err := verifyPasswordConfirmation(c); err != nil {
+		if err.Error() == "password confirmation required" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
+		} else if err.Error() == "invalid password" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
 	admin, err := services.UpdateAdmin(id, models.UpdateAdminRequest{Active: boolPtr(false)})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	recordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
+
 	c.JSON(http.StatusOK, admin)
 }
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+func verifyPasswordConfirmation(c *gin.Context) error {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		return fmt.Errorf("not authenticated")
+	}
+
+	adminID, err := uuid.Parse(adminIDStr.(string))
+	if err != nil {
+		return fmt.Errorf("invalid admin")
+	}
+
+	hash, err := services.GetAdminPasswordHash(adminID)
+	if err != nil {
+		return fmt.Errorf("admin not found")
+	}
+
+	var currentPassword string
+	if c.Request.Method == "POST" && c.ContentType() == "application/x-www-form-urlencoded" {
+		currentPassword = c.PostForm("current_password")
+	} else {
+		var req struct {
+			CurrentPassword string `json:"current_password"`
+		}
+		if err := c.ShouldBindJSON(&req); err == nil {
+			currentPassword = req.CurrentPassword
+		}
+	}
+
+	if currentPassword == "" {
+		return fmt.Errorf("password confirmation required")
+	}
+
+	if !services.CheckPassword(currentPassword, hash) {
+		return fmt.Errorf("invalid password")
+	}
+
+	return nil
 }

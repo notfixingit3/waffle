@@ -3,9 +3,11 @@ var SpotSelection = (function() {
 
   var selectedSpots = new Set();
   var config = {};
+  var _cacheKey = null;
 
   function init(opts) {
     config = opts || {};
+    _cacheKey = config.slug || null;
 
     var grid = document.getElementById('spot-grid');
     if (!grid) return;
@@ -38,16 +40,29 @@ var SpotSelection = (function() {
     }
 
     updateClaimButton();
+    if (!navigator.onLine) {
+      setOfflineClaim();
+    }
+    window.addEventListener('waffle:offline', function() { setOfflineClaim(); });
+    window.addEventListener('waffle:online', function() { updateClaimButton(); });
+  }
+
+  function setOfflineClaim() {
+    var btn = document.getElementById('claim-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Offline — cannot claim';
   }
 
   function toggleSpot(num, el) {
+    var selectedClasses = SPOT_SELECTION_CLASSES.selected.split(' ');
     if (selectedSpots.has(num)) {
       selectedSpots.delete(num);
-      el.classList.remove('ring-2', 'ring-blue-500', 'bg-green-200');
+      selectedClasses.forEach(function(cls) { el.classList.remove(cls); });
       el.setAttribute('aria-checked', 'false');
     } else {
       selectedSpots.add(num);
-      el.classList.add('ring-2', 'ring-blue-500', 'bg-green-200');
+      selectedClasses.forEach(function(cls) { el.classList.add(cls); });
       el.setAttribute('aria-checked', 'true');
     }
 
@@ -133,10 +148,8 @@ var SpotSelection = (function() {
         var el = document.querySelector('[data-spot-number="' + num + '"]');
         if (el) {
           el.dataset.spotStatus = 'pending';
-          el.className = el.className.replace(/ring-\w+-\d+/g, '').replace(/bg-green-\w+/g, 'bg-yellow-50');
-          el.className = el.className.replace(/border-green-\w+/g, 'border-yellow-400');
-          el.className = el.className.replace(/cursor-pointer/g, 'cursor-default');
-          el.classList.add('text-yellow-900');
+          var pendingClasses = SPOT_STATUS_CLASSES.pending;
+          el.className = 'spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + pendingClasses.bg + ' ' + pendingClasses.border + ' ' + pendingClasses.text + ' cursor-default';
           el.disabled = true;
           el.setAttribute('aria-checked', 'false');
 
@@ -148,6 +161,17 @@ var SpotSelection = (function() {
       });
 
       selectedSpots.clear();
+
+      if (_cacheKey && typeof OfflineHandler !== 'undefined') {
+        fetch('/api/waffles/' + _cacheKey + '/spots')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.spots) {
+              OfflineHandler.setCachedData(_cacheKey, data.spots);
+            }
+          })
+          .catch(function() { /* cache update failed — non-critical */ });
+      }
 
       successEl.textContent = spotsArray.length + ' spot' + (spotsArray.length !== 1 ? 's' : '') + ' claimed by @' + handle + '!';
       successEl.classList.remove('hidden');

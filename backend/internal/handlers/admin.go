@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -12,6 +14,19 @@ import (
 	"github.com/syrup/backend/internal/services"
 	ws "github.com/syrup/backend/internal/websocket"
 )
+
+func recordAudit(c *gin.Context, action, targetType, targetID, details string) {
+	adminIDStr, _ := c.Get("admin_id")
+	if idStr, ok := adminIDStr.(string); ok {
+		if adminID, err := uuid.Parse(idStr); err == nil {
+			go func() {
+				if err := services.RecordAudit(adminID, action, targetType, targetID, details, c.ClientIP()); err != nil {
+					slog.Error("Failed to record audit", "error", err, "action", action)
+				}
+			}()
+		}
+	}
+}
 
 func adminNavData(c *gin.Context) gin.H {
 	adminIDStr, _ := c.Get("admin_id")
@@ -38,11 +53,28 @@ func adminNavData(c *gin.Context) gin.H {
 		csrfToken = t
 	}
 
+	total, active, _ := services.CountWaffles()
+
+	timezone := "UTC"
+	if idStr, ok := adminIDStr.(string); ok {
+		if id, err := uuid.Parse(idStr); err == nil {
+			if admin, err := services.GetAdminByID(id); err == nil && admin.Timezone != "" {
+				timezone = admin.Timezone
+			}
+		}
+	}
+
 	return gin.H{
-		"Role":        roleStr,
-		"DisplayName": displayName,
-		"CurrentPath": c.Request.URL.Path,
-		"CSRFToken":   csrfToken,
+		"Role":          roleStr,
+		"DisplayName":   displayName,
+		"CurrentPath":   c.Request.URL.Path,
+		"CSRFToken":     csrfToken,
+		"Version":       AppVersion,
+		"DevMode":       strings.Contains(strings.ToLower(AppVersion), "dev"),
+		"TotalWaffles":  total,
+		"ActiveWaffles": active,
+		"ServerTime":    time.Now().UTC().Format("3:04 PM"),
+		"Timezone":      timezone,
 	}
 }
 
@@ -90,6 +122,124 @@ func ManageWafflePage(c *gin.Context) {
 	renderers["waffle_manage.html"].Render(c, "waffle_manage.html", data)
 }
 
+func EditWafflePage(c *gin.Context) {
+	slug := c.Param("slug")
+
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.String(http.StatusNotFound, "Waffle not found")
+		return
+	}
+
+	data := adminNavData(c)
+	data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
+	data["waffle"] = waffle
+	data["Slug"] = slug
+
+	renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
+}
+
+func EditWafflePost(c *gin.Context) {
+	if !validateCSRF(c) {
+		c.String(http.StatusBadRequest, "Invalid or missing CSRF token")
+		return
+	}
+
+	slug := c.Param("slug")
+
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.String(http.StatusNotFound, "Waffle not found")
+		return
+	}
+
+	title := strings.TrimSpace(c.PostForm("title"))
+	description := strings.TrimSpace(c.PostForm("description"))
+	paymentInfo := strings.TrimSpace(c.PostForm("payment_info"))
+	spotPriceStr := c.PostForm("spot_price")
+
+	var errors gin.H
+	var hasError bool
+
+	if title == "" {
+		errors = gin.H{"Title": "Title is required"}
+		hasError = true
+	}
+
+	spotPrice, err := strconv.Atoi(spotPriceStr)
+	if err != nil || spotPrice <= 0 {
+		if errors == nil {
+			errors = gin.H{}
+		}
+		errors["SpotPrice"] = "Price per spot must be greater than 0"
+		hasError = true
+	}
+
+	mediaLinks := c.PostFormArray("instagram_media_links[]")
+	var cleanLinks []string
+	for _, link := range mediaLinks {
+		link = strings.TrimSpace(link)
+		if link != "" {
+			cleanLinks = append(cleanLinks, link)
+		}
+	}
+
+	if hasError {
+		if errors == nil {
+			errors = gin.H{}
+		}
+		data := adminNavData(c)
+		data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
+		data["waffle"] = waffle
+		data["Slug"] = slug
+		data["Error"] = "Please fix the errors below"
+		data["Errors"] = errors
+		data["Title"] = title
+		data["Description"] = description
+		data["SpotPrice"] = spotPriceStr
+		data["PaymentInfo"] = paymentInfo
+		data["InstagramMediaLinks"] = cleanLinks
+		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
+		return
+	}
+
+	var descPtr, paymentPtr *string
+	if description != "" {
+		descPtr = &description
+	}
+	if paymentInfo != "" {
+		paymentPtr = &paymentInfo
+	}
+
+	req := models.UpdateWaffleRequest{
+		Title:               title,
+		Description:         descPtr,
+		SpotPrice:           spotPrice,
+		PaymentInfo:         paymentPtr,
+		InstagramMediaLinks: cleanLinks,
+	}
+
+	updated, err := services.UpdateWaffle(waffle.ID, req)
+	if err != nil {
+		data := adminNavData(c)
+		data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
+		data["waffle"] = waffle
+		data["Slug"] = slug
+		data["Error"] = "Failed to update waffle: " + err.Error()
+		data["Title"] = title
+		data["Description"] = description
+		data["SpotPrice"] = spotPriceStr
+		data["PaymentInfo"] = paymentInfo
+		data["InstagramMediaLinks"] = cleanLinks
+		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
+		return
+	}
+
+	recordAudit(c, "update_waffle", "waffle", waffle.ID.String(), "updated waffle '"+updated.Title+"'")
+
+	c.Redirect(http.StatusFound, "/admin/waffles/"+slug)
+}
+
 func MarkSpotPaidAPI(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -112,6 +262,7 @@ func MarkSpotPaidAPI(c *gin.Context) {
 			}
 			ws.BroadcastSpotUpdate(waffle.Slug, spot.Number, string(spot.Status), handle)
 		}
+		recordAudit(c, "mark_paid", "spot", id.String(), "spot #"+strconv.Itoa(spot.Number)+" marked paid")
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "spot marked as paid"})
@@ -136,6 +287,7 @@ func ReleaseSpotAPI(c *gin.Context) {
 		if err == nil {
 			ws.BroadcastSpotUpdate(waffle.Slug, spot.Number, string(models.SpotStatusAvailable), "")
 		}
+		recordAudit(c, "release_spot", "spot", id.String(), "spot #"+strconv.Itoa(spot.Number)+" released")
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "spot released"})
@@ -162,9 +314,58 @@ func SetWinnerAPI(c *gin.Context) {
 	waffle, err := services.GetWaffleByID(id)
 	if err == nil {
 		ws.BroadcastWaffleCompleted(waffle.Slug, req.WinningSpotNumber)
+		recordAudit(c, "set_winner", "waffle", id.String(), "winner set to spot #"+strconv.Itoa(req.WinningSpotNumber))
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "winner set successfully"})
+}
+
+func ClearWinnerAPI(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	if err := services.ClearWinner(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	waffle, err := services.GetWaffleByID(id)
+	if err == nil {
+		ws.BroadcastWinnerCleared(waffle.Slug)
+		recordAudit(c, "clear_winner", "waffle", id.String(), "winner cleared")
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "winner cleared successfully"})
+}
+
+func ChangeWinnerAPI(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req models.SetWinnerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := services.ChangeWinner(id, req.WinningSpotNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	waffle, err := services.GetWaffleByID(id)
+	if err == nil {
+		ws.BroadcastWinnerChanged(waffle.Slug, req.WinningSpotNumber)
+		recordAudit(c, "change_winner", "waffle", id.String(), "winner changed to spot #"+strconv.Itoa(req.WinningSpotNumber))
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "winner changed successfully"})
 }
 
 func NewWafflePage(c *gin.Context) {
@@ -276,6 +477,8 @@ func CreateWafflePost(c *gin.Context) {
 		return
 	}
 
+	recordAudit(c, "create_waffle", "waffle", waffle.ID.String(), "created waffle '"+waffle.Title+"'")
+
 	c.Redirect(http.StatusFound, "/admin/waffles/"+waffle.Slug)
 }
 
@@ -302,7 +505,9 @@ func ArchiveWafflePost(c *gin.Context) {
 	}
 
 	if err := services.ArchiveWaffle(id, true); err != nil {
-		log.Printf("Failed to archive waffle: %v", err)
+		slog.Error("Failed to archive waffle", "error", err, "request_id", c.GetString("request_id"))
+	} else {
+		recordAudit(c, "archive_waffle", "waffle", id.String(), "waffle archived")
 	}
 
 	referer := c.Request.Header.Get("Referer")
@@ -320,7 +525,9 @@ func UnarchiveWafflePost(c *gin.Context) {
 	}
 
 	if err := services.ArchiveWaffle(id, false); err != nil {
-		log.Printf("Failed to unarchive waffle: %v", err)
+		slog.Error("Failed to unarchive waffle", "error", err, "request_id", c.GetString("request_id"))
+	} else {
+		recordAudit(c, "unarchive_waffle", "waffle", id.String(), "waffle unarchived")
 	}
 
 	referer := c.Request.Header.Get("Referer")
@@ -328,6 +535,45 @@ func UnarchiveWafflePost(c *gin.Context) {
 		referer = "/admin/dashboard"
 	}
 	c.Redirect(http.StatusFound, referer)
+}
+
+func verifyPasswordConfirmation(c *gin.Context) error {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		return fmt.Errorf("not authenticated")
+	}
+
+	adminID, err := uuid.Parse(adminIDStr.(string))
+	if err != nil {
+		return fmt.Errorf("invalid admin")
+	}
+
+	hash, err := services.GetAdminPasswordHash(adminID)
+	if err != nil {
+		return fmt.Errorf("admin not found")
+	}
+
+	var currentPassword string
+	if c.Request.Method == "POST" && c.ContentType() == "application/x-www-form-urlencoded" {
+		currentPassword = c.PostForm("current_password")
+	} else {
+		var req struct {
+			CurrentPassword string `json:"current_password"`
+		}
+		if err := c.ShouldBindJSON(&req); err == nil {
+			currentPassword = req.CurrentPassword
+		}
+	}
+
+	if currentPassword == "" {
+		return fmt.Errorf("password confirmation required")
+	}
+
+	if !services.CheckPassword(currentPassword, hash) {
+		return fmt.Errorf("invalid password")
+	}
+
+	return nil
 }
 
 func DeleteWafflePost(c *gin.Context) {
@@ -346,8 +592,19 @@ func DeleteWafflePost(c *gin.Context) {
 		return
 	}
 
+	if err := verifyPasswordConfirmation(c); err != nil {
+		referer := c.Request.Header.Get("Referer")
+		if referer == "" {
+			referer = "/admin/dashboard"
+		}
+		c.Redirect(http.StatusFound, referer)
+		return
+	}
+
 	if err := services.DeleteWaffle(id); err != nil {
-		log.Printf("Failed to delete waffle: %v", err)
+		slog.Error("Failed to delete waffle", "error", err, "request_id", c.GetString("request_id"))
+	} else {
+		recordAudit(c, "delete_waffle", "waffle", id.String(), "waffle deleted permanently")
 	}
 
 	referer := c.Request.Header.Get("Referer")
@@ -381,6 +638,22 @@ func AdminManagementPage(c *gin.Context) {
 	renderers["admins.html"].Render(c, "admins.html", data)
 }
 
+func validateCreateAdminForm(username, email, password string) []string {
+	var errors []string
+	if username == "" {
+		errors = append(errors, "Username is required")
+	}
+	if email == "" {
+		errors = append(errors, "Email is required")
+	}
+	if password == "" {
+		errors = append(errors, "Password is required")
+	} else if err := services.ValidatePassword(password); err != nil {
+		errors = append(errors, err.Error())
+	}
+	return errors
+}
+
 func CreateAdminPost(c *gin.Context) {
 	if !validateCSRF(c) {
 		renderAdminManagementWithError(c, "Invalid or missing CSRF token. Please try again.", nil)
@@ -393,18 +666,9 @@ func CreateAdminPost(c *gin.Context) {
 	displayName := strings.TrimSpace(c.PostForm("display_name"))
 	role := c.PostForm("role")
 
-	var errors []string
-	if username == "" {
-		errors = append(errors, "Username is required")
-	}
-	if email == "" {
-		errors = append(errors, "Email is required")
-	}
-	if password == "" {
-		errors = append(errors, "Password is required")
-	}
-	if role != "admin" && role != "super_admin" {
-		role = "admin"
+	errors := validateCreateAdminForm(username, email, password)
+	if role != models.RoleAdmin && role != models.RoleSuperAdmin && role != models.RoleWaffleManager {
+		role = models.RoleAdmin
 	}
 
 	if len(errors) > 0 {
@@ -422,7 +686,7 @@ func CreateAdminPost(c *gin.Context) {
 		displayNamePtr = &displayName
 	}
 
-	_, err := services.CreateAdmin(models.CreateAdminRequest{
+	admin, err := services.CreateAdmin(models.CreateAdminRequest{
 		Username:    username,
 		Email:       email,
 		Password:    password,
@@ -438,6 +702,8 @@ func CreateAdminPost(c *gin.Context) {
 		})
 		return
 	}
+
+	recordAudit(c, "create_admin", "admin", admin.ID.String(), "created admin '"+admin.Username+"' with role "+admin.Role)
 
 	c.Redirect(http.StatusFound, "/admin/admins")
 }
@@ -483,6 +749,8 @@ func UpdateAdminRoleAPI(c *gin.Context) {
 		return
 	}
 
+	recordAudit(c, "update_admin_role", "admin", id.String(), "role changed to "+admin.Role)
+
 	c.JSON(http.StatusOK, admin)
 }
 
@@ -499,6 +767,8 @@ func DeactivateAdminAPI(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
 }
@@ -530,8 +800,8 @@ func ResetAdminPasswordAPI(c *gin.Context) {
 		return
 	}
 
-	if len(req.Password) < 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters"})
+	if err := services.ValidatePassword(req.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -544,6 +814,8 @@ func ResetAdminPasswordAPI(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	recordAudit(c, "reset_admin_password", "admin", targetID.String(), "password reset by admin")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
 }

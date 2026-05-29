@@ -3,14 +3,23 @@ var WaffleWebSocket = (function() {
 
   var ws = null;
   var reconnectTimer = null;
+  var healthCheckTimer = null;
   var reconnectDelay = 3000;
   var currentSlug = null;
   var messageHandler = null;
   var activityFlashTimer = null;
+  var maxRetries = 10;
+  var retryCount = 0;
+  var lastMessageTime = Date.now();
 
   function connect(slug, handler) {
     currentSlug = slug;
     messageHandler = handler;
+
+    if (!navigator.onLine) {
+      updateStatus('disconnected');
+      return;
+    }
 
     var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     var url = protocol + '//' + window.location.host + '/ws/' + slug;
@@ -27,15 +36,32 @@ var WaffleWebSocket = (function() {
     updateStatus('connecting');
 
     ws.onopen = function() {
+      lastMessageTime = Date.now();
       updateStatus('connected');
       reconnectDelay = 3000;
+      retryCount = 0;
+
+      if (healthCheckTimer) {
+        clearInterval(healthCheckTimer);
+      }
+      healthCheckTimer = setInterval(function() {
+        if (Date.now() - lastMessageTime > 90000) {
+          if (ws) {
+            ws.close();
+          }
+        }
+      }, 45000);
     };
 
     ws.onmessage = function(event) {
+      lastMessageTime = Date.now();
       try {
         var msg = JSON.parse(event.data);
         if (msg.type === 'ACTIVITY_EVENT') {
           flashActivity(msg.payload);
+        }
+        if (msg.type === 'SPOT_UPDATED' && msg.payload && currentSlug) {
+          updateCachedSpot(currentSlug, msg.payload);
         }
         if (messageHandler) {
           messageHandler(msg);
@@ -46,6 +72,10 @@ var WaffleWebSocket = (function() {
     };
 
     ws.onclose = function() {
+      if (healthCheckTimer) {
+        clearInterval(healthCheckTimer);
+        healthCheckTimer = null;
+      }
       updateStatus('disconnected');
       ws = null;
       scheduleReconnect();
@@ -58,7 +88,16 @@ var WaffleWebSocket = (function() {
 
   function scheduleReconnect() {
     if (reconnectTimer) return;
+
+    retryCount++;
+    if (retryCount >= maxRetries) {
+      updateStatus('disconnected', true);
+      return;
+    }
+
     updateStatus('reconnecting');
+
+    var delay = reconnectDelay + Math.random() * 1000;
 
     reconnectTimer = setTimeout(function() {
       reconnectTimer = null;
@@ -67,12 +106,12 @@ var WaffleWebSocket = (function() {
         var url = protocol + '//' + window.location.host + '/ws/' + currentSlug;
         tryConnect(url);
       }
-    }, reconnectDelay);
+    }, delay);
 
     reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
   }
 
-  function updateStatus(status) {
+  function updateStatus(status, permanent) {
     var container = document.getElementById('ws-status');
     if (!container) return;
 
@@ -90,25 +129,25 @@ var WaffleWebSocket = (function() {
 
     switch (status) {
       case 'connected':
-        dot.className += ' bg-green-500';
+        dot.className += ' bg-success';
         label.textContent = 'live';
-        label.className = 'text-xs text-green-600';
+        label.className = 'text-xs text-success';
         break;
       case 'connecting':
-        dot.className += ' bg-yellow-500 animate-pulse';
+        dot.className += ' bg-warning animate-pulse';
         label.textContent = 'connecting';
-        label.className = 'text-xs text-yellow-600';
+        label.className = 'text-xs text-warning';
         break;
       case 'reconnecting':
-        dot.className += ' bg-yellow-500 animate-pulse';
+        dot.className += ' bg-warning animate-pulse';
         label.textContent = 'reconnecting';
-        label.className = 'text-xs text-yellow-600';
+        label.className = 'text-xs text-warning';
         break;
       case 'disconnected':
       default:
-        dot.className += ' bg-gray-300';
-        label.textContent = 'offline';
-        label.className = 'text-xs text-gray-400';
+        dot.className += ' bg-base-300';
+        label.textContent = permanent ? 'connection lost' : 'offline';
+        label.className = 'text-xs text-base-content/40';
         break;
     }
   }
@@ -121,9 +160,9 @@ var WaffleWebSocket = (function() {
     var label = container.querySelector('span:last-child');
     if (!dot || !label) return;
 
-    dot.className = 'w-2 h-2 rounded-full inline-block bg-blue-500 animate-pulse';
+    dot.className = 'w-2 h-2 rounded-full inline-block bg-info animate-pulse';
     label.textContent = payload.message || 'activity';
-    label.className = 'text-xs text-blue-600';
+    label.className = 'text-xs text-info';
 
     if (activityFlashTimer) {
       clearTimeout(activityFlashTimer);
@@ -137,10 +176,37 @@ var WaffleWebSocket = (function() {
     }, 2000);
   }
 
+  function updateCachedSpot(slug, payload) {
+    if (typeof OfflineHandler === 'undefined') return;
+    var cached = OfflineHandler.getCachedData(slug);
+    if (!cached || !cached.data) return;
+    var found = false;
+    for (var i = 0; i < cached.data.length; i++) {
+      if (cached.data[i].number === payload.spot_number) {
+        cached.data[i].status = payload.status;
+        if (payload.claimed_by_handle !== undefined) {
+          cached.data[i].claimed_by_handle = payload.claimed_by_handle;
+        }
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      localStorage.setItem('waffle-data-' + slug, JSON.stringify({
+        data: cached.data,
+        timestamp: Date.now()
+      }));
+    }
+  }
+
   function disconnect() {
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
+    }
+    if (healthCheckTimer) {
+      clearInterval(healthCheckTimer);
+      healthCheckTimer = null;
     }
     if (ws) {
       ws.close();
@@ -152,6 +218,31 @@ var WaffleWebSocket = (function() {
 
   window.addEventListener('beforeunload', function() {
     disconnect();
+  });
+
+  window.addEventListener('waffle:offline', function() {
+    if (ws) {
+      ws.close();
+      ws = null;
+    }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    if (healthCheckTimer) {
+      clearInterval(healthCheckTimer);
+      healthCheckTimer = null;
+    }
+    updateStatus('disconnected');
+  });
+
+  window.addEventListener('waffle:online', function() {
+    if (currentSlug && messageHandler && !ws) {
+      reconnectDelay = 3000;
+      var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      var url = protocol + '//' + window.location.host + '/ws/' + currentSlug;
+      tryConnect(url);
+    }
   });
 
   return {

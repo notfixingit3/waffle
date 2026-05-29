@@ -4,15 +4,15 @@
 
 {{ define "content" }}
 <div class="min-h-[80vh] flex items-center justify-center px-4">
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 max-w-sm w-full p-6">
+  <div class="card bg-base-100 shadow-md max-w-sm w-full p-6">
     <div class="text-center mb-6">
       <img src="/static/img/logo.png" alt="The Waffle Maker" class="w-16 h-16 rounded-2xl mx-auto mb-4" />
-      <h1 class="text-2xl font-bold text-gray-900">Admin Login</h1>
-      <p class="text-sm text-gray-500 mt-1">Project Syrup</p>
+      <h1 class="text-2xl font-bold text-base-content">Admin Login</h1>
+      <p class="text-sm text-base-content/70 mt-1">Project Syrup</p>
     </div>
 
     {{ if .Error }}
-    <div class="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+    <div class="alert alert-error mb-4 text-sm">
       {{ .Error }}
     </div>
     {{ end }}
@@ -21,28 +21,31 @@
       <form method="POST" action="/admin/login" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
-        <div>
-          <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+        <fieldset class="fieldset">
+          <label for="username" class="label">
+            <span class="label-text">Username</span>
+          </label>
           <input type="text" id="username" name="username" required autocomplete="username" autofocus
             value="{{ .Username }}"
-            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-shadow"
+            class="input input-bordered w-full"
             placeholder="Enter username">
-        </div>
+        </fieldset>
 
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <fieldset class="fieldset">
+          <label for="password" class="label">
+            <span class="label-text">Password</span>
+          </label>
           <input type="password" id="password" name="password" required autocomplete="current-password"
-            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-shadow"
+            class="input input-bordered w-full"
             placeholder="Enter password">
-        </div>
+        </fieldset>
 
-        <button type="submit"
-          class="w-full bg-amber-600 text-white font-semibold py-2.5 rounded-lg hover:bg-amber-700 active:bg-amber-800 transition-colors text-base">
+        <button type="submit" class="btn btn-primary w-full">
           Sign In
         </button>
       </form>
 
-      <button type="button" onclick="toggleReset(true)" class="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+      <button type="button" onclick="toggleReset(true)" class="link link-primary w-full mt-4 text-sm">
         Forgot Password?
       </button>
     </div>
@@ -50,10 +53,10 @@
     <div id="forgot-form-wrapper"{{ if not .ShowReset }} class="hidden"{{ end }}>
       {{ if .ResetSent }}
       <div class="text-center">
-        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+        <div class="alert alert-success mb-4 text-sm">
           Check your email for reset instructions.
         </div>
-        <button type="button" onclick="toggleReset(false)" class="text-sm text-amber-600 hover:underline">
+        <button type="button" onclick="toggleReset(false)" class="link link-primary text-sm">
           Back to login
         </button>
       </div>
@@ -61,20 +64,21 @@
       <form method="POST" action="/admin/forgot-password" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
-        <div>
-          <label for="reset-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <fieldset class="fieldset">
+          <label for="reset-email" class="label">
+            <span class="label-text">Email</span>
+          </label>
           <input type="email" id="reset-email" name="email" required autocomplete="email" autofocus
-            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-shadow"
+            class="input input-bordered w-full"
             placeholder="your@email.com">
-        </div>
+        </fieldset>
 
-        <button type="submit"
-          class="w-full bg-amber-600 text-white font-semibold py-2.5 rounded-lg hover:bg-amber-700 active:bg-amber-800 transition-colors text-base">
+        <button type="submit" class="btn btn-primary w-full">
           Send Reset Link
         </button>
       </form>
 
-      <button type="button" onclick="toggleReset(false)" class="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+      <button type="button" onclick="toggleReset(false)" class="link link-primary w-full mt-4 text-sm">
         Back to login
       </button>
       {{ end }}

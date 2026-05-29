@@ -186,11 +186,13 @@
 
   function switchTab(tab) {
     state.activeTab = tab
-    $$('.tab-btn').forEach(function (btn) {
+    $$('.tab').forEach(function (btn) {
       var isActive = btn.getAttribute('data-tab') === tab
-      btn.className = isActive
-        ? 'tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-amber-600 text-amber-600 transition-colors'
-        : 'tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors'
+      if (isActive) {
+        btn.classList.add('tab-active')
+      } else {
+        btn.classList.remove('tab-active')
+      }
     })
     $$('.tab-content').forEach(function (el) { el.classList.add('hidden') })
     $('#tab-' + tab).classList.remove('hidden')
@@ -212,9 +214,13 @@
     state.datePreset = preset
     $$('.date-preset-btn').forEach(function (btn) {
       var isActive = btn.getAttribute('data-date-preset') === preset
-      btn.className = isActive
-        ? 'date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-700 text-white'
-        : 'date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100'
+      if (isActive) {
+        btn.classList.remove('btn-outline')
+        btn.classList.add('btn-primary')
+      } else {
+        btn.classList.remove('btn-primary')
+        btn.classList.add('btn-outline')
+      }
     })
 
     if (preset === 'custom') {
@@ -274,31 +280,31 @@
     var container = $('#tab-drought')
     var entries = state.droughtData || []
 
-    var html = '<div class="p-4 border-b border-gray-100">' +
-      '<h2 class="text-lg font-semibold text-gray-900">Drought List</h2>' +
-      '<p class="text-sm text-gray-500">Users with entries but no recent wins</p>' +
+    var html = '<div class="p-4 border-b border-base-200">' +
+      '<h2 class="text-lg font-semibold text-base-content">Drought List</h2>' +
+      '<p class="text-sm text-base-content/60">Users with entries but no recent wins</p>' +
       '</div>'
 
     if (entries.length === 0) {
-      html += '<div class="p-8 text-center text-gray-500 text-sm">No users with drought data in this range.</div>'
+      html += '<div class="p-8 text-center text-base-content/60 text-sm">No users with drought data in this range.</div>'
     } else {
       html += '<div class="overflow-x-auto"><table class="w-full text-sm">' +
-        '<thead class="bg-gray-50"><tr>' +
-        '<th class="text-left px-4 py-3 font-medium text-gray-500">Instagram Handle</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Total Entries</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Last Entry</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Drought (Days)</th>' +
+        '<thead class="bg-base-200"><tr>' +
+        '<th class="text-left px-4 py-3 font-medium text-base-content/60">Instagram Handle</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Total Entries</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Last Entry</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Drought (Days)</th>' +
         '</tr></thead><tbody>'
 
       for (var i = 0; i < entries.length; i++) {
         var e = entries[i]
-        var droughtClass = e.longest_drought >= 30 ? 'text-red-600' : (e.longest_drought >= 14 ? 'text-yellow-600' : 'text-gray-600')
+        var droughtClass = e.longest_drought >= 30 ? 'text-error' : (e.longest_drought >= 14 ? 'text-warning' : 'text-base-content/70')
         var droughtLabel = e.longest_drought >= 99999 ? 'Never won' : e.longest_drought
         var lastDate = new Date(e.last_entry_date).toLocaleDateString()
-        html += '<tr class="border-t border-gray-50 hover:bg-gray-50">' +
-          '<td class="px-4 py-3 font-medium text-gray-900">@' + escHtml(e.instagram_handle) + '</td>' +
-          '<td class="px-4 py-3 text-right text-gray-600">' + e.total_entries + '</td>' +
-          '<td class="px-4 py-3 text-right text-gray-500">' + lastDate + '</td>' +
+        html += '<tr class="border-t border-base-200 hover:bg-base-200">' +
+          '<td class="px-4 py-3 font-medium text-base-content">@' + escHtml(e.instagram_handle) + '</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/70">' + e.total_entries + '</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/60">' + lastDate + '</td>' +
           '<td class="px-4 py-3 text-right"><span class="font-semibold ' + droughtClass + '">' + droughtLabel + '</span></td>' +
           '</tr>'
       }
@@ -313,29 +319,29 @@
     var container = $('#tab-power-buyers')
     var entries = state.powerBuyerData || []
 
-    var html = '<div class="p-4 border-b border-gray-100">' +
-      '<h2 class="text-lg font-semibold text-gray-900">Power Buyers</h2>' +
-      '<p class="text-sm text-gray-500">Top users by activity and spending</p>' +
+    var html = '<div class="p-4 border-b border-base-200">' +
+      '<h2 class="text-lg font-semibold text-base-content">Power Buyers</h2>' +
+      '<p class="text-sm text-base-content/60">Top users by activity and spending</p>' +
       '</div>'
 
     if (entries.length === 0) {
-      html += '<div class="p-8 text-center text-gray-500 text-sm">No power buyer data in this range.</div>'
+      html += '<div class="p-8 text-center text-base-content/60 text-sm">No power buyer data in this range.</div>'
     } else {
       html += '<div class="overflow-x-auto"><table class="w-full text-sm">' +
-        '<thead class="bg-gray-50"><tr>' +
-        '<th class="text-left px-4 py-3 font-medium text-gray-500">Instagram Handle</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Spots Claimed</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Total Spent</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Win Rate</th>' +
+        '<thead class="bg-base-200"><tr>' +
+        '<th class="text-left px-4 py-3 font-medium text-base-content/60">Instagram Handle</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Spots Claimed</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Total Spent</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Win Rate</th>' +
         '</tr></thead><tbody>'
 
       for (var i = 0; i < entries.length; i++) {
         var e = entries[i]
-        var rateClass = e.win_rate >= 50 ? 'text-green-600' : (e.win_rate >= 20 ? 'text-yellow-600' : 'text-gray-500')
-        html += '<tr class="border-t border-gray-50 hover:bg-gray-50">' +
-          '<td class="px-4 py-3 font-medium text-gray-900">@' + escHtml(e.instagram_handle) + '</td>' +
-          '<td class="px-4 py-3 text-right text-gray-600">' + e.total_spots_claimed + '</td>' +
-          '<td class="px-4 py-3 text-right text-gray-600">' + formatMoney(e.total_spent) + '</td>' +
+        var rateClass = e.win_rate >= 50 ? 'text-success' : (e.win_rate >= 20 ? 'text-warning' : 'text-base-content/60')
+        html += '<tr class="border-t border-base-200 hover:bg-base-200">' +
+          '<td class="px-4 py-3 font-medium text-base-content">@' + escHtml(e.instagram_handle) + '</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/70">' + e.total_spots_claimed + '</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/70">' + formatMoney(e.total_spent) + '</td>' +
           '<td class="px-4 py-3 text-right"><span class="font-semibold ' + rateClass + '">' + e.win_rate + '%</span></td>' +
           '</tr>'
       }
@@ -351,12 +357,12 @@
     var entries = state.monthlyData || []
 
     var html = '<div class="mb-4">' +
-      '<h2 class="text-lg font-semibold text-gray-900">Monthly Activity</h2>' +
-      '<p class="text-sm text-gray-500">Waffles, claims, and revenue by month</p>' +
+      '<h2 class="text-lg font-semibold text-base-content">Monthly Activity</h2>' +
+      '<p class="text-sm text-base-content/60">Waffles, claims, and revenue by month</p>' +
       '</div>'
 
     if (entries.length === 0) {
-      html += '<div class="p-8 text-center text-gray-500 text-sm">No activity data in this range.</div>'
+      html += '<div class="p-8 text-center text-base-content/60 text-sm">No activity data in this range.</div>'
     } else {
       var barMax = 1
       for (var i = 0; i < entries.length; i++) {
@@ -380,32 +386,32 @@
         var revPct = (m.revenue / 10 / barMax * 30).toFixed(1)
 
         html += '<div class="flex items-center gap-3">' +
-          '<span class="text-xs text-gray-500 w-16 flex-shrink-0">' + escHtml(m.month) + '</span>' +
+          '<span class="text-xs text-base-content/60 w-16 flex-shrink-0">' + escHtml(m.month) + '</span>' +
           '<div class="flex-1 flex items-end gap-1" style="height:32px">' +
-          '<div class="bg-amber-500 rounded-t" style="width:' + wafflePct + '%;min-width:' + (m.waffles > 0 ? '4px' : '0') + ';height:100%" title="' + m.waffles + ' waffles"></div>' +
-          '<div class="bg-green-500 rounded-t" style="width:' + claimPct + '%;min-width:' + (m.spots_claimed > 0 ? '4px' : '0') + ';height:100%" title="' + m.spots_claimed + ' spots claimed"></div>' +
-          '<div class="bg-purple-500 rounded-t" style="width:' + revPct + '%;min-width:' + (m.revenue > 0 ? '4px' : '0') + ';height:100%" title="' + formatMoney(m.revenue) + ' revenue"></div>' +
+          '<div class="bg-primary rounded-t" style="width:' + wafflePct + '%;min-width:' + (m.waffles > 0 ? '4px' : '0') + ';height:100%" title="' + m.waffles + ' waffles"></div>' +
+          '<div class="bg-success rounded-t" style="width:' + claimPct + '%;min-width:' + (m.spots_claimed > 0 ? '4px' : '0') + ';height:100%" title="' + m.spots_claimed + ' spots claimed"></div>' +
+          '<div class="bg-secondary rounded-t" style="width:' + revPct + '%;min-width:' + (m.revenue > 0 ? '4px' : '0') + ';height:100%" title="' + formatMoney(m.revenue) + ' revenue"></div>' +
           '</div>' +
-          '<div class="flex gap-2 text-xs text-gray-400 w-24 flex-shrink-0 justify-end">' +
-          '<span class="text-amber-600 font-medium">' + m.waffles + ' waff</span>' +
-          '<span class="text-green-600 font-medium">' + m.spots_claimed + ' clm</span>' +
-          '<span class="text-purple-600 font-medium">' + formatMoney(m.revenue) + '</span>' +
+          '<div class="flex gap-2 text-xs text-base-content/60 w-24 flex-shrink-0 justify-end">' +
+          '<span class="text-primary font-medium">' + m.waffles + ' waff</span>' +
+          '<span class="text-success font-medium">' + m.spots_claimed + ' clm</span>' +
+          '<span class="text-secondary font-medium">' + formatMoney(m.revenue) + '</span>' +
           '</div>' +
           '</div>'
       }
 
       html += '</div>'
 
-      html += '<div class="flex gap-4 pt-2 border-t border-gray-100 text-xs">' +
-        '<div class="flex items-center gap-1"><div class="w-3 h-3 bg-amber-500 rounded"></div><span>Waffles</span></div>' +
-        '<div class="flex items-center gap-1"><div class="w-3 h-3 bg-green-500 rounded"></div><span>Claims</span></div>' +
-        '<div class="flex items-center gap-1"><div class="w-3 h-3 bg-purple-500 rounded"></div><span>Revenue</span></div>' +
+      html += '<div class="flex gap-4 pt-2 border-t border-base-200 text-xs">' +
+        '<div class="flex items-center gap-1"><div class="w-3 h-3 bg-primary rounded"></div><span>Waffles</span></div>' +
+        '<div class="flex items-center gap-1"><div class="w-3 h-3 bg-success rounded"></div><span>Claims</span></div>' +
+        '<div class="flex items-center gap-1"><div class="w-3 h-3 bg-secondary rounded"></div><span>Revenue</span></div>' +
         '</div></div>'
 
-      html += '<div class="mt-6 grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">' +
-        '<div><p class="text-xs text-gray-500">Total Waffles</p><p class="text-lg font-bold text-gray-900">' + totalWaffles + '</p></div>' +
-        '<div><p class="text-xs text-gray-500">Total Claims</p><p class="text-lg font-bold text-gray-900">' + totalClaims + '</p></div>' +
-        '<div><p class="text-xs text-gray-500">Total Revenue</p><p class="text-lg font-bold text-gray-900">' + formatMoney(totalRevenue) + '</p></div>' +
+      html += '<div class="mt-6 grid grid-cols-3 gap-4 p-4 bg-base-200 rounded-lg">' +
+        '<div><p class="text-xs text-base-content/60">Total Waffles</p><p class="text-lg font-bold text-base-content">' + totalWaffles + '</p></div>' +
+        '<div><p class="text-xs text-base-content/60">Total Claims</p><p class="text-lg font-bold text-base-content">' + totalClaims + '</p></div>' +
+        '<div><p class="text-xs text-base-content/60">Total Revenue</p><p class="text-lg font-bold text-base-content">' + formatMoney(totalRevenue) + '</p></div>' +
         '</div>'
     }
 
@@ -414,10 +420,10 @@
 
   function renderVelocityShell() {
     var container = $('#tab-velocity')
-    container.innerHTML = '<div class="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">' +
-      '<div><h2 class="text-lg font-semibold text-gray-900">Spot Velocity</h2>' +
-      '<p class="text-sm text-gray-500">How fast waffles fill (hours)</p></div>' +
-      '<select id="velocity-filter-sel" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white">' +
+    container.innerHTML = '<div class="p-4 border-b border-base-200 flex flex-wrap items-center justify-between gap-3">' +
+      '<div><h2 class="text-lg font-semibold text-base-content">Spot Velocity</h2>' +
+      '<p class="text-sm text-base-content/60">How fast waffles fill (hours)</p></div>' +
+      '<select id="velocity-filter-sel" class="select select-bordered select-sm">' +
       '<option value="">All Statuses</option>' +
       '<option value="active"' + (state.velocityFilter === 'active' ? ' selected' : '') + '>Active</option>' +
       '<option value="completed"' + (state.velocityFilter === 'completed' ? ' selected' : '') + '>Completed</option>' +
@@ -436,38 +442,38 @@
     var container = $('#tab-velocity')
     var entries = state.velocityData || []
 
-    var html = '<div class="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">' +
-      '<div><h2 class="text-lg font-semibold text-gray-900">Spot Velocity</h2>' +
-      '<p class="text-sm text-gray-500">How fast waffles fill (hours)</p></div>' +
-      '<select id="velocity-filter-sel" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white">' +
+    var html = '<div class="p-4 border-b border-base-200 flex flex-wrap items-center justify-between gap-3">' +
+      '<div><h2 class="text-lg font-semibold text-base-content">Spot Velocity</h2>' +
+      '<p class="text-sm text-base-content/60">How fast waffles fill (hours)</p></div>' +
+      '<select id="velocity-filter-sel" class="select select-bordered select-sm">' +
       '<option value="">All Statuses</option>' +
       '<option value="active"' + (state.velocityFilter === 'active' ? ' selected' : '') + '>Active</option>' +
       '<option value="completed"' + (state.velocityFilter === 'completed' ? ' selected' : '') + '>Completed</option>' +
       '</select></div>'
 
     if (entries.length === 0) {
-      html += '<div class="p-8 text-center text-gray-500 text-sm">No velocity data available.</div>'
+      html += '<div class="p-8 text-center text-base-content/60 text-sm">No velocity data available.</div>'
     } else {
       html += '<div class="overflow-x-auto"><table class="w-full text-sm">' +
-        '<thead class="bg-gray-50"><tr>' +
-        '<th class="text-left px-4 py-3 font-medium text-gray-500">Status</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Waffles</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Avg First Claim (hrs)</th>' +
-        '<th class="text-right px-4 py-3 font-medium text-gray-500">Avg Completion (hrs)</th>' +
+        '<thead class="bg-base-200"><tr>' +
+        '<th class="text-left px-4 py-3 font-medium text-base-content/60">Status</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Waffles</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Avg First Claim (hrs)</th>' +
+        '<th class="text-right px-4 py-3 font-medium text-base-content/60">Avg Completion (hrs)</th>' +
         '</tr></thead><tbody>'
 
       for (var i = 0; i < entries.length; i++) {
         var v = entries[i]
         var statusBadge = v.status === 'active'
-          ? '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">' + escHtml(v.status) + '</span>'
-          : '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">' + escHtml(v.status) + '</span>'
+          ? '<span class="badge badge-success">' + escHtml(v.status) + '</span>'
+          : '<span class="badge badge-secondary">' + escHtml(v.status) + '</span>'
         var completion = v.avg_completion_hours > 0 ? v.avg_completion_hours.toFixed(1) + 'h' : '\u2014'
 
-        html += '<tr class="border-t border-gray-50 hover:bg-gray-50">' +
+        html += '<tr class="border-t border-base-200 hover:bg-base-200">' +
           '<td class="px-4 py-3">' + statusBadge + '</td>' +
-          '<td class="px-4 py-3 text-right text-gray-600">' + v.waffle_count + '</td>' +
-          '<td class="px-4 py-3 text-right text-gray-600">' + v.avg_first_claim_hours.toFixed(1) + 'h</td>' +
-          '<td class="px-4 py-3 text-right text-gray-600">' + completion + '</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/70">' + v.waffle_count + '</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/70">' + v.avg_first_claim_hours.toFixed(1) + 'h</td>' +
+          '<td class="px-4 py-3 text-right text-base-content/70">' + completion + '</td>' +
           '</tr>'
       }
 

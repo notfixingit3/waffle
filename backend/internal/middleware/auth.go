@@ -96,3 +96,23 @@ func RequireSuperAdmin(c *gin.Context) {
 		return
 	}
 }
+
+func RequireRole(roles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role := c.GetString("admin_role")
+		for _, allowed := range roles {
+			if role == allowed {
+				c.Next()
+				return
+			}
+		}
+		if isAPIRequest(c) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "access denied",
+			})
+		} else {
+			c.String(http.StatusForbidden, "access denied")
+		}
+		c.Abort()
+	}
+}

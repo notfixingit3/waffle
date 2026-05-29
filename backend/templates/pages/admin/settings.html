@@ -1,0 +1,387 @@
+{{ template "admin_base.html" . }}
+
+{{ define "title" }}Settings - Project Syrup{{ end }}
+
+{{ define "content" }}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-2xl font-bold text-base-content mb-6">Settings</h1>
+
+  <div id="success-banner" class="alert alert-success mb-4 hidden">
+    <span>Timezone updated successfully</span>
+  </div>
+
+  <div id="error-banner" class="alert alert-error mb-4 hidden">
+    <span id="error-text"></span>
+  </div>
+
+  <div class="tabs tabs-bordered mb-6">
+    <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Timezone</a>
+    <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">Login History</a>
+  </div>
+
+  <div id="panel-timezone" class="card bg-base-100 shadow-sm border border-base-200 p-6">
+    <h2 class="text-lg font-semibold text-base-content mb-4">Timezone</h2>
+    <p class="text-sm opacity-60 mb-4">Select your timezone for accurate time display.</p>
+
+    <form id="timezone-form" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+      <div>
+        <label class="label"><span class="label-text">Timezone</span></label>
+        <select name="timezone" id="timezone-select" class="select select-bordered w-full">
+          <option value="">Select a timezone...</option>
+
+          <optgroup label="Americas">
+            <option value="America/New_York"{{ if eq .Timezone "America/New_York" }} selected{{ end }}>America/New_York (Eastern)</option>
+            <option value="America/Chicago"{{ if eq .Timezone "America/Chicago" }} selected{{ end }}>America/Chicago (Central)</option>
+            <option value="America/Denver"{{ if eq .Timezone "America/Denver" }} selected{{ end }}>America/Denver (Mountain)</option>
+            <option value="America/Los_Angeles"{{ if eq .Timezone "America/Los_Angeles" }} selected{{ end }}>America/Los_Angeles (Pacific)</option>
+            <option value="America/Anchorage"{{ if eq .Timezone "America/Anchorage" }} selected{{ end }}>America/Anchorage (Alaska)</option>
+            <option value="America/Honolulu"{{ if eq .Timezone "America/Honolulu" }} selected{{ end }}>America/Honolulu (Hawaii)</option>
+            <option value="America/Phoenix"{{ if eq .Timezone "America/Phoenix" }} selected{{ end }}>America/Phoenix</option>
+            <option value="America/Detroit"{{ if eq .Timezone "America/Detroit" }} selected{{ end }}>America/Detroit</option>
+            <option value="America/Indianapolis"{{ if eq .Timezone "America/Indianapolis" }} selected{{ end }}>America/Indianapolis</option>
+            <option value="America/Toronto"{{ if eq .Timezone "America/Toronto" }} selected{{ end }}>America/Toronto</option>
+            <option value="America/Vancouver"{{ if eq .Timezone "America/Vancouver" }} selected{{ end }}>America/Vancouver</option>
+            <option value="America/Montreal"{{ if eq .Timezone "America/Montreal" }} selected{{ end }}>America/Montreal</option>
+            <option value="America/Edmonton"{{ if eq .Timezone "America/Edmonton" }} selected{{ end }}>America/Edmonton</option>
+            <option value="America/Winnipeg"{{ if eq .Timezone "America/Winnipeg" }} selected{{ end }}>America/Winnipeg</option>
+            <option value="America/Halifax"{{ if eq .Timezone "America/Halifax" }} selected{{ end }}>America/Halifax</option>
+            <option value="America/Mexico_City"{{ if eq .Timezone "America/Mexico_City" }} selected{{ end }}>America/Mexico_City</option>
+            <option value="America/Guadalajara"{{ if eq .Timezone "America/Guadalajara" }} selected{{ end }}>America/Guadalajara</option>
+            <option value="America/Monterrey"{{ if eq .Timezone "America/Monterrey" }} selected{{ end }}>America/Monterrey</option>
+            <option value="America/Bogota"{{ if eq .Timezone "America/Bogota" }} selected{{ end }}>America/Bogota</option>
+            <option value="America/Lima"{{ if eq .Timezone "America/Lima" }} selected{{ end }}>America/Lima</option>
+            <option value="America/Santiago"{{ if eq .Timezone "America/Santiago" }} selected{{ end }}>America/Santiago</option>
+            <option value="America/Sao_Paulo"{{ if eq .Timezone "America/Sao_Paulo" }} selected{{ end }}>America/Sao_Paulo</option>
+            <option value="America/Argentina/Buenos_Aires"{{ if eq .Timezone "America/Argentina/Buenos_Aires" }} selected{{ end }}>America/Argentina/Buenos_Aires</option>
+            <option value="America/Caracas"{{ if eq .Timezone "America/Caracas" }} selected{{ end }}>America/Caracas</option>
+            <option value="America/Panama"{{ if eq .Timezone "America/Panama" }} selected{{ end }}>America/Panama</option>
+            <option value="America/Puerto_Rico"{{ if eq .Timezone "America/Puerto_Rico" }} selected{{ end }}>America/Puerto_Rico</option>
+            <option value="America/Jamaica"{{ if eq .Timezone "America/Jamaica" }} selected{{ end }}>America/Jamaica</option>
+          </optgroup>
+
+          <optgroup label="Europe">
+            <option value="Europe/London"{{ if eq .Timezone "Europe/London" }} selected{{ end }}>Europe/London</option>
+            <option value="Europe/Paris"{{ if eq .Timezone "Europe/Paris" }} selected{{ end }}>Europe/Paris</option>
+            <option value="Europe/Berlin"{{ if eq .Timezone "Europe/Berlin" }} selected{{ end }}>Europe/Berlin</option>
+            <option value="Europe/Rome"{{ if eq .Timezone "Europe/Rome" }} selected{{ end }}>Europe/Rome</option>
+            <option value="Europe/Madrid"{{ if eq .Timezone "Europe/Madrid" }} selected{{ end }}>Europe/Madrid</option>
+            <option value="Europe/Amsterdam"{{ if eq .Timezone "Europe/Amsterdam" }} selected{{ end }}>Europe/Amsterdam</option>
+            <option value="Europe/Brussels"{{ if eq .Timezone "Europe/Brussels" }} selected{{ end }}>Europe/Brussels</option>
+            <option value="Europe/Vienna"{{ if eq .Timezone "Europe/Vienna" }} selected{{ end }}>Europe/Vienna</option>
+            <option value="Europe/Zurich"{{ if eq .Timezone "Europe/Zurich" }} selected{{ end }}>Europe/Zurich</option>
+            <option value="Europe/Stockholm"{{ if eq .Timezone "Europe/Stockholm" }} selected{{ end }}>Europe/Stockholm</option>
+            <option value="Europe/Oslo"{{ if eq .Timezone "Europe/Oslo" }} selected{{ end }}>Europe/Oslo</option>
+            <option value="Europe/Copenhagen"{{ if eq .Timezone "Europe/Copenhagen" }} selected{{ end }}>Europe/Copenhagen</option>
+            <option value="Europe/Helsinki"{{ if eq .Timezone "Europe/Helsinki" }} selected{{ end }}>Europe/Helsinki</option>
+            <option value="Europe/Dublin"{{ if eq .Timezone "Europe/Dublin" }} selected{{ end }}>Europe/Dublin</option>
+            <option value="Europe/Lisbon"{{ if eq .Timezone "Europe/Lisbon" }} selected{{ end }}>Europe/Lisbon</option>
+            <option value="Europe/Athens"{{ if eq .Timezone "Europe/Athens" }} selected{{ end }}>Europe/Athens</option>
+            <option value="Europe/Istanbul"{{ if eq .Timezone "Europe/Istanbul" }} selected{{ end }}>Europe/Istanbul</option>
+            <option value="Europe/Moscow"{{ if eq .Timezone "Europe/Moscow" }} selected{{ end }}>Europe/Moscow</option>
+            <option value="Europe/Warsaw"{{ if eq .Timezone "Europe/Warsaw" }} selected{{ end }}>Europe/Warsaw</option>
+            <option value="Europe/Prague"{{ if eq .Timezone "Europe/Prague" }} selected{{ end }}>Europe/Prague</option>
+            <option value="Europe/Budapest"{{ if eq .Timezone "Europe/Budapest" }} selected{{ end }}>Europe/Budapest</option>
+            <option value="Europe/Bucharest"{{ if eq .Timezone "Europe/Bucharest" }} selected{{ end }}>Europe/Bucharest</option>
+            <option value="Europe/Belgrade"{{ if eq .Timezone "Europe/Belgrade" }} selected{{ end }}>Europe/Belgrade</option>
+            <option value="Europe/Kiev"{{ if eq .Timezone "Europe/Kiev" }} selected{{ end }}>Europe/Kiev</option>
+            <option value="Europe/Zagreb"{{ if eq .Timezone "Europe/Zagreb" }} selected{{ end }}>Europe/Zagreb</option>
+          </optgroup>
+
+          <optgroup label="Asia">
+            <option value="Asia/Tokyo"{{ if eq .Timezone "Asia/Tokyo" }} selected{{ end }}>Asia/Tokyo</option>
+            <option value="Asia/Seoul"{{ if eq .Timezone "Asia/Seoul" }} selected{{ end }}>Asia/Seoul</option>
+            <option value="Asia/Shanghai"{{ if eq .Timezone "Asia/Shanghai" }} selected{{ end }}>Asia/Shanghai</option>
+            <option value="Asia/Beijing"{{ if eq .Timezone "Asia/Beijing" }} selected{{ end }}>Asia/Beijing</option>
+            <option value="Asia/Hong_Kong"{{ if eq .Timezone "Asia/Hong_Kong" }} selected{{ end }}>Asia/Hong_Kong</option>
+            <option value="Asia/Singapore"{{ if eq .Timezone "Asia/Singapore" }} selected{{ end }}>Asia/Singapore</option>
+            <option value="Asia/Bangkok"{{ if eq .Timezone "Asia/Bangkok" }} selected{{ end }}>Asia/Bangkok</option>
+            <option value="Asia/Jakarta"{{ if eq .Timezone "Asia/Jakarta" }} selected{{ end }}>Asia/Jakarta</option>
+            <option value="Asia/Manila"{{ if eq .Timezone "Asia/Manila" }} selected{{ end }}>Asia/Manila</option>
+            <option value="Asia/Kuala_Lumpur"{{ if eq .Timezone "Asia/Kuala_Lumpur" }} selected{{ end }}>Asia/Kuala_Lumpur</option>
+            <option value="Asia/Taipei"{{ if eq .Timezone "Asia/Taipei" }} selected{{ end }}>Asia/Taipei</option>
+            <option value="Asia/Ho_Chi_Minh"{{ if eq .Timezone "Asia/Ho_Chi_Minh" }} selected{{ end }}>Asia/Ho_Chi_Minh</option>
+            <option value="Asia/Dubai"{{ if eq .Timezone "Asia/Dubai" }} selected{{ end }}>Asia/Dubai</option>
+            <option value="Asia/Riyadh"{{ if eq .Timezone "Asia/Riyadh" }} selected{{ end }}>Asia/Riyadh</option>
+            <option value="Asia/Tehran"{{ if eq .Timezone "Asia/Tehran" }} selected{{ end }}>Asia/Tehran</option>
+            <option value="Asia/Karachi"{{ if eq .Timezone "Asia/Karachi" }} selected{{ end }}>Asia/Karachi</option>
+            <option value="Asia/Mumbai"{{ if eq .Timezone "Asia/Mumbai" }} selected{{ end }}>Asia/Mumbai</option>
+            <option value="Asia/Kolkata"{{ if eq .Timezone "Asia/Kolkata" }} selected{{ end }}>Asia/Kolkata</option>
+            <option value="Asia/Dhaka"{{ if eq .Timezone "Asia/Dhaka" }} selected{{ end }}>Asia/Dhaka</option>
+            <option value="Asia/Colombo"{{ if eq .Timezone "Asia/Colombo" }} selected{{ end }}>Asia/Colombo</option>
+            <option value="Asia/Kathmandu"{{ if eq .Timezone "Asia/Kathmandu" }} selected{{ end }}>Asia/Kathmandu</option>
+            <option value="Asia/Tashkent"{{ if eq .Timezone "Asia/Tashkent" }} selected{{ end }}>Asia/Tashkent</option>
+            <option value="Asia/Almaty"{{ if eq .Timezone "Asia/Almaty" }} selected{{ end }}>Asia/Almaty</option>
+            <option value="Asia/Tbilisi"{{ if eq .Timezone "Asia/Tbilisi" }} selected{{ end }}>Asia/Tbilisi</option>
+            <option value="Asia/Yerevan"{{ if eq .Timezone "Asia/Yerevan" }} selected{{ end }}>Asia/Yerevan</option>
+            <option value="Asia/Baku"{{ if eq .Timezone "Asia/Baku" }} selected{{ end }}>Asia/Baku</option>
+          </optgroup>
+
+          <optgroup label="Pacific">
+            <option value="Australia/Sydney"{{ if eq .Timezone "Australia/Sydney" }} selected{{ end }}>Australia/Sydney</option>
+            <option value="Australia/Melbourne"{{ if eq .Timezone "Australia/Melbourne" }} selected{{ end }}>Australia/Melbourne</option>
+            <option value="Australia/Brisbane"{{ if eq .Timezone "Australia/Brisbane" }} selected{{ end }}>Australia/Brisbane</option>
+            <option value="Australia/Perth"{{ if eq .Timezone "Australia/Perth" }} selected{{ end }}>Australia/Perth</option>
+            <option value="Australia/Adelaide"{{ if eq .Timezone "Australia/Adelaide" }} selected{{ end }}>Australia/Adelaide</option>
+            <option value="Pacific/Auckland"{{ if eq .Timezone "Pacific/Auckland" }} selected{{ end }}>Pacific/Auckland</option>
+            <option value="Pacific/Fiji"{{ if eq .Timezone "Pacific/Fiji" }} selected{{ end }}>Pacific/Fiji</option>
+            <option value="Pacific/Guam"{{ if eq .Timezone "Pacific/Guam" }} selected{{ end }}>Pacific/Guam</option>
+            <option value="Pacific/Honolulu"{{ if eq .Timezone "Pacific/Honolulu" }} selected{{ end }}>Pacific/Honolulu</option>
+            <option value="Pacific/Samoa"{{ if eq .Timezone "Pacific/Samoa" }} selected{{ end }}>Pacific/Samoa</option>
+            <option value="Pacific/Tahiti"{{ if eq .Timezone "Pacific/Tahiti" }} selected{{ end }}>Pacific/Tahiti</option>
+            <option value="Pacific/Noumea"{{ if eq .Timezone "Pacific/Noumea" }} selected{{ end }}>Pacific/Noumea</option>
+          </optgroup>
+
+          <optgroup label="Africa">
+            <option value="Africa/Cairo"{{ if eq .Timezone "Africa/Cairo" }} selected{{ end }}>Africa/Cairo</option>
+            <option value="Africa/Johannesburg"{{ if eq .Timezone "Africa/Johannesburg" }} selected{{ end }}>Africa/Johannesburg</option>
+            <option value="Africa/Lagos"{{ if eq .Timezone "Africa/Lagos" }} selected{{ end }}>Africa/Lagos</option>
+            <option value="Africa/Nairobi"{{ if eq .Timezone "Africa/Nairobi" }} selected{{ end }}>Africa/Nairobi</option>
+            <option value="Africa/Casablanca"{{ if eq .Timezone "Africa/Casablanca" }} selected{{ end }}>Africa/Casablanca</option>
+            <option value="Africa/Tunis"{{ if eq .Timezone "Africa/Tunis" }} selected{{ end }}>Africa/Tunis</option>
+            <option value="Africa/Accra"{{ if eq .Timezone "Africa/Accra" }} selected{{ end }}>Africa/Accra</option>
+            <option value="Africa/Addis_Ababa"{{ if eq .Timezone "Africa/Addis_Ababa" }} selected{{ end }}>Africa/Addis_Ababa</option>
+            <option value="Africa/Dakar"{{ if eq .Timezone "Africa/Dakar" }} selected{{ end }}>Africa/Dakar</option>
+            <option value="Africa/Harare"{{ if eq .Timezone "Africa/Harare" }} selected{{ end }}>Africa/Harare</option>
+            <option value="Africa/Kigali"{{ if eq .Timezone "Africa/Kigali" }} selected{{ end }}>Africa/Kigali</option>
+            <option value="Africa/Luanda"{{ if eq .Timezone "Africa/Luanda" }} selected{{ end }}>Africa/Luanda</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit" class="btn btn-primary btn-sm" id="save-btn">Save</button>
+        <span id="current-tz" class="text-sm opacity-60">Current: {{ if .Timezone }}{{ .Timezone }}{{ else }}UTC{{ end }}</span>
+      </div>
+    </form>
+  </div>
+
+  <div id="panel-login-history" class="hidden card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+    <div class="p-6 border-b border-base-200">
+      <h2 class="text-lg font-semibold text-base-content">Login History</h2>
+      <p class="text-sm opacity-60">Recent logins for your account.</p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th class="text-left">Time</th>
+            <th class="text-left">IP Address</th>
+            <th class="text-left">Browser</th>
+            <th class="text-left">OS</th>
+            <th class="text-left">Device</th>
+            <th class="text-left">Location</th>
+          </tr>
+        </thead>
+        <tbody id="login-history-body">
+          <tr>
+            <td colspan="6" class="text-center py-8 opacity-60">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="login-history-pagination" class="p-4 border-t border-base-200 flex items-center justify-between">
+      <span id="login-history-info" class="text-sm opacity-60"></span>
+      <div class="join">
+        <button id="login-history-prev" class="join-item btn btn-sm" onclick="LoginHistory.prev()">Previous</button>
+        <button id="login-history-next" class="join-item btn btn-sm" onclick="LoginHistory.next()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}
+
+{{ define "scripts" }}
+<script>
+function switchTab(tabName) {
+  var timezonePanel = document.getElementById('panel-timezone');
+  var historyPanel = document.getElementById('panel-login-history');
+  var timezoneTab = document.getElementById('tab-timezone');
+  var historyTab = document.getElementById('tab-login-history');
+
+  if (tabName === 'timezone') {
+    timezonePanel.classList.remove('hidden');
+    historyPanel.classList.add('hidden');
+    timezoneTab.classList.add('tab-active');
+    historyTab.classList.remove('tab-active');
+  } else {
+    timezonePanel.classList.add('hidden');
+    historyPanel.classList.remove('hidden');
+    timezoneTab.classList.remove('tab-active');
+    historyTab.classList.add('tab-active');
+    LoginHistory.load(1);
+  }
+}
+
+document.getElementById('timezone-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var select = document.getElementById('timezone-select');
+  var tz = select.value;
+  var btn = document.getElementById('save-btn');
+  var successBanner = document.getElementById('success-banner');
+  var errorBanner = document.getElementById('error-banner');
+  var errorText = document.getElementById('error-text');
+  var currentTzSpan = document.getElementById('current-tz');
+
+  successBanner.classList.add('hidden');
+  errorBanner.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  fetch('/api/admin/me/timezone', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ timezone: tz })
+  })
+  .then(function(res) {
+    return res.json().then(function(data) {
+      if (res.ok) {
+        successBanner.classList.remove('hidden');
+        currentTzSpan.textContent = 'Current: ' + (data.timezone || 'UTC');
+      } else {
+        errorText.textContent = data.error || 'Failed to update timezone';
+        errorBanner.classList.remove('hidden');
+      }
+    });
+  })
+  .catch(function() {
+    errorText.textContent = 'Failed to update timezone';
+    errorBanner.classList.remove('hidden');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  });
+});
+
+var LoginHistory = (function() {
+  'use strict';
+
+  var currentPage = 1;
+  var totalPages = 1;
+  var limit = 20;
+
+  function formatDateTime(isoString) {
+    if (!isoString) return '-';
+    var d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var month = months[d.getMonth()];
+    var day = d.getDate();
+    var year = d.getFullYear();
+    var hours = d.getHours();
+    var minutes = d.getMinutes();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    var minStr = minutes < 10 ? '0' + minutes : minutes;
+    return month + ' ' + day + ', ' + year + ' ' + hours + ':' + minStr + ' ' + ampm;
+  }
+
+  function buildLocation(record) {
+    var parts = [];
+    if (record.ip_city) parts.push(record.ip_city);
+    if (record.ip_country) parts.push(record.ip_country);
+    if (record.ip_org) parts.push(record.ip_org);
+    if (record.ip_asn) parts.push('ASN ' + record.ip_asn);
+    if (parts.length === 0) return '-';
+    return parts.join(', ');
+  }
+
+  function renderRow(record) {
+    var location = buildLocation(record);
+    return '<tr class="hover:bg-base-200/50 transition-colors">' +
+      '<td class="px-4 py-3 whitespace-nowrap">' + formatDateTime(record.created_at) + '</td>' +
+      '<td class="px-4 py-3 font-mono text-sm">' + (record.ip_address || '-') + '</td>' +
+      '<td class="px-4 py-3">' + (record.browser || '-') + '</td>' +
+      '<td class="px-4 py-3">' + (record.os || '-') + '</td>' +
+      '<td class="px-4 py-3">' + (record.device_type || '-') + '</td>' +
+      '<td class="px-4 py-3">' + location + '</td>' +
+      '</tr>';
+  }
+
+  function updatePagination() {
+    var info = document.getElementById('login-history-info');
+    var prevBtn = document.getElementById('login-history-prev');
+    var nextBtn = document.getElementById('login-history-next');
+
+    if (totalPages === 0) {
+      info.textContent = 'No records';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    info.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+  }
+
+  function load(page) {
+    currentPage = page;
+    var tbody = document.getElementById('login-history-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">Loading...</td></tr>';
+
+    fetch('/api/admin/me/login-history?page=' + page + '&limit=' + limit, {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (!res.ok) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">Failed to load login history</td></tr>';
+          totalPages = 0;
+          updatePagination();
+          return;
+        }
+
+        var records = data.records || [];
+        var total = data.total || 0;
+        totalPages = Math.ceil(total / limit);
+        if (totalPages < 1) totalPages = 1;
+
+        if (records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">No login history found</td></tr>';
+        } else {
+          var html = '';
+          var i;
+          for (i = 0; i < records.length; i++) {
+            html += renderRow(records[i]);
+          }
+          tbody.innerHTML = html;
+        }
+
+        updatePagination();
+      });
+    })
+    .catch(function() {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 opacity-60">Failed to load login history</td></tr>';
+      totalPages = 0;
+      updatePagination();
+    });
+  }
+
+  function prev() {
+    if (currentPage > 1) {
+      load(currentPage - 1);
+    }
+  }
+
+  function next() {
+    if (currentPage < totalPages) {
+      load(currentPage + 1);
+    }
+  }
+
+  return {
+    load: load,
+    prev: prev,
+    next: next
+  };
+})();
+</script>
+{{ end }}

@@ -5,57 +5,57 @@
 {{ define "content" }}
 <div class="max-w-5xl mx-auto" id="reports-app">
   <div class="mb-6">
-    <h1 class="text-xl font-bold text-gray-900">Reports</h1>
-    <p class="text-sm text-gray-500">Analytics and insights</p>
+    <h1 class="text-xl font-bold text-base-content">Reports</h1>
+    <p class="text-sm opacity-60">Analytics and insights</p>
   </div>
 
   <!-- Date Range Filters -->
-  <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+  <div class="card bg-base-100 shadow-sm border border-base-200 p-4 mb-6">
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-sm font-medium text-gray-500 mr-1 hidden sm:inline">Range:</span>
-      <button data-date-preset="this-month" class="date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-700 text-white">This Month</button>
-      <button data-date-preset="last-month" class="date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100">Last Month</button>
-      <button data-date-preset="last-3-months" class="date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100">Last 3 Months</button>
-      <button data-date-preset="all-time" class="date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100">All Time</button>
-      <button data-date-preset="custom" class="date-preset-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-amber-50 text-amber-800 hover:bg-amber-100">Custom</button>
+      <span class="text-sm font-medium opacity-50 mr-1 hidden sm:inline">Range:</span>
+      <button data-date-preset="this-month" class="date-preset-btn btn btn-primary btn-sm">This Month</button>
+      <button data-date-preset="last-month" class="date-preset-btn btn btn-outline btn-sm">Last Month</button>
+      <button data-date-preset="last-3-months" class="date-preset-btn btn btn-outline btn-sm">Last 3 Months</button>
+      <button data-date-preset="all-time" class="date-preset-btn btn btn-outline btn-sm">All Time</button>
+      <button data-date-preset="custom" class="date-preset-btn btn btn-outline btn-sm">Custom</button>
       <div id="custom-date-range" class="hidden flex items-center gap-2 ml-2">
-        <input type="date" id="custom-from" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
-        <span class="text-gray-400 text-sm">to</span>
-        <input type="date" id="custom-to" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+        <input type="date" id="custom-from" class="input input-bordered input-sm">
+        <span class="opacity-40 text-sm">to</span>
+        <input type="date" id="custom-to" class="input input-bordered input-sm">
       </div>
     </div>
-    <p class="text-xs text-gray-400 mt-2" id="date-range-label">—</p>
+    <p class="text-xs opacity-40 mt-2" id="date-range-label">—</p>
   </div>
 
   <!-- Tab Bar -->
-  <div class="flex border-b border-gray-200 mb-6 overflow-x-auto" id="tab-bar">
-    <button data-tab="drought" class="tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-amber-600 text-amber-600 transition-colors">Drought List</button>
-    <button data-tab="power-buyers" class="tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">Power Buyers</button>
-    <button data-tab="monthly" class="tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">Monthly Activity</button>
-    <button data-tab="velocity" class="tab-btn px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">Spot Velocity</button>
+  <div class="tabs tabs-bordered mb-6" id="tab-bar">
+    <button data-tab="drought" class="tab tab-active">Drought List</button>
+    <button data-tab="power-buyers" class="tab">Power Buyers</button>
+    <button data-tab="monthly" class="tab">Monthly Activity</button>
+    <button data-tab="velocity" class="tab">Spot Velocity</button>
   </div>
 
   <!-- Error State -->
-  <div id="reports-error" class="hidden mb-4 p-4 bg-red-50 rounded-lg">
-    <p class="text-red-600 text-sm" id="reports-error-msg"></p>
+  <div id="reports-error" class="hidden alert alert-error mb-4">
+    <span id="reports-error-msg"></span>
   </div>
 
   <!-- Loading State -->
   <div id="reports-loading" class="hidden text-center py-12">
-    <p class="text-gray-500">Loading...</p>
+    <span class="loading loading-spinner"></span>
   </div>
 
   <!-- Tab: Drought List -->
-  <div id="tab-drought" class="tab-content hidden bg-white rounded-xl shadow-sm overflow-hidden"></div>
+  <div id="tab-drought" class="tab-content hidden card bg-base-100 shadow-sm border border-base-200 overflow-hidden"></div>
 
   <!-- Tab: Power Buyers -->
-  <div id="tab-power-buyers" class="tab-content hidden bg-white rounded-xl shadow-sm overflow-hidden"></div>
+  <div id="tab-power-buyers" class="tab-content hidden card bg-base-100 shadow-sm border border-base-200 overflow-hidden"></div>
 
   <!-- Tab: Monthly Activity -->
-  <div id="tab-monthly" class="tab-content hidden bg-white rounded-xl shadow-sm p-6"></div>
+  <div id="tab-monthly" class="tab-content hidden card bg-base-100 shadow-sm border border-base-200 p-6"></div>
 
   <!-- Tab: Spot Velocity -->
-  <div id="tab-velocity" class="tab-content hidden bg-white rounded-xl shadow-sm overflow-hidden"></div>
+  <div id="tab-velocity" class="tab-content hidden card bg-base-100 shadow-sm border border-base-200 overflow-hidden"></div>
 </div>
 {{ end }}
 

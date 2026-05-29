@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/models"
 	"github.com/syrup/backend/internal/renderer"
 	"github.com/syrup/backend/internal/services"
@@ -19,11 +19,53 @@ func InitRenderers(r map[string]*renderer.Renderer) {
 	renderers = r
 }
 
+func AboutPage(c *gin.Context) {
+	data := mergeMaps(pageData(), gin.H{
+		"title": "About - Project Syrup",
+	})
+
+	if _, exists := c.Get("admin_id"); exists {
+		var dbStatus string
+		if err := db.Pool.Ping(c.Request.Context()); err != nil {
+			dbStatus = "disconnected"
+		} else {
+			dbStatus = "connected"
+		}
+
+		totalWaffles, _, _ := services.CountWaffles()
+
+		var totalAdmins int
+		_ = db.Pool.QueryRow(c.Request.Context(), `SELECT COUNT(*) FROM admins WHERE active = true`).Scan(&totalAdmins)
+
+		var wsClients int
+		if hub := ws.GetHub(); hub != nil {
+			wsClients = hub.TotalClients()
+		}
+
+		var startTime time.Time
+		if err := db.Pool.QueryRow(c.Request.Context(), `SELECT pg_postmaster_start_time()`).Scan(&startTime); err != nil {
+			startTime = time.Now()
+		}
+		uptime := time.Since(startTime)
+
+		data = mergeMaps(data, gin.H{
+			"IsAdmin":      true,
+			"DBStatus":     dbStatus,
+			"TotalWaffles": totalWaffles,
+			"TotalAdmins":  totalAdmins,
+			"WSClients":    wsClients,
+			"Uptime":       uptime.Round(time.Second).String(),
+		})
+	}
+
+	renderers["about.html"].Render(c, "about.html", data)
+}
+
 // HomePage renders the public home page.
 func HomePage(c *gin.Context) {
-	renderers["home.html"].Render(c, "home.html", gin.H{
+	renderers["home.html"].Render(c, "home.html", mergeMaps(pageData(), gin.H{
 		"title": "Project Syrup - The Waffle Maker",
-	})
+	}))
 }
 
 // WaffleListPage renders the public waffle list page.
@@ -34,10 +76,10 @@ func WaffleListPage(c *gin.Context) {
 		return
 	}
 
-	renderers["waffles.html"].Render(c, "waffles.html", gin.H{
+	renderers["waffles.html"].Render(c, "waffles.html", mergeMaps(pageData(), gin.H{
 		"title":   "Active Waffles - Project Syrup",
 		"waffles": waffles,
-	})
+	}))
 }
 
 // WaffleDetailPage renders the public waffle detail page with an interactive spot grid.
@@ -61,44 +103,12 @@ func WaffleDetailPage(c *gin.Context) {
 		stats = map[string]interface{}{}
 	}
 
-	renderers["waffle_detail.html"].Render(c, "waffle_detail.html", gin.H{
+	renderers["waffle_detail.html"].Render(c, "waffle_detail.html", mergeMaps(pageData(), gin.H{
 		"title":     waffle.Title + " - Project Syrup",
 		"waffle":    waffle,
 		"spots":     spots,
 		"stats":     stats,
-	})
-}
-
-// ClaimSpotsAPI handles JSON spot claim requests (kept as async fetch API).
-func ClaimSpotsAPI(c *gin.Context) {
-	var req models.CreateClaimRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return
-	}
-
-	waffleID, err := uuid.Parse(req.WaffleID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid waffle id"})
-		return
-	}
-
-	if err := services.ClaimSpots(waffleID, req.Spots, req.InstagramHandle); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	waffle, err := services.GetWaffleByID(waffleID)
-	if err != nil {
-		log.Printf("Failed to get waffle for broadcast: %v", err)
-	} else {
-		handle := services.NormalizeInstagramHandle(req.InstagramHandle)
-		for _, spotNum := range req.Spots {
-			ws.BroadcastSpotUpdate(waffle.Slug, spotNum, string(models.SpotStatusPending), handle)
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "spots claimed successfully"})
+	}))
 }
 
 // BuyerStatsPage renders the public buyer stats page.
@@ -121,13 +131,13 @@ func BuyerStatsPage(c *gin.Context) {
 		winRate = (stats.TotalWins * 100) / (stats.TotalWins + stats.TotalLosses)
 	}
 
-	renderers["buyer_stats.html"].Render(c, "buyer_stats.html", gin.H{
+	renderers["buyer_stats.html"].Render(c, "buyer_stats.html", mergeMaps(pageData(), gin.H{
 		"title":       "@" + handle + " - Project Syrup",
 		"handle":      handle,
 		"stats":       stats,
 		"history":     history,
 		"winRate":     winRate,
-	})
+	}))
 }
 
 // GetBuyerStats returns buyer stats as JSON.

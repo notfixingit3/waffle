@@ -1,4 +1,74 @@
+@font-face {
+  font-family: 'Inter';
+  src: url('/static/fonts/inter-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: halloween --default;
+  include: button, card, table, input, select, badge, alert, modal, dropdown, tooltip, navbar, stats, tabs, label, fieldset, textarea, checkbox, toggle, radio, join, indicator, loading, progress, skeleton, divider, footer, hero, link, status, collapse, menu, pagination, avatar, drawer, toast;
+  logs: false;
+}
+@plugin "daisyui/theme" {
+  name: "syrup";
+  default: true;
+  color-scheme: dark;
+  --color-base-100: oklch(20% 0.02 270);
+  --color-base-200: oklch(15% 0.02 270);
+  --color-base-300: oklch(25% 0.02 270);
+  --color-base-content: oklch(95% 0.02 270);
+  --color-primary: oklch(55.39% 0.164 41.7);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(70% 0.15 330);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(65% 0.18 180);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(25% 0.02 270);
+  --color-neutral-content: oklch(95% 0.02 270);
+  --color-success: oklch(64% 0.2 145);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(75% 0.18 75);
+  --color-warning-content: oklch(25% 0.05 75);
+  --color-error: oklch(55% 0.22 25);
+  --color-error-content: oklch(100% 0 0);
+  --color-info: oklch(65% 0.17 240);
+  --color-info-content: oklch(100% 0 0);
+  --radius-box: 0.5rem;
+  --radius-btn: 0.5rem;
+}
+@plugin "daisyui/theme" {
+  name: "syrup-light";
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: oklch(95% 0.02 270);
+  --color-base-200: oklch(90% 0.02 270);
+  --color-base-300: oklch(85% 0.02 270);
+  --color-base-content: oklch(20% 0.02 270);
+  --color-primary: oklch(55.39% 0.164 41.7);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(70% 0.15 330);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(65% 0.18 180);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(25% 0.02 270);
+  --color-neutral-content: oklch(95% 0.02 270);
+  --color-success: oklch(64% 0.2 145);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(75% 0.18 75);
+  --color-warning-content: oklch(25% 0.05 75);
+  --color-error: oklch(55% 0.22 25);
+  --color-error-content: oklch(100% 0 0);
+  --color-info: oklch(65% 0.17 240);
+  --color-info-content: oklch(100% 0 0);
+  --radius-box: 0.5rem;
+  --radius-btn: 0.5rem;
+}
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
 
 /* Mobile touch optimization — prevent double-tap zoom on interactive elements */
 * {

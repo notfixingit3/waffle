@@ -8,12 +8,13 @@
 
 <p align="center">
   <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-Compose-blue?logo=docker" alt="Docker" /></a>
-  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.25-00ADD8?logo=go" alt="Go" /></a>
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.23-00ADD8?logo=go" alt="Go" /></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL" /></a>
+  <a href="https://github.com/notfixingit3/waffle/pkgs/container/waffle"><img src="https://img.shields.io/badge/ghcr.io-notfixingit3%2Fwaffle-blue?logo=docker&label=GHCR" alt="GHCR" /></a>
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.0.4">v0.0.4</a></p>
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.9">v0.1.9</a></p>
 
 ---
 
@@ -40,13 +41,16 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 | **Public Home**<br>![Public home page showing active waffles](docs/screenshots/homepage.png) | **Admin Login**<br>![Admin login page](docs/screenshots/admin-login.png) |
 | **Admin Dashboard**<br>![Admin dashboard with waffle cards](docs/screenshots/admin-dashboard.png) | **Waffle Management**<br>![Waffle management spot grid with mixed spot statuses](docs/screenshots/waffle-manage.png) |
 | **Admin Management**<br>![Admin management table](docs/screenshots/admins-page.png) | **Reports**<br>![Admin reports page](docs/screenshots/reports-page.png) |
+| **About Page**<br>![Public about page with admin extras](docs/screenshots/about-page.png) | |
 
 ---
 
 ## Features
 
-- **Multi-admin auth** — Role-based access control with `super_admin` and `admin` roles
+- **Multi-admin auth** — Role-based access control with `super_admin`, `admin`, and `waffle_manager` roles
 - **Admin management** — Create admins, change roles, deactivate accounts, and reset another admin's password (super_admin only)
+- **waffle_manager role** — Create and manage waffles + view reports, without archive/delete/user-management access
+- **Timezone settings** — Per-admin timezone preference with IANA timezone dropdown in settings page
 - **Password reset** — Self-service reset tokens plus authenticated password changes
 - **Instagram media links** — Link to posts showing what's being waffled (supports multiple items)
 - **Archive + delete controls** — Hide completed waffles by default, or type `DELETE` for permanent removal
@@ -59,6 +63,15 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 - **Activity history** — Record claim, payment, release, and winner events per waffle
 - **CSV exports** — Download a waffle's spot list for external reconciliation
 - **Transactional safety** — No double-claims, ever
+- **Light/dark mode** — Manual theme toggle with persisted preference
+- **Dual clock footer** — Server UTC time + local browser time with waffle counter
+- **Winner management** — Admin-only clear/change winner with buyer stats recalculation
+- **Login history** — Audit trail with async WHOIS IP enrichment (org, country, city, ASN)
+- **Settings dropdown** — Consolidated admin menu under username (Settings, History, About, Theme, Logout)
+- **About page** — Public about page with admin-only system extras
+- **Configurable WHOIS** — Super_admin can configure WHOIS server for IP lookups
+- **Admin audit log** — Admin and super_admin users can review audited state changes with filters and pagination
+- **Security hardening** — Structured logging, health/readiness probes, secure cookies, login lockout, password policy, and destructive action password confirmation
 
 ---
 
@@ -85,7 +98,29 @@ After startup, open the app and admin tools here:
 | Admin Login | http://localhost:8383/admin/login |
 | PostgreSQL | localhost:5432 |
 
-Default local admin credentials are `admin` / `admin123`. Change them before any real deployment.
+Default local admin credentials are `admin` / `syrup`. Change them before any real deployment.
+
+---
+
+## Production Deployment
+
+**Prerequisites:** Docker and Docker Compose v2+.
+
+1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
+2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
+   ```bash
+   WAFFLE_VERSION=v0.1.9
+   DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
+   JWT_SECRET=your-secure-random-secret-here
+   ADMIN_PASSWORD=your-secure-admin-password
+   ```
+3. Start the services:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+4. Open `/admin/login` and change the default admin password immediately
+
+Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github.com/notfixingit3/waffle/pkgs/container/waffle) for `linux/amd64` and `linux/arm64`.
 
 ---
 
@@ -93,7 +128,7 @@ Default local admin credentials are `admin` / `admin123`. Change them before any
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Go server-side templates + Tailwind CSS (server-rendered HTML) |
+| Frontend | Go server-side templates + Tailwind CSS + DaisyUI |
 | Backend | Go (Gin), WebSocket hub |
 | Database | PostgreSQL with migrations |
 | DevOps | Docker Compose, multi-stage builds |
@@ -112,8 +147,10 @@ Default local admin credentials are `admin` / `admin123`. Change them before any
 | 5 | ✅ Complete | Manual winner entry + winner/loser marking + buyer stats + history |
 | 6 | ✅ Complete | Mobile polish + production Dockerfiles + deployment docs |
 | 7 | ✅ Complete | Multi-admin auth + role-based access + password reset + admin management + archive/delete |
-| 8 | ⏭️ Planned | Offline/service worker support; current build already includes Web App Manifest, icons, and install metadata |
-| Admin UI Refresh | ✅ Complete | Warm amber admin palette + screenshots added to README |
+| 8 | ✅ Complete | Offline/service worker support with installable app shell, offline page caching, and update notifications |
+| 9 | ✅ Complete | DaisyUI migration (Halloween/syrup theme + amber primary) |
+| 10 | ✅ Complete | Production hardening (structured logging, health probes, graceful shutdown, rate limiting, Docker hardening) |
+| 11 | ✅ Complete | Admin audit/security polish (audit log, password policy, lockout, destructive confirmations) |
 
 ---
 
@@ -164,6 +201,7 @@ Default local admin credentials are `admin` / `admin123`. Change them before any
 
 **Admin Endpoints** (auth required)
 - `GET /api/admin/me` — Get current admin info
+- `PATCH /api/admin/me/timezone` — Update timezone preference
 - `POST /api/admin/change-password` — Change password
 - `GET /api/admin/waffles?archived=true|false` — List waffles
 - `POST /api/admin/waffles` — Create waffle

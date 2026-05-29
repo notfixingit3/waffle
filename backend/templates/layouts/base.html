@@ -1,25 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="syrup">
 <head>
+  <script>
+  (function(){var t=localStorage.getItem('syrup-theme')||'syrup';document.documentElement.setAttribute('data-theme',t)})();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
   <title>{{ block "title" . }}Project Syrup{{ end }}</title>
   <link rel="stylesheet" href="/static/css/output.css">
+  <script src="/static/js/theme-toggle.js"></script>
+  <script>ThemeToggle.init();</script>
   <link rel="manifest" href="/static/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="The Waffle Maker">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#B45309">
   <meta name="format-detection" content="telephone=no">
   <link rel="icon" href="/static/favicon.svg">
   <link rel="apple-touch-icon" href="/static/img/logo.png">
   {{ block "head" . }}{{ end }}
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-dvh">
+<body class="bg-base-200 text-base-content min-h-dvh">
+  <div id="offline-banner" class="hidden alert alert-warning py-2 fixed top-0 left-0 right-0 z-50 rounded-none">
+    <span class="text-sm font-medium">You are offline. Some features may be unavailable.</span>
+  </div>
+  <div id="update-toast" class="hidden toast toast-top toast-center z-50">
+    <div class="alert alert-info">
+      <span class="text-sm font-medium">A new version is available. Reload to update.</span>
+      <button onclick="window.location.reload()" class="btn btn-sm">Reload</button>
+    </div>
+  </div>
   {{ template "header.html" . }}
   <main class="container mx-auto px-4 py-4">
     {{ block "content" . }}{{ end }}
   </main>
   {{ template "footer.html" . }}
+  <script src="/static/js/footer-clock.js"></script>
+  <script>FooterClock.init();</script>
+  <script src="/static/js/offline-handler.js"></script>
   {{ block "scripts" . }}{{ end }}
+  <script>
+  (function() {
+    var banner = document.getElementById('offline-banner');
+    var isAdmin = window.location.pathname.startsWith('/admin/');
+
+    function updateOffline() {
+      if (!navigator.onLine && !isAdmin) {
+        banner.classList.remove('hidden');
+        document.body.classList.add('pt-10');
+      } else {
+        banner.classList.add('hidden');
+        document.body.classList.remove('pt-10');
+      }
+    }
+    window.addEventListener('online', function() {
+      updateOffline();
+      window.dispatchEvent(new CustomEvent('waffle:online'));
+    });
+    window.addEventListener('offline', function() {
+      updateOffline();
+      window.dispatchEvent(new CustomEvent('waffle:offline'));
+    });
+    updateOffline();
+
+    if ('serviceWorker' in navigator && !window.location.pathname.startsWith('/admin/')) {
+      navigator.serviceWorker.register('/static/js/sw.js').then(function(reg) {
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', function() {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              document.getElementById('update-toast').classList.remove('hidden');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      }).catch(function() { /* SW registration failed */ });
+    }
+  })();
+  </script>
 </body>
 </html>
