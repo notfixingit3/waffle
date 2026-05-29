@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.8] - 2026-05-28
+
+### Added
+- **CI Pipeline** — GitHub Actions workflow with essential checks (go test, vet, govulncheck, Docker build)
+- **Audit Log CSV Export** — New API endpoint to export audit log entries as CSV
+- **WebSocket Reconnect Logic** — Exponential backoff jitter and max retry cap for resilient client reconnection
+- **gosec G104 Triage** — All unhandled error returns reviewed and explicitly handled across the codebase
+- **gitignore Update** — `*.sarif` files added to `.gitignore`
+
+### Changed
+- Release version bumped to v0.1.8
+
 ## [v0.1.7] - 2026-05-27
 
 ### Added
@@ -113,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[v0.1.8]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.8
 [v0.1.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.7
 [v0.1.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.5
 [v0.1.0]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.0

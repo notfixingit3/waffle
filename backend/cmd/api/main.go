@@ -26,7 +26,7 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "v0.1.7"
+var Version = "v0.1.8"
 
 func recordAudit(c *gin.Context, action, targetType, targetID, details string) {
 	adminIDStr, _ := c.Get("admin_id")
