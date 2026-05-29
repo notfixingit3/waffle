@@ -3,12 +3,14 @@ var WaffleWebSocket = (function() {
 
   var ws = null;
   var reconnectTimer = null;
+  var healthCheckTimer = null;
   var reconnectDelay = 3000;
   var currentSlug = null;
   var messageHandler = null;
   var activityFlashTimer = null;
   var maxRetries = 10;
   var retryCount = 0;
+  var lastMessageTime = Date.now();
 
   function connect(slug, handler) {
     currentSlug = slug;
@@ -34,12 +36,25 @@ var WaffleWebSocket = (function() {
     updateStatus('connecting');
 
     ws.onopen = function() {
+      lastMessageTime = Date.now();
       updateStatus('connected');
       reconnectDelay = 3000;
       retryCount = 0;
+
+      if (healthCheckTimer) {
+        clearInterval(healthCheckTimer);
+      }
+      healthCheckTimer = setInterval(function() {
+        if (Date.now() - lastMessageTime > 90000) {
+          if (ws) {
+            ws.close();
+          }
+        }
+      }, 45000);
     };
 
     ws.onmessage = function(event) {
+      lastMessageTime = Date.now();
       try {
         var msg = JSON.parse(event.data);
         if (msg.type === 'ACTIVITY_EVENT') {
@@ -57,6 +72,10 @@ var WaffleWebSocket = (function() {
     };
 
     ws.onclose = function() {
+      if (healthCheckTimer) {
+        clearInterval(healthCheckTimer);
+        healthCheckTimer = null;
+      }
       updateStatus('disconnected');
       ws = null;
       scheduleReconnect();
@@ -72,7 +91,7 @@ var WaffleWebSocket = (function() {
 
     retryCount++;
     if (retryCount >= maxRetries) {
-      updateStatus('disconnected');
+      updateStatus('disconnected', true);
       return;
     }
 
@@ -92,7 +111,7 @@ var WaffleWebSocket = (function() {
     reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
   }
 
-  function updateStatus(status) {
+  function updateStatus(status, permanent) {
     var container = document.getElementById('ws-status');
     if (!container) return;
 
@@ -127,7 +146,7 @@ var WaffleWebSocket = (function() {
       case 'disconnected':
       default:
         dot.className += ' bg-base-300';
-        label.textContent = 'offline';
+        label.textContent = permanent ? 'connection lost' : 'offline';
         label.className = 'text-xs text-base-content/40';
         break;
     }
@@ -185,6 +204,10 @@ var WaffleWebSocket = (function() {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
+    if (healthCheckTimer) {
+      clearInterval(healthCheckTimer);
+      healthCheckTimer = null;
+    }
     if (ws) {
       ws.close();
       ws = null;
@@ -205,6 +228,10 @@ var WaffleWebSocket = (function() {
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
+    }
+    if (healthCheckTimer) {
+      clearInterval(healthCheckTimer);
+      healthCheckTimer = null;
     }
     updateStatus('disconnected');
   });
