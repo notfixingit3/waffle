@@ -10,6 +10,11 @@ import (
 	"github.com/syrup/backend/internal/services"
 )
 
+var (
+	getLoginHistory    = services.GetLoginHistory
+	getAllLoginHistory = services.GetAllLoginHistory
+)
+
 func LoginHistoryPage(c *gin.Context) {
 	adminIDStr, exists := c.Get("admin_id")
 	if !exists {
@@ -117,7 +122,7 @@ func GetMyLoginHistoryAPI(c *gin.Context) {
 
 	page, limit := parsePagination(c)
 
-	records, total, err := services.GetLoginHistory(adminID, page, limit)
+	records, total, err := getLoginHistory(adminID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -153,7 +158,7 @@ func GetAllLoginHistoryAPI(c *gin.Context) {
 
 	page, limit := parsePagination(c)
 
-	records, total, err := services.GetAllLoginHistory(roleStr, adminID, page, limit)
+	records, total, err := getAllLoginHistory(roleStr, adminID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -10,17 +10,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/models"
 )
 
-func init() {
-	if db.Pool == nil {
-		pool, err := db.Connect()
-		if err == nil {
-			_ = pool
-		}
+func stubLoginHistoryServices(
+	t *testing.T,
+	myHistory func(uuid.UUID, int, int) ([]models.LoginHistory, int, error),
+	allHistory func(string, uuid.UUID, int, int) ([]models.LoginHistory, int, error),
+) {
+	t.Helper()
+
+	originalMyHistory := getLoginHistory
+	originalAllHistory := getAllLoginHistory
+
+	if myHistory != nil {
+		getLoginHistory = myHistory
 	}
+	if allHistory != nil {
+		getAllLoginHistory = allHistory
+	}
+
+	t.Cleanup(func() {
+		getLoginHistory = originalMyHistory
+		getAllLoginHistory = originalAllHistory
+	})
 }
 
 func TestGetMyLoginHistoryAPI_Unauthorized(t *testing.T) {
@@ -47,6 +60,10 @@ func TestGetMyLoginHistoryAPI_Unauthorized(t *testing.T) {
 
 func TestGetMyLoginHistoryAPI_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	stubLoginHistoryServices(t, func(uuid.UUID, int, int) ([]models.LoginHistory, int, error) {
+		return []models.LoginHistory{}, 0, nil
+	}, nil)
+
 	r := gin.New()
 	r.GET("/api/admin/me/login-history", func(c *gin.Context) {
 		c.Set("admin_id", uuid.New().String())
@@ -82,6 +99,13 @@ func TestGetMyLoginHistoryAPI_Success(t *testing.T) {
 
 func TestGetMyLoginHistoryAPI_Pagination(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	var gotPage, gotLimit int
+	stubLoginHistoryServices(t, func(_ uuid.UUID, page, limit int) ([]models.LoginHistory, int, error) {
+		gotPage = page
+		gotLimit = limit
+		return []models.LoginHistory{}, 0, nil
+	}, nil)
+
 	r := gin.New()
 	r.GET("/api/admin/me/login-history", func(c *gin.Context) {
 		c.Set("admin_id", uuid.New().String())
@@ -109,6 +133,9 @@ func TestGetMyLoginHistoryAPI_Pagination(t *testing.T) {
 	if int(limit) != 5 {
 		t.Fatalf("expected limit 5, got %v", limit)
 	}
+	if gotPage != 2 || gotLimit != 5 {
+		t.Fatalf("expected service pagination page=2 limit=5, got page=%d limit=%d", gotPage, gotLimit)
+	}
 }
 
 func TestGetAllLoginHistoryAPI_Unauthorized(t *testing.T) {
@@ -127,6 +154,10 @@ func TestGetAllLoginHistoryAPI_Unauthorized(t *testing.T) {
 
 func TestGetAllLoginHistoryAPI_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	stubLoginHistoryServices(t, nil, func(string, uuid.UUID, int, int) ([]models.LoginHistory, int, error) {
+		return []models.LoginHistory{}, 0, nil
+	})
+
 	r := gin.New()
 	r.GET("/api/admin/login-history", func(c *gin.Context) {
 		c.Set("admin_id", uuid.New().String())
@@ -163,6 +194,13 @@ func TestGetAllLoginHistoryAPI_Success(t *testing.T) {
 
 func TestGetAllLoginHistoryAPI_Pagination(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	var gotPage, gotLimit int
+	stubLoginHistoryServices(t, nil, func(_ string, _ uuid.UUID, page, limit int) ([]models.LoginHistory, int, error) {
+		gotPage = page
+		gotLimit = limit
+		return []models.LoginHistory{}, 0, nil
+	})
+
 	r := gin.New()
 	r.GET("/api/admin/login-history", func(c *gin.Context) {
 		c.Set("admin_id", uuid.New().String())
@@ -191,10 +229,17 @@ func TestGetAllLoginHistoryAPI_Pagination(t *testing.T) {
 	if int(limit) != 20 {
 		t.Fatalf("expected limit 20, got %v", limit)
 	}
+	if gotPage != 3 || gotLimit != 20 {
+		t.Fatalf("expected service pagination page=3 limit=20, got page=%d limit=%d", gotPage, gotLimit)
+	}
 }
 
 func TestGetAllLoginHistoryAPI_DefaultPagination(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	stubLoginHistoryServices(t, nil, func(string, uuid.UUID, int, int) ([]models.LoginHistory, int, error) {
+		return []models.LoginHistory{}, 0, nil
+	})
+
 	r := gin.New()
 	r.GET("/api/admin/login-history", func(c *gin.Context) {
 		c.Set("admin_id", uuid.New().String())
@@ -473,6 +518,10 @@ func TestPaginationResponse_TotalPages(t *testing.T) {
 
 func TestGetMyLoginHistoryAPI_ServiceError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	stubLoginHistoryServices(t, func(uuid.UUID, int, int) ([]models.LoginHistory, int, error) {
+		return []models.LoginHistory{}, 0, nil
+	}, nil)
+
 	r := gin.New()
 	r.GET("/api/admin/me/login-history", func(c *gin.Context) {
 		// Use a random UUID that won't have login history records
@@ -511,6 +560,10 @@ func TestGetMyLoginHistoryAPI_ServiceError(t *testing.T) {
 
 func TestGetAllLoginHistoryAPI_ServiceError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	stubLoginHistoryServices(t, nil, func(string, uuid.UUID, int, int) ([]models.LoginHistory, int, error) {
+		return []models.LoginHistory{}, 0, nil
+	})
+
 	r := gin.New()
 	r.GET("/api/admin/login-history", func(c *gin.Context) {
 		c.Set("admin_id", uuid.New().String())
