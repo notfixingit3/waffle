@@ -14,7 +14,7 @@
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.9">v0.1.9</a></p>
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.11">v0.1.11</a></p>
 
 ---
 
@@ -109,7 +109,7 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
 2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
    ```bash
-   WAFFLE_VERSION=v0.1.9
+   WAFFLE_VERSION=v0.1.11
    DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
    JWT_SECRET=your-secure-random-secret-here
    ADMIN_PASSWORD=your-secure-admin-password
@@ -151,6 +151,7 @@ Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github
 | 9 | ✅ Complete | DaisyUI migration (Halloween/syrup theme + amber primary) |
 | 10 | ✅ Complete | Production hardening (structured logging, health probes, graceful shutdown, rate limiting, Docker hardening) |
 | 11 | ✅ Complete | Admin audit/security polish (audit log, password policy, lockout, destructive confirmations) |
+| 12 | ✅ Complete | Bugfix/polish release (archived filters, buyer stats recalculation, password reset response, accessibility polish) |
 
 ---
 

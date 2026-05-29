@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.11] - 2026-05-29
+
+### Fixed
+- **Archived Waffle Filter** — Admin active and archived waffle lists now show the correct records.
+- **Buyer Stats Recalculation** — Clear/change winner actions now refresh buyer win/loss stats.
+- **Password Reset API** — Forgot-password JSON response no longer exposes reset tokens.
+- **Drought Report Dates** — Missing last-entry dates now render cleanly instead of showing `Invalid Date`.
+
+### Changed
+- **Admin Code Cleanup** — Removed unused spot/winner handlers and consolidated shared audit/password confirmation helpers.
+- **Accessibility Polish** — Claim success/error feedback now announces via `aria-live`.
+- **Audit Export Link** — CSV export filters are URL-encoded.
+
+## [v0.1.10] - 2026-05-29
+
+### Fixed
+- **Admin Login Redirect** — Already-authenticated admins are redirected from login to the dashboard.
+- **Public Header/Footer Spacing** — Public header and footer vertical spacing now better matches admin layout density.
+
 ## [v0.1.9] - 2026-05-29
 
 ### Added
@@ -135,6 +154,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[v0.1.11]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.11
+[v0.1.10]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.10
+[v0.1.9]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.9
 [v0.1.8]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.8
 [v0.1.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.7
 [v0.1.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.5
