@@ -126,7 +126,7 @@ func GetMonthlyActivity(from, to time.Time) ([]models.MonthlyActivity, error) {
 			WHERE s.paid_at IS NOT NULL AND s.paid_at >= $1 AND s.paid_at <= $2
 		) d
 		GROUP BY DATE_TRUNC('month', d.date)
-		ORDER BY month
+		ORDER BY 1
 	`, from, to)
 	if err != nil {
 		return nil, fmt.Errorf("get monthly activity: %w", err)

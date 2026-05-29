@@ -688,7 +688,7 @@ func parseDateRange(c *gin.Context) (time.Time, time.Time) {
 	}
 	if toStr != "" {
 		if parsed, err := time.Parse("2006-01-02", toStr); err == nil {
-			to = parsed
+			to = parsed.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 		}
 	}
 
