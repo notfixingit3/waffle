@@ -7,6 +7,8 @@ var WaffleWebSocket = (function() {
   var currentSlug = null;
   var messageHandler = null;
   var activityFlashTimer = null;
+  var maxRetries = 10;
+  var retryCount = 0;
 
   function connect(slug, handler) {
     currentSlug = slug;
@@ -34,6 +36,7 @@ var WaffleWebSocket = (function() {
     ws.onopen = function() {
       updateStatus('connected');
       reconnectDelay = 3000;
+      retryCount = 0;
     };
 
     ws.onmessage = function(event) {
@@ -66,7 +69,16 @@ var WaffleWebSocket = (function() {
 
   function scheduleReconnect() {
     if (reconnectTimer) return;
+
+    retryCount++;
+    if (retryCount >= maxRetries) {
+      updateStatus('disconnected');
+      return;
+    }
+
     updateStatus('reconnecting');
+
+    var delay = reconnectDelay + Math.random() * 1000;
 
     reconnectTimer = setTimeout(function() {
       reconnectTimer = null;
@@ -75,7 +87,7 @@ var WaffleWebSocket = (function() {
         var url = protocol + '//' + window.location.host + '/ws/' + currentSlug;
         tryConnect(url);
       }
-    }, reconnectDelay);
+    }, delay);
 
     reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
   }
