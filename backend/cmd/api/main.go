@@ -26,7 +26,7 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "v0.1.8"
+var Version = "v0.1.9"
 
 func recordAudit(c *gin.Context, action, targetType, targetID, details string) {
 	adminIDStr, _ := c.Get("admin_id")
@@ -68,6 +68,8 @@ func main() {
 		slog.Error("Failed to run migrations", "error", err)
 		os.Exit(1)
 	}
+
+	services.PurgeOldEntries()
 
 	ws.InitHub()
 
@@ -355,13 +357,21 @@ func exportAuditCSV(c *gin.Context) {
 	}
 
 	if fromStr := c.Query("from"); fromStr != "" {
-		if fromTime, err := time.Parse(time.RFC3339, fromStr); err == nil {
+		fromTime, err := time.Parse(time.RFC3339, fromStr)
+		if err != nil {
+			fromTime, err = time.Parse("2006-01-02", fromStr)
+		}
+		if err == nil {
 			filters.From = &fromTime
 		}
 	}
 
 	if toStr := c.Query("to"); toStr != "" {
-		if toTime, err := time.Parse(time.RFC3339, toStr); err == nil {
+		toTime, err := time.Parse(time.RFC3339, toStr)
+		if err != nil {
+			toTime, err = time.Parse("2006-01-02", toStr)
+		}
+		if err == nil {
 			filters.To = &toTime
 		}
 	}

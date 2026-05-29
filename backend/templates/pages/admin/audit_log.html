@@ -19,6 +19,7 @@
     <div class="mt-3 flex gap-2">
       <button class="btn btn-primary btn-sm" type="submit">Filter</button>
       <a class="btn btn-ghost btn-sm" href="/admin/audit">Clear</a>
+      <a class="btn btn-sm btn-outline" href="/api/admin/audit/export?action={{ .Action }}&target_type={{ .TargetType }}&from={{ .From }}&to={{ .To }}">Export CSV</a>
     </div>
   </form>
 
