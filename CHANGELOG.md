@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.9] - 2026-05-29
+
+### Added
+- **CI Pipeline** — `dev` branch added to GitHub Actions trigger
+- **Audit Export UI** — CSV export button on admin audit log page with date filter support
+- **WebSocket Heartbeat** — Server-side ping/pong with per-connection mutex, client-side stale detection
+- **Smoke Tests** — Shell script for end-to-end Docker Compose validation
+- **Data Retention** — Configurable audit_log and login_history retention (default 90 days)
+- **Release Automation** — GitHub Release auto-created on tag push with CHANGELOG excerpt
+
 ## [v0.1.8] - 2026-05-28
 
 ### Added
