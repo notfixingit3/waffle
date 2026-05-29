@@ -310,7 +310,7 @@ func ResetPasswordPost(c *gin.Context) {
 
 	services.MarkResetTokenUsed(token) // #nosec G104 — MarkResetTokenUsed is best-effort cleanup after successful password reset
 
-	recordAudit(c, "reset_password", "admin", adminID.String(), "password reset via token")
+	RecordAudit(c, "reset_password", "admin", adminID.String(), "password reset via token")
 
 	tok := getCSRFToken(c)
 	renderers["reset_password.html"].Render(c, "reset_password.html", mergeMaps(pageData(), gin.H{

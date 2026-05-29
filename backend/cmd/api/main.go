@@ -26,19 +26,12 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "v0.1.10"
+var Version = "v0.1.11"
 
-func recordAudit(c *gin.Context, action, targetType, targetID, details string) {
-	adminIDStr, _ := c.Get("admin_id")
-	if idStr, ok := adminIDStr.(string); ok {
-		if adminID, err := uuid.Parse(idStr); err == nil {
-			go func() {
-				if err := services.RecordAudit(adminID, action, targetType, targetID, details, c.ClientIP()); err != nil {
-					slog.Error("Failed to record audit", "error", err, "action", action)
-				}
-			}()
-		}
-	}
+var roleHierarchy = map[string]int{
+	"super_admin":    3,
+	"admin":          2,
+	"waffle_manager": 1,
 }
 
 func initLogger() {
@@ -498,7 +491,7 @@ func createWaffle(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "create_waffle", "waffle", waffle.ID.String(), "created waffle '"+waffle.Title+"'")
+	handlers.RecordAudit(c, "create_waffle", "waffle", waffle.ID.String(), "created waffle '"+waffle.Title+"'")
 
 	c.JSON(http.StatusCreated, waffle)
 }
@@ -522,7 +515,7 @@ func updateWaffle(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "update_waffle", "waffle", id.String(), "updated waffle '"+waffle.Title+"'")
+	handlers.RecordAudit(c, "update_waffle", "waffle", id.String(), "updated waffle '"+waffle.Title+"'")
 
 	c.JSON(http.StatusOK, waffle)
 }
@@ -552,7 +545,7 @@ func archiveWaffle(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "archive_waffle", "waffle", id.String(), "waffle archived")
+	handlers.RecordAudit(c, "archive_waffle", "waffle", id.String(), "waffle archived")
 
 	c.JSON(http.StatusOK, gin.H{"message": "waffle archived"})
 }
@@ -569,7 +562,7 @@ func unarchiveWaffle(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "unarchive_waffle", "waffle", id.String(), "waffle unarchived")
+	handlers.RecordAudit(c, "unarchive_waffle", "waffle", id.String(), "waffle unarchived")
 
 	c.JSON(http.StatusOK, gin.H{"message": "waffle unarchived"})
 }
@@ -581,7 +574,7 @@ func deleteWaffle(c *gin.Context) {
 		return
 	}
 
-	if err := verifyPasswordConfirmation(c); err != nil {
+	if err := handlers.VerifyPasswordConfirmation(c); err != nil {
 		if err.Error() == "password confirmation required" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
 		} else if err.Error() == "invalid password" {
@@ -597,81 +590,9 @@ func deleteWaffle(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "delete_waffle", "waffle", id.String(), "waffle deleted permanently")
+	handlers.RecordAudit(c, "delete_waffle", "waffle", id.String(), "waffle deleted permanently")
 
 	c.JSON(http.StatusOK, gin.H{"message": "waffle deleted permanently"})
-}
-
-func setWinner(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	var req models.SetWinnerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return
-	}
-
-	if err := services.SetWinner(id, req.WinningSpotNumber); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	waffle, err := services.GetWaffleByID(id)
-	if err == nil {
-		ws.BroadcastWaffleCompleted(waffle.Slug, req.WinningSpotNumber)
-		recordAudit(c, "set_winner", "waffle", id.String(), "winner set to spot #"+strconv.Itoa(req.WinningSpotNumber))
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "winner set successfully"})
-}
-
-func markPaid(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	if err := services.MarkSpotPaid(id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	spot, err := services.GetSpotByID(id)
-	if err == nil {
-		waffle, err := services.GetWaffleByID(spot.WaffleID)
-		if err == nil {
-			handle := ""
-			if spot.ClaimedByHandle != nil {
-				handle = *spot.ClaimedByHandle
-			}
-			ws.BroadcastSpotUpdate(waffle.Slug, spot.Number, string(spot.Status), handle)
-		}
-		recordAudit(c, "mark_paid", "spot", id.String(), "spot #"+strconv.Itoa(spot.Number)+" marked paid")
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "spot marked as paid"})
-}
-
-func releaseSpot(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	if err := services.ReleaseSpot(id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	recordAudit(c, "release_spot", "spot", id.String(), "spot released")
-
-	c.JSON(http.StatusOK, gin.H{"message": "spot released"})
 }
 
 func parseDateRange(c *gin.Context) (time.Time, time.Time) {
@@ -798,7 +719,7 @@ func forgotPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := services.CreatePasswordResetToken(admin.ID)
+	_, err = services.CreatePasswordResetToken(admin.ID)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "if the email exists, a reset link has been sent"})
 		return
@@ -806,7 +727,6 @@ func forgotPassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "if the email exists, a reset link has been sent",
-		"token":   token,
 	})
 }
 
@@ -898,7 +818,7 @@ func changePassword(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "change_password", "admin", adminID.String(), "password changed")
+	handlers.RecordAudit(c, "change_password", "admin", adminID.String(), "password changed")
 
 	c.JSON(http.StatusOK, gin.H{"message": "password changed successfully"})
 }
@@ -935,7 +855,7 @@ func createAdmin(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "create_admin", "admin", admin.ID.String(), "created admin '"+admin.Username+"' with role "+admin.Role)
+	handlers.RecordAudit(c, "create_admin", "admin", admin.ID.String(), "created admin '"+admin.Username+"' with role "+admin.Role)
 
 	c.JSON(http.StatusCreated, admin)
 }
@@ -959,17 +879,12 @@ func updateAdmin(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "admin not found"})
 			return
 		}
-		roleHierarchy := map[string]int{
-			"super_admin":     3,
-			"admin":           2,
-			"waffle_manager":  1,
-		}
 		targetLevel := roleHierarchy[targetAdmin.Role]
 		newLevel := roleHierarchy[*req.Role]
 		if newLevel < targetLevel {
-			if err := verifyPasswordConfirmation(c); err != nil {
-				if err.Error() == "password confirmation required" {
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
+	if err := handlers.VerifyPasswordConfirmation(c); err != nil {
+		if err.Error() == "password confirmation required" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
 				} else if err.Error() == "invalid password" {
 					c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 				} else {
@@ -986,7 +901,7 @@ func updateAdmin(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "update_admin", "admin", id.String(), "updated admin '"+admin.Username+"'")
+	handlers.RecordAudit(c, "update_admin", "admin", id.String(), "updated admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
 }
@@ -998,7 +913,7 @@ func deactivateAdmin(c *gin.Context) {
 		return
 	}
 
-	if err := verifyPasswordConfirmation(c); err != nil {
+	if err := handlers.VerifyPasswordConfirmation(c); err != nil {
 		if err.Error() == "password confirmation required" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
 		} else if err.Error() == "invalid password" {
@@ -1015,50 +930,11 @@ func deactivateAdmin(c *gin.Context) {
 		return
 	}
 
-	recordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
+	handlers.RecordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
 }
 
 func boolPtr(b bool) *bool {
 	return &b
-}
-
-func verifyPasswordConfirmation(c *gin.Context) error {
-	adminIDStr, exists := c.Get("admin_id")
-	if !exists {
-		return fmt.Errorf("not authenticated")
-	}
-
-	adminID, err := uuid.Parse(adminIDStr.(string))
-	if err != nil {
-		return fmt.Errorf("invalid admin")
-	}
-
-	hash, err := services.GetAdminPasswordHash(adminID)
-	if err != nil {
-		return fmt.Errorf("admin not found")
-	}
-
-	var currentPassword string
-	if c.Request.Method == "POST" && c.ContentType() == "application/x-www-form-urlencoded" {
-		currentPassword = c.PostForm("current_password")
-	} else {
-		var req struct {
-			CurrentPassword string `json:"current_password"`
-		}
-		if err := c.ShouldBindJSON(&req); err == nil {
-			currentPassword = req.CurrentPassword
-		}
-	}
-
-	if currentPassword == "" {
-		return fmt.Errorf("password confirmation required")
-	}
-
-	if !services.CheckPassword(currentPassword, hash) {
-		return fmt.Errorf("invalid password")
-	}
-
-	return nil
 }
