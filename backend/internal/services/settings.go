@@ -15,9 +15,11 @@ import (
 
 // allowedSettings is the whitelist of keys that SetSetting accepts.
 var allowedSettings = map[string]bool{
-	"whois_server":         true,
-	"jwt_expiration_hours": true,
-	"password_min_length":  true,
+	"whois_server":                   true,
+	"jwt_expiration_hours":           true,
+	"password_min_length":            true,
+	"audit_retention_days":           true,
+	"login_history_retention_days":   true,
 }
 
 // GetSetting retrieves the value for the given key from system_settings.
@@ -62,12 +64,25 @@ func validatePositiveInteger(value string) error {
 	return nil
 }
 
+func validateRetentionDays(value string) error {
+	n, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return fmt.Errorf("value must be an integer")
+	}
+	if n < 1 || n > 365 {
+		return fmt.Errorf("value must be between 1 and 365 days")
+	}
+	return nil
+}
+
 func validateSettingValue(key, value string) error {
 	switch key {
 	case "whois_server":
 		return validateHostname(value)
 	case "jwt_expiration_hours", "password_min_length":
 		return validatePositiveInteger(value)
+	case "audit_retention_days", "login_history_retention_days":
+		return validateRetentionDays(value)
 	default:
 		return fmt.Errorf("invalid setting key: %q", key)
 	}
