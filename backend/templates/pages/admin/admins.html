@@ -50,7 +50,8 @@
         <div>
           <label class="label"><span class="label-text">Role</span></label>
           <select name="role"
-            class="select select-bordered w-full">
+            class="select select-bordered w-full"
+            data-original-role="{{ .Role }}">
             <option value="admin"{{ if eq "admin" .Role }} selected{{ end }}>Admin</option>
             <option value="super_admin"{{ if eq "super_admin" .Role }} selected{{ end }}>Super Admin</option>
             <option value="waffle_manager"{{ if eq "waffle_manager" .Role }} selected{{ end }}>Waffle Manager</option>
@@ -110,6 +111,7 @@
                 <select
                   class="role-select select select-bordered select-sm"
                   data-admin-id="{{ .ID }}"
+                  data-original-role="{{ .Role }}"
                   {{ if not .Active }}disabled{{ end }}>
                   <option value="admin"{{ if eq .Role "admin" }} selected{{ end }}>Admin</option>
                   <option value="super_admin"{{ if eq .Role "super_admin" }} selected{{ end }}>Super Admin</option>

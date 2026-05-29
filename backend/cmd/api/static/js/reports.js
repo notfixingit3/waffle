@@ -300,7 +300,7 @@
         var e = entries[i]
         var droughtClass = e.longest_drought >= 30 ? 'text-error' : (e.longest_drought >= 14 ? 'text-warning' : 'text-base-content/70')
         var droughtLabel = e.longest_drought >= 99999 ? 'Never won' : e.longest_drought
-        var lastDate = new Date(e.last_entry_date).toLocaleDateString()
+        var lastDate = e.last_entry_date ? new Date(e.last_entry_date).toLocaleDateString() : '—'
         html += '<tr class="border-t border-base-200 hover:bg-base-200">' +
           '<td class="px-4 py-3 font-medium text-base-content">@' + escHtml(e.instagram_handle) + '</td>' +
           '<td class="px-4 py-3 text-right text-base-content/70">' + e.total_entries + '</td>' +

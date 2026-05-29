@@ -391,7 +391,7 @@ func ListWaffles(includeArchived bool) ([]models.Waffle, error) {
 	if includeArchived {
 		query = `
 			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at
-			FROM waffles ORDER BY created_at DESC
+			FROM waffles WHERE archived = true ORDER BY created_at DESC
 		`
 	} else {
 		query = `
@@ -500,6 +500,20 @@ func ClearWinner(waffleID uuid.UUID) error {
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 
+	spots, err := GetSpotsByWaffleID(waffleID)
+	if err != nil {
+		slog.Error("Failed to get spots for buyer stats update", "error", err)
+	} else {
+		for _, spot := range spots {
+			if spot.ClaimedByHandle != nil {
+				isWin := spot.Status == models.SpotStatusWinner
+				if err := UpdateBuyerStats(*spot.ClaimedByHandle, isWin); err != nil {
+					slog.Error("Failed to update buyer stats", "handle", *spot.ClaimedByHandle, "error", err)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -557,6 +571,20 @@ func ChangeWinner(waffleID uuid.UUID, newWinningSpotNumber int) error {
 
 	if err := tx.Commit(context.Background()); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	spots, err := GetSpotsByWaffleID(waffleID)
+	if err != nil {
+		slog.Error("Failed to get spots for buyer stats update", "error", err)
+	} else {
+		for _, spot := range spots {
+			if spot.ClaimedByHandle != nil {
+				isWin := spot.Status == models.SpotStatusWinner
+				if err := UpdateBuyerStats(*spot.ClaimedByHandle, isWin); err != nil {
+					slog.Error("Failed to update buyer stats", "handle", *spot.ClaimedByHandle, "error", err)
+				}
+			}
+		}
 	}
 
 	return nil
