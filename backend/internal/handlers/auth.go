@@ -5,12 +5,14 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/syrup/backend/internal/services"
 )
@@ -73,6 +75,26 @@ func useSecureCookie(c *gin.Context) bool {
 }
 
 func LoginPage(c *gin.Context) {
+	// Check if already authenticated — redirect to dashboard
+	tokenStr := ""
+	if cookie, err := c.Cookie("admin_token"); err == nil {
+		tokenStr = cookie
+	} else if auth := c.GetHeader("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+		tokenStr = strings.TrimPrefix(auth, "Bearer ")
+	}
+	if tokenStr != "" {
+		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
+		if err == nil && token.Valid {
+			c.Redirect(http.StatusFound, "/admin/dashboard")
+			return
+		}
+	}
+
 	tok := getCSRFToken(c)
 	renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
 		"CSRFToken": tok,
