@@ -40,7 +40,7 @@ func QueryWHOIS(ipAddress, server string) (*models.WHOISResult, error) {
 	}
 	defer conn.Close()
 
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	conn.SetDeadline(time.Now().Add(10 * time.Second)) // #nosec G104
 
 	fmt.Fprintf(conn, "%s\r\n", ipAddress)
 

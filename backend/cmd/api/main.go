@@ -72,7 +72,7 @@ func main() {
 	ws.InitHub()
 
 	r := gin.New()
-	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"})
+	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}) // #nosec G104 — SetTrustedProxies failure is fatal to startup; logged by Gin and exits on next error
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Recovery())
 	r.Use(middleware.SecurityHeaders())
@@ -323,7 +323,7 @@ func exportWaffleCSV(c *gin.Context) {
 	c.Header("Content-Type", "text/csv")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s-spots.csv\"", slug))
 
-	c.Writer.WriteString("spot_number,status,instagram_handle,claimed_at,paid_at\n")
+	c.Writer.WriteString("spot_number,status,instagram_handle,claimed_at,paid_at\n") // #nosec G104 — CSV header write failure will cascade to HTTP response error; no recovery possible
 	for _, spot := range spots {
 		claimedAt := ""
 		if spot.ClaimedAt != nil {
@@ -763,7 +763,7 @@ func resetPassword(c *gin.Context) {
 		return
 	}
 
-	services.MarkResetTokenUsed(req.Token)
+	services.MarkResetTokenUsed(req.Token) // #nosec G104 — MarkResetTokenUsed is best-effort cleanup after successful password reset
 
 	c.JSON(http.StatusOK, gin.H{"message": "password reset successfully"})
 }

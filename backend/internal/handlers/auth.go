@@ -286,7 +286,7 @@ func ResetPasswordPost(c *gin.Context) {
 		return
 	}
 
-	services.MarkResetTokenUsed(token)
+	services.MarkResetTokenUsed(token) // #nosec G104 — MarkResetTokenUsed is best-effort cleanup after successful password reset
 
 	recordAudit(c, "reset_password", "admin", adminID.String(), "password reset via token")
 

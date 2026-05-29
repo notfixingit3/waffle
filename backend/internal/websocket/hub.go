@@ -70,7 +70,9 @@ func (h *Hub) Run() {
 				}
 			}
 			h.mu.Unlock()
-			sub.Conn.Close()
+			if err := sub.Conn.Close(); err != nil {
+				slog.Error("Failed to close WebSocket connection", "error", err, "room", sub.Room)
+			}
 			slog.Info("Client unregistered from room", "room", sub.Room)
 
 		case msg := <-h.broadcast:
@@ -81,7 +83,9 @@ func (h *Hub) Run() {
 			for client := range clients {
 				if err := client.WriteJSON(msg); err != nil {
 					slog.Error("Error writing to client", "error", err)
-					client.Close()
+					if closeErr := client.Close(); closeErr != nil {
+						slog.Error("Failed to close client connection", "error", closeErr)
+					}
 					h.Unregister <- Subscription{Conn: client, Room: msg.Room}
 				}
 			}
@@ -94,8 +98,12 @@ func (h *Hub) Stop() {
 	for _, clients := range h.clients {
 		for client := range clients {
 			closeMsg := gorillaWs.FormatCloseMessage(gorillaWs.CloseGoingAway, "server shutting down")
-			client.WriteMessage(gorillaWs.CloseMessage, closeMsg)
-			client.Close()
+			if err := client.WriteMessage(gorillaWs.CloseMessage, closeMsg); err != nil {
+				slog.Error("Failed to send close message", "error", err)
+			}
+			if err := client.Close(); err != nil {
+				slog.Error("Failed to close client connection during shutdown", "error", err)
+			}
 		}
 	}
 	h.mu.Unlock()

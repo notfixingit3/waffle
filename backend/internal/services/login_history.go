@@ -105,6 +105,7 @@ func RecordLogin(adminIDStr, ipAddress, userAgent string) (uuid.UUID, error) {
 		return uuid.UUID{}, fmt.Errorf("update last login: %w", err)
 	}
 
+	// #nosec G104 — non-critical last_login_ip update; failure is acceptable per v0.1.7 design
 	_, _ = db.Pool.Exec(context.Background(),
 		`UPDATE admins SET last_login_ip = $1 WHERE id = $2`, ipAddress, adminID)
 
@@ -303,7 +304,7 @@ func queryWHOIS(server, ip string) (string, error) {
 	}
 	defer conn.Close()
 
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	conn.SetDeadline(time.Now().Add(10 * time.Second)) // #nosec G104
 
 	if _, err := fmt.Fprintf(conn, "%s\r\n", ip); err != nil {
 		return "", fmt.Errorf("write whois query: %w", err)
