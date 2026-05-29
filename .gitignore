@@ -26,3 +26,4 @@ backend/cmd/api/static/css/package-lock.json
 /scenario*-*.txt
 /f3-*.md
 /EOF
+*.sarif
