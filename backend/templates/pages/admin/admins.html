@@ -18,6 +18,54 @@
   </div>
   {{ end }}
 
+  <section class="card bg-base-100 shadow-sm border border-base-200 p-6 mb-6" aria-labelledby="role-permissions-title">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+      <div>
+        <h2 id="role-permissions-title" class="text-lg font-semibold text-base-content">Role permissions</h2>
+        <p class="text-sm opacity-70">Choose the least access someone needs for their job.</p>
+      </div>
+      <span class="badge badge-outline">Super admin only</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <article class="rounded-box border border-secondary/30 bg-secondary/10 p-4">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <h3 class="font-semibold text-base-content">Super Admin</h3>
+          <span class="badge badge-secondary">Owner</span>
+        </div>
+        <p class="text-sm opacity-70 mb-3">Full access for the person who owns the board.</p>
+        <ul class="space-y-1 text-sm">
+          <li>• Manage users and roles</li>
+          <li>• Archive, delete, and edit winners</li>
+          <li>• Configure system settings</li>
+        </ul>
+      </article>
+      <article class="rounded-box border border-base-300 bg-base-200/50 p-4">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <h3 class="font-semibold text-base-content">Admin</h3>
+          <span class="badge badge-ghost">Operator</span>
+        </div>
+        <p class="text-sm opacity-70 mb-3">Trusted staff who run waffles end to end.</p>
+        <ul class="space-y-1 text-sm">
+          <li>• Create and manage waffles</li>
+          <li>• Mark spots paid or released</li>
+          <li>• View reports, audit logs, and login history</li>
+        </ul>
+      </article>
+      <article class="rounded-box border border-info/30 bg-info/10 p-4">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <h3 class="font-semibold text-base-content">Waffle Manager</h3>
+          <span class="badge badge-info">Helper</span>
+        </div>
+        <p class="text-sm opacity-70 mb-3">Drop helpers who should not handle account controls.</p>
+        <ul class="space-y-1 text-sm">
+          <li>• Create/manage waffles and spots</li>
+          <li>• Enter the initial winner</li>
+          <li>• No users, audit log, archive/delete, or winner edits</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
   <div id="create-form" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6 mb-6">
     <h2 class="text-lg font-semibold text-base-content mb-4">Create New User</h2>
     <form method="POST" action="/admin/admins" class="space-y-4">
@@ -51,11 +99,13 @@
           <label class="label"><span class="label-text">Role</span></label>
           <select name="role"
             class="select select-bordered w-full"
+            aria-describedby="role-help"
             data-original-role="{{ .Role }}">
             <option value="admin"{{ if eq "admin" .Role }} selected{{ end }}>Admin</option>
             <option value="super_admin"{{ if eq "super_admin" .Role }} selected{{ end }}>Super Admin</option>
             <option value="waffle_manager"{{ if eq "waffle_manager" .Role }} selected{{ end }}>Waffle Manager</option>
           </select>
+          <p id="role-help" class="text-xs opacity-60 mt-2">Most helpers should be Waffle Manager. Use Admin for trusted operators, and Super Admin only for account owners.</p>
         </div>
         <div class="flex items-center gap-3">
           <button type="submit"
