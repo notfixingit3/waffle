@@ -229,6 +229,8 @@ func main() {
 	adminAuth.GET("/settings/whois-server", handlers.GetWhoisSettingsAPI)
 
 	adminSuperSettings := admin.Group("/settings", middleware.RequireAuth, middleware.RequireSuperAdmin)
+	adminSuperSettings.GET("/", handlers.GetAllSettingsAPI)
+	adminSuperSettings.PATCH("/:key", handlers.UpdateSettingAPI)
 	adminSuperSettings.PATCH("/whois-server", handlers.UpdateWhoisSettingsAPI)
 
 	adminUsers := admin.Group("/admins", middleware.RequireAuth, middleware.RequireSuperAdmin)

@@ -274,8 +274,8 @@ func EnrichLoginWithWHOIS(loginID uuid.UUID) error {
 	err = db.Pool.QueryRow(context.Background(),
 		`SELECT value FROM system_settings WHERE key = 'whois_server'`).Scan(&whoisServer)
 	if err != nil {
-		// No whois_server configured — nothing to do
-		return nil
+		// No whois_server configured — fall back to default
+		whoisServer = "whois.pwhois.org"
 	}
 
 	// Query the WHOIS server

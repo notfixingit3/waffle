@@ -3,7 +3,7 @@
 {{ define "title" }}User Management - Project Syrup{{ end }}
 
 {{ define "content" }}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-base-content">User Management</h1>
     <button type="button" onclick="toggleCreateForm()"
@@ -18,51 +18,70 @@
   </div>
   {{ end }}
 
-  <section class="card bg-base-100 shadow-sm border border-base-200 p-6 mb-6" aria-labelledby="role-permissions-title">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
-      <div>
-        <h2 id="role-permissions-title" class="text-lg font-semibold text-base-content">Role permissions</h2>
-        <p class="text-sm opacity-70">Choose the least access someone needs for their job.</p>
+  <section class="mb-4" aria-label="Role permissions">
+    <details class="collapse collapse-arrow md:hidden bg-base-100 shadow-sm border border-base-200">
+      <summary class="collapse-title px-4 py-3 min-h-0">
+        <span id="role-permissions-title" class="font-semibold text-base-content">Which role should I choose?</span>
+        <span class="block text-xs opacity-70 mt-1">Choose the least access needed. Tap for permissions.</span>
+      </summary>
+      <div class="collapse-content px-4 pb-4 pt-0">
+        <div class="space-y-3 text-sm">
+          <div>
+            <p class="font-semibold text-secondary">Super Admin</p>
+            <p class="opacity-70">Owner-level access: users, roles, archive/delete, winner edits, and system settings.</p>
+          </div>
+          <div>
+            <p class="font-semibold">Admin</p>
+            <p class="opacity-70">Trusted operator: manage waffles/spots, reports, audit logs, and login history.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-info">Waffle Manager</p>
+            <p class="opacity-70">Helper access: manage waffles/spots and enter initial winners; no user controls, audit log, archive/delete, or winner edits.</p>
+          </div>
+        </div>
       </div>
-      <span class="badge badge-outline">Super admin only</span>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <article class="rounded-box border border-secondary/30 bg-secondary/10 p-4">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <h3 class="font-semibold text-base-content">Super Admin</h3>
-          <span class="badge badge-secondary">Owner</span>
+    </details>
+
+    <div class="hidden md:block card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200">
+        <div>
+          <h2 id="role-permissions-title-desktop" class="font-semibold text-base-content">Role permissions</h2>
+          <p class="text-xs opacity-70">Choose the least access someone needs.</p>
         </div>
-        <p class="text-sm opacity-70 mb-3">Full access for the person who owns the board.</p>
-        <ul class="space-y-1 text-sm">
-          <li>• Manage users and roles</li>
-          <li>• Archive, delete, and edit winners</li>
-          <li>• Configure system settings</li>
-        </ul>
-      </article>
-      <article class="rounded-box border border-base-300 bg-base-200/50 p-4">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <h3 class="font-semibold text-base-content">Admin</h3>
-          <span class="badge badge-ghost">Operator</span>
-        </div>
-        <p class="text-sm opacity-70 mb-3">Trusted staff who run waffles end to end.</p>
-        <ul class="space-y-1 text-sm">
-          <li>• Create and manage waffles</li>
-          <li>• Mark spots paid or released</li>
-          <li>• View reports, audit logs, and login history</li>
-        </ul>
-      </article>
-      <article class="rounded-box border border-info/30 bg-info/10 p-4">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <h3 class="font-semibold text-base-content">Waffle Manager</h3>
-          <span class="badge badge-info">Helper</span>
-        </div>
-        <p class="text-sm opacity-70 mb-3">Drop helpers who should not handle account controls.</p>
-        <ul class="space-y-1 text-sm">
-          <li>• Create/manage waffles and spots</li>
-          <li>• Enter the initial winner</li>
-          <li>• No users, audit log, archive/delete, or winner edits</li>
-        </ul>
-      </article>
+        <span class="badge badge-outline">Super admin only</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Best for</th>
+              <th>Can do</th>
+              <th>Limits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-secondary">Super Admin</span></td>
+              <td>Owner</td>
+              <td>Everything, including users, roles, archive/delete, winner edits, and system settings</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-ghost">Admin</span></td>
+              <td>Trusted operator</td>
+              <td>Manage waffles/spots, reports, audit logs, and login history</td>
+              <td>No user or system settings controls</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-info">Waffle Manager</span></td>
+              <td>Drop helper</td>
+              <td>Manage waffles/spots and enter initial winners</td>
+              <td>No users, audit log, archive/delete, or winner edits</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 

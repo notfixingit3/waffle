@@ -43,6 +43,30 @@ func AuditLogPage(c *gin.Context) {
 	data["From"] = c.Query("from")
 	data["To"] = c.Query("to")
 
+	allAdmins, err := services.ListAdmins()
+	if err != nil {
+		allAdmins = []models.Admin{}
+	}
+
+	currentAdminID, _ := uuid.Parse(c.GetString("admin_id"))
+	currentAdmin, _ := services.GetAdminByID(currentAdminID)
+
+	var filteredAdmins []models.Admin
+	for _, admin := range allAdmins {
+		if currentAdmin != nil && currentAdmin.Role == models.RoleSuperAdmin {
+			filteredAdmins = append(filteredAdmins, admin)
+		} else if currentAdmin != nil && (admin.ID == currentAdminID || admin.Role == models.RoleWaffleManager) {
+			filteredAdmins = append(filteredAdmins, admin)
+		}
+	}
+	data["Admins"] = filteredAdmins
+
+	selectedAdminID := ""
+	if filters.AdminID != nil {
+		selectedAdminID = filters.AdminID.String()
+	}
+	data["SelectedAdminID"] = selectedAdminID
+
 	renderers["audit_log.html"].Render(c, "audit_log.html", data)
 }
 

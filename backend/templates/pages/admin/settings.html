@@ -17,6 +17,9 @@
   <div class="tabs tabs-bordered mb-6">
     <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Timezone</a>
     <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">Login History</a>
+    {{ if eq .Role "super_admin" }}
+    <a class="tab" id="tab-server-settings" onclick="switchTab('server-settings')">Server Settings</a>
+    {{ end }}
   </div>
 
   <div id="panel-timezone" class="card bg-base-100 shadow-sm border border-base-200 p-6">
@@ -190,6 +193,45 @@
       </div>
     </div>
   </div>
+
+  {{ if eq .Role "super_admin" }}
+  <div id="panel-server-settings" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6">
+    <h2 class="text-lg font-semibold text-base-content mb-4">Server Settings</h2>
+    <p class="text-sm opacity-60 mb-4">Configure global server settings.</p>
+
+    <div class="space-y-6">
+      <div>
+        <label class="label"><span class="label-text">WHOIS Server</span></label>
+        <input type="text" id="setting-whois_server" class="input input-bordered w-full" placeholder="whois.example.com">
+        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('whois_server')">Save</button>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">JWT Expiration Hours</span></label>
+        <input type="number" id="setting-jwt_expiration_hours" class="input input-bordered w-full" min="1" placeholder="24">
+        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('jwt_expiration_hours')">Save</button>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Password Min Length</span></label>
+        <input type="number" id="setting-password_min_length" class="input input-bordered w-full" min="1" placeholder="8">
+        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('password_min_length')">Save</button>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Audit Retention Days</span></label>
+        <input type="number" id="setting-audit_retention_days" class="input input-bordered w-full" min="1" max="365" placeholder="90">
+        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('audit_retention_days')">Save</button>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Login History Retention Days</span></label>
+        <input type="number" id="setting-login_history_retention_days" class="input input-bordered w-full" min="1" max="365" placeholder="90">
+        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('login_history_retention_days')">Save</button>
+      </div>
+    </div>
+  </div>
+  {{ end }}
 </div>
 {{ end }}
 
@@ -198,20 +240,33 @@
 function switchTab(tabName) {
   var timezonePanel = document.getElementById('panel-timezone');
   var historyPanel = document.getElementById('panel-login-history');
+  var serverSettingsPanel = document.getElementById('panel-server-settings');
   var timezoneTab = document.getElementById('tab-timezone');
   var historyTab = document.getElementById('tab-login-history');
+  var serverSettingsTab = document.getElementById('tab-server-settings');
+
+  timezonePanel.classList.add('hidden');
+  historyPanel.classList.add('hidden');
+  if (serverSettingsPanel) serverSettingsPanel.classList.add('hidden');
+  timezoneTab.classList.remove('tab-active');
+  historyTab.classList.remove('tab-active');
+  if (serverSettingsTab) serverSettingsTab.classList.remove('tab-active');
 
   if (tabName === 'timezone') {
     timezonePanel.classList.remove('hidden');
-    historyPanel.classList.add('hidden');
     timezoneTab.classList.add('tab-active');
-    historyTab.classList.remove('tab-active');
-  } else {
-    timezonePanel.classList.add('hidden');
+  } else if (tabName === 'login-history') {
     historyPanel.classList.remove('hidden');
-    timezoneTab.classList.remove('tab-active');
     historyTab.classList.add('tab-active');
     LoginHistory.load(1);
+  } else if (tabName === 'server-settings') {
+    if (serverSettingsPanel) serverSettingsPanel.classList.remove('hidden');
+    if (serverSettingsTab) serverSettingsTab.classList.add('tab-active');
+    ServerSettings.load();
+  }
+
+  if (window.location.hash !== '#' + tabName) {
+    window.location.hash = tabName;
   }
 }
 
@@ -381,6 +436,121 @@ var LoginHistory = (function() {
     load: load,
     prev: prev,
     next: next
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+  var hash = window.location.hash;
+  if (hash === '#login-history') {
+    switchTab('login-history');
+  } else if (hash === '#server-settings') {
+    switchTab('server-settings');
+  }
+});
+
+var ServerSettings = (function() {
+  'use strict';
+
+  var settingsKeys = [
+    'whois_server',
+    'jwt_expiration_hours',
+    'password_min_length',
+    'audit_retention_days',
+    'login_history_retention_days'
+  ];
+
+  function showSuccess(message) {
+    var banner = document.getElementById('success-banner');
+    var span = banner.querySelector('span');
+    span.textContent = message;
+    banner.classList.remove('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+  }
+
+  function showError(message) {
+    var banner = document.getElementById('error-banner');
+    var text = document.getElementById('error-text');
+    text.textContent = message;
+    banner.classList.remove('hidden');
+    document.getElementById('success-banner').classList.add('hidden');
+  }
+
+  function load() {
+    fetch('/api/admin/settings', {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (!res.ok) {
+          showError(data.error || 'Failed to load server settings');
+          return;
+        }
+
+        var settings = data.settings || [];
+        var i;
+        for (i = 0; i < settings.length; i++) {
+          var item = settings[i];
+          var input = document.getElementById('setting-' + item.key);
+          if (input) {
+            input.value = item.value || '';
+          }
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to load server settings');
+    });
+  }
+
+  function save(key) {
+    var input = document.getElementById('setting-' + key);
+    if (!input) return;
+
+    var value = input.value;
+    var btn = input.nextElementSibling;
+    while (btn && btn.tagName !== 'BUTTON') {
+      btn = btn.nextElementSibling;
+    }
+
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+
+    fetch('/api/admin/settings/' + encodeURIComponent(key) + '/', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ value: value })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          showSuccess('Setting saved successfully');
+        } else {
+          showError(data.error || 'Failed to save setting');
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to save setting');
+    })
+    .finally(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+      }
+    });
+  }
+
+  return {
+    load: load,
+    save: save
   };
 })();
 </script>

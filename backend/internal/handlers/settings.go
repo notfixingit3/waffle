@@ -19,7 +19,24 @@ func SettingsPage(c *gin.Context) {
 			if id, err := uuid.Parse(idStr); err == nil {
 				if admin, err := services.GetAdminByID(id); err == nil {
 					data["Timezone"] = admin.Timezone
+					data["Role"] = admin.Role
 				}
+			}
+		}
+	}
+
+	if data["Role"] == "super_admin" {
+		settingsKeys := []string{
+			"whois_server",
+			"jwt_expiration_hours",
+			"password_min_length",
+			"audit_retention_days",
+			"login_history_retention_days",
+		}
+		for _, key := range settingsKeys {
+			value, err := services.GetSetting(key)
+			if err == nil {
+				data[key] = value
 			}
 		}
 	}
@@ -123,4 +140,69 @@ func UpdateWhoisSettingsAPI(c *gin.Context) {
 	RecordAudit(c, "update_whois_settings", "settings", "", "WHOIS server updated to "+req.WhoisServer)
 
 	c.JSON(http.StatusOK, gin.H{"whois_server": req.WhoisServer})
+}
+
+var allSettingsKeys = []string{
+	"whois_server",
+	"jwt_expiration_hours",
+	"password_min_length",
+	"audit_retention_days",
+	"login_history_retention_days",
+}
+
+func GetAllSettingsAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+	if _, err := uuid.Parse(adminIDStr.(string)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	settings := make([]gin.H, 0, len(allSettingsKeys))
+	for _, key := range allSettingsKeys {
+		value, err := services.GetSetting(key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		settings = append(settings, gin.H{"key": key, "value": value})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"settings": settings})
+}
+
+func UpdateSettingAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	adminID, err := uuid.Parse(adminIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	key := c.Param("key")
+
+	var req struct {
+		Value string `json:"value"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := services.SetSetting(key, req.Value, adminID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	RecordAudit(c, "update_setting", "settings", "", "Updated "+key+" to "+req.Value)
+
+	c.JSON(http.StatusOK, gin.H{"key": key, "value": req.Value})
 }
