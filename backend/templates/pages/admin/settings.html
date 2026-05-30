@@ -4,7 +4,8 @@
 
 {{ define "content" }}
 <div class="max-w-4xl mx-auto">
-  <h1 class="text-2xl font-bold text-base-content mb-6">Settings</h1>
+  <h1 class="text-2xl font-bold text-base-content mb-2">Settings</h1>
+  <p class="text-sm opacity-60 mb-6">Profile settings live here. Super admins can use the Server Settings tab for WHOIS and system configuration.</p>
 
   <div id="success-banner" class="alert alert-success mb-4 hidden">
     <span>Timezone updated successfully</span>
@@ -15,8 +16,8 @@
   </div>
 
   <div class="tabs tabs-bordered mb-6">
-    <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Timezone</a>
-    <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">Login History</a>
+    <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Profile Timezone</a>
+    <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">My Login History</a>
     {{ if eq .Role "super_admin" }}
     <a class="tab" id="tab-server-settings" onclick="switchTab('server-settings')">Server Settings</a>
     {{ end }}
