@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.16] - 2026-05-31
+
+### Changed
+- **Dev/Stable Release Channels** — Docker workflow dev branch trigger, version bump, CHANGELOG backfill, README channels section
+
+## [v0.1.15] - 2026-05-30
+
+### Added
+- **Admin Profile Expansion** — First name, last name, email, and social links fields on admin profile
+
+## [v0.1.14] - 2026-05-30
+
+### Changed
+- **Admin UI Polish** — Password change UI, tooltips, responsive layout fix
+
+## [v0.1.13] - 2026-05-29
+
+### Changed
+- **Admin Nav Grouping** — Grouped admin navigation under Admin Tools dropdown
+
+## [v0.1.12] - 2026-05-29
+
+### Added
+- **Audit Log Nav Prominence** — Moved audit log to top nav, added admin filter, and added server settings tab
+- **Role-Permissions Guide** — Inline role-permissions guide on admin users page
+
 ## [v0.1.11] - 2026-05-29
 
 ### Fixed
@@ -154,6 +180,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[v0.1.16]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.16
+[v0.1.15]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.15
+[v0.1.14]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.14
+[v0.1.13]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.13
+[v0.1.12]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.12
 [v0.1.11]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.11
 [v0.1.10]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.10
 [v0.1.9]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.9
