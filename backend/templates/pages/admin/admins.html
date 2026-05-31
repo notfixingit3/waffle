@@ -19,7 +19,7 @@
   {{ end }}
 
   <section class="mb-4" aria-label="Role permissions">
-    <details class="collapse collapse-arrow md:hidden bg-base-100 shadow-sm border border-base-200">
+    <details class="collapse collapse-arrow lg:hidden bg-base-100 shadow-sm border border-base-200">
       <summary class="collapse-title px-4 py-3 min-h-0">
         <span id="role-permissions-title" class="font-semibold text-base-content">Which role should I choose?</span>
         <span class="block text-xs opacity-70 mt-1">Choose the least access needed. Tap for permissions.</span>
@@ -42,7 +42,7 @@
       </div>
     </details>
 
-    <div class="hidden md:block card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+    <div class="hidden lg:block card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
       <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200">
         <div>
           <h2 id="role-permissions-title-desktop" class="font-semibold text-base-content">Role permissions</h2>
@@ -51,33 +51,33 @@
         <span class="badge badge-outline">Super admin only</span>
       </div>
       <div class="overflow-x-auto">
-        <table class="table table-sm">
+        <table class="table table-sm text-sm">
           <thead>
             <tr>
-              <th>Role</th>
-              <th>Best for</th>
-              <th>Can do</th>
-              <th>Limits</th>
+              <th class="whitespace-normal">Role</th>
+              <th class="whitespace-normal">Best for</th>
+              <th class="whitespace-normal">Can do</th>
+              <th class="whitespace-normal">Limits</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><span class="badge badge-secondary">Super Admin</span></td>
               <td>Owner</td>
-              <td>Everything, including users, roles, archive/delete, winner edits, and system settings</td>
+              <td class="whitespace-normal">Everything, including users, roles, archive/delete, winner edits, and system settings</td>
               <td>—</td>
             </tr>
             <tr>
               <td><span class="badge badge-ghost">Admin</span></td>
               <td>Trusted operator</td>
-              <td>Manage waffles/spots, reports, audit logs, and login history</td>
-              <td>No user or system settings controls</td>
+              <td class="whitespace-normal">Manage waffles/spots, reports, audit logs, and login history</td>
+              <td class="whitespace-normal">No user or system settings controls</td>
             </tr>
             <tr>
               <td><span class="badge badge-info">Waffle Manager</span></td>
               <td>Drop helper</td>
-              <td>Manage waffles/spots and enter initial winners</td>
-              <td>No users, audit log, archive/delete, or winner edits</td>
+              <td class="whitespace-normal">Manage waffles/spots and enter initial winners</td>
+              <td class="whitespace-normal">No users, audit log, archive/delete, or winner edits</td>
             </tr>
           </tbody>
         </table>
@@ -104,7 +104,7 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="label"><span class="label-text">Password <span class="text-error">*</span></span></label>
+            <label class="label"><span class="label-text">Password <span class="text-error">*</span></span><span class="tooltip" data-tip="Initial password for the new user. They will be prompted to change it on first login."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span></label>
             <input type="password" name="password" required minlength="8"
               class="input input-bordered w-full">
           </div>
@@ -178,7 +178,7 @@
             <td class="px-4 py-3 text-right">
               <div class="flex items-center justify-end gap-2">
                 <select
-                  class="role-select select select-bordered select-sm"
+                  class="role-select select select-bordered select-sm tooltip" data-tip="Changes this user's access level. Demoting requires password confirmation."
                   data-admin-id="{{ .ID }}"
                   data-original-role="{{ .Role }}"
                   {{ if not .Active }}disabled{{ end }}>
@@ -189,12 +189,12 @@
                 {{ if .Active }}
                 {{ if ne (printf "%s" .ID) $.CurrentAdminID }}
                 <button type="button" onclick="toggleResetForm('{{ .ID }}')"
-                  class="btn btn-ghost btn-xs">
+                  class="btn btn-ghost btn-xs tooltip" data-tip="Resets the user's password. They will use the new password on next login.">
                   Reset Password
                 </button>
                 {{ end }}
                 <button type="button" onclick="deactivateAdmin('{{ .ID }}', '{{ if .DisplayName }}{{ .DisplayName }}{{ else }}{{ .Username }}{{ end }}')"
-                  class="btn btn-error btn-xs btn-outline">
+                  class="btn btn-error btn-xs btn-outline tooltip" data-tip="Disables this user's account immediately. They cannot log in until re-activated.">
                   Deactivate
                 </button>
                 {{ end }}
@@ -235,7 +235,7 @@
         <p id="password-modal-message" class="text-sm opacity-70 mt-1"></p>
         <div class="mt-4">
           <label class="label">
-            <span class="label-text">Current Password</span>
+            <span class="label-text">Current Password</span><span class="tooltip" data-tip="Enter YOUR password to confirm this action."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
           </label>
           <input type="password" id="password-modal-input" placeholder="Enter your password"
             class="input input-bordered w-full">

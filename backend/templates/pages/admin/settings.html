@@ -18,6 +18,7 @@
   <div class="tabs tabs-bordered mb-6">
     <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Profile Timezone</a>
     <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">My Login History</a>
+    <a class="tab" id="tab-password" onclick="switchTab('password')">Change Password</a>
     {{ if eq .Role "super_admin" }}
     <a class="tab" id="tab-server-settings" onclick="switchTab('server-settings')">Server Settings</a>
     {{ end }}
@@ -195,6 +196,27 @@
     </div>
   </div>
 
+  <div id="panel-password" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6">
+    <h2 class="text-lg font-semibold text-base-content mb-4">Change Password</h2>
+    <p class="text-sm opacity-60 mb-4">Update your password. You'll need your current password to make changes.</p>
+
+    <form id="password-form" class="space-y-4 max-w-md">
+      <div>
+        <label class="label"><span class="label-text">Current Password</span></label>
+        <input type="password" id="password-current" class="input input-bordered w-full" placeholder="Enter current password">
+      </div>
+      <div>
+        <label class="label"><span class="label-text">New Password</span></label>
+        <input type="password" id="password-new" class="input input-bordered w-full" placeholder="Enter new password">
+      </div>
+      <div>
+        <label class="label"><span class="label-text">Confirm New Password</span></label>
+        <input type="password" id="password-confirm" class="input input-bordered w-full" placeholder="Re-enter new password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="password-btn">Change Password</button>
+    </form>
+  </div>
+
   {{ if eq .Role "super_admin" }}
   <div id="panel-server-settings" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6">
     <h2 class="text-lg font-semibold text-base-content mb-4">Server Settings</h2>
@@ -202,31 +224,41 @@
 
     <div class="space-y-6">
       <div>
-        <label class="label"><span class="label-text">WHOIS Server</span></label>
+        <label class="label"><span class="label-text">WHOIS Server</span>
+          <span class="tooltip" data-tip="WHOIS server hostname for IP geolocation lookups in login history (e.g., whois.arin.net). Leave empty for default."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="text" id="setting-whois_server" class="input input-bordered w-full" placeholder="whois.example.com">
         <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('whois_server')">Save</button>
       </div>
 
       <div>
-        <label class="label"><span class="label-text">JWT Expiration Hours</span></label>
+        <label class="label"><span class="label-text">JWT Expiration Hours</span>
+          <span class="tooltip" data-tip="How long an admin login session lasts before re-authentication is required. Default: 24 hours."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="number" id="setting-jwt_expiration_hours" class="input input-bordered w-full" min="1" placeholder="24">
         <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('jwt_expiration_hours')">Save</button>
       </div>
 
       <div>
-        <label class="label"><span class="label-text">Password Min Length</span></label>
+        <label class="label"><span class="label-text">Password Min Length</span>
+          <span class="tooltip" data-tip="Minimum password length enforced for all admin accounts including resets. Default: 8 characters."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="number" id="setting-password_min_length" class="input input-bordered w-full" min="1" placeholder="8">
         <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('password_min_length')">Save</button>
       </div>
 
       <div>
-        <label class="label"><span class="label-text">Audit Retention Days</span></label>
+        <label class="label"><span class="label-text">Audit Retention Days</span>
+          <span class="tooltip" data-tip="Days to keep audit log entries before auto-cleanup. Default: 90. Set 0 to disable."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="number" id="setting-audit_retention_days" class="input input-bordered w-full" min="1" max="365" placeholder="90">
         <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('audit_retention_days')">Save</button>
       </div>
 
       <div>
-        <label class="label"><span class="label-text">Login History Retention Days</span></label>
+        <label class="label"><span class="label-text">Login History Retention Days</span>
+          <span class="tooltip" data-tip="Days to keep login history records before auto-cleanup. Default: 90. Set 0 to disable."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="number" id="setting-login_history_retention_days" class="input input-bordered w-full" min="1" max="365" placeholder="90">
         <button type="button" class="btn btn-primary btn-sm mt-2" onclick="ServerSettings.save('login_history_retention_days')">Save</button>
       </div>
@@ -241,16 +273,20 @@
 function switchTab(tabName) {
   var timezonePanel = document.getElementById('panel-timezone');
   var historyPanel = document.getElementById('panel-login-history');
+  var passwordPanel = document.getElementById('panel-password');
   var serverSettingsPanel = document.getElementById('panel-server-settings');
   var timezoneTab = document.getElementById('tab-timezone');
   var historyTab = document.getElementById('tab-login-history');
+  var passwordTab = document.getElementById('tab-password');
   var serverSettingsTab = document.getElementById('tab-server-settings');
 
   timezonePanel.classList.add('hidden');
   historyPanel.classList.add('hidden');
+  passwordPanel.classList.add('hidden');
   if (serverSettingsPanel) serverSettingsPanel.classList.add('hidden');
   timezoneTab.classList.remove('tab-active');
   historyTab.classList.remove('tab-active');
+  passwordTab.classList.remove('tab-active');
   if (serverSettingsTab) serverSettingsTab.classList.remove('tab-active');
 
   if (tabName === 'timezone') {
@@ -260,6 +296,9 @@ function switchTab(tabName) {
     historyPanel.classList.remove('hidden');
     historyTab.classList.add('tab-active');
     LoginHistory.load(1);
+  } else if (tabName === 'password') {
+    passwordPanel.classList.remove('hidden');
+    passwordTab.classList.add('tab-active');
   } else if (tabName === 'server-settings') {
     if (serverSettingsPanel) serverSettingsPanel.classList.remove('hidden');
     if (serverSettingsTab) serverSettingsTab.classList.add('tab-active');
@@ -444,6 +483,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var hash = window.location.hash;
   if (hash === '#login-history') {
     switchTab('login-history');
+  } else if (hash === '#password' || hash === '#change-password') {
+    switchTab('password');
   } else if (hash === '#server-settings') {
     switchTab('server-settings');
   }
@@ -554,5 +595,85 @@ var ServerSettings = (function() {
     save: save
   };
 })();
+
+var ChangePassword = (function() {
+  'use strict';
+
+  function showSuccess(message) {
+    var banner = document.getElementById('success-banner');
+    var span = banner.querySelector('span');
+    span.textContent = message;
+    banner.classList.remove('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+  }
+
+  function showError(message) {
+    var banner = document.getElementById('error-banner');
+    var text = document.getElementById('error-text');
+    text.textContent = message;
+    banner.classList.remove('hidden');
+    document.getElementById('success-banner').classList.add('hidden');
+  }
+
+  function submit() {
+    var current = document.getElementById('password-current').value;
+    var newPass = document.getElementById('password-new').value;
+    var confirm = document.getElementById('password-confirm').value;
+    var btn = document.getElementById('password-btn');
+
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+
+    if (!current || !newPass || !confirm) {
+      showError('All fields are required');
+      return;
+    }
+
+    if (newPass !== confirm) {
+      showError('New password and confirmation do not match');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Changing...';
+
+    fetch('/api/admin/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ current_password: current, new_password: newPass })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          showSuccess('Password changed successfully');
+          document.getElementById('password-current').value = '';
+          document.getElementById('password-new').value = '';
+          document.getElementById('password-confirm').value = '';
+        } else {
+          showError(data.error || 'Failed to change password');
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to change password');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Change Password';
+    });
+  }
+
+  return {
+    submit: submit
+  };
+})();
+
+document.getElementById('password-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  ChangePassword.submit();
+});
 </script>
 {{ end }}
