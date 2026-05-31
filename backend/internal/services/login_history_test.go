@@ -168,9 +168,10 @@ const testLoginAdminPrefix = "test-login-"
 func createTestAdmin(t *testing.T, role string) *models.Admin {
 	t.Helper()
 	username := testLoginAdminPrefix + uuid.New().String()[:8]
+	email := username + "@test.local"
 	admin, err := CreateAdmin(models.CreateAdminRequest{
 		Username:    username,
-		Email:       username + "@test.local",
+		Email:       &email,
 		Password:    "testpass123",
 		DisplayName: nil,
 		Role:        role,

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -22,10 +23,17 @@ func CreateAdmin(req models.CreateAdminRequest) (*models.Admin, error) {
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
 
+	var email string
+	if req.Email != nil {
+		email = *req.Email
+	}
+
 	admin := &models.Admin{
 		ID:          uuid.New(),
 		Username:    req.Username,
-		Email:       req.Email,
+		Email:       email,
+		FirstName:   req.FirstName,
+		LastName:    req.LastName,
 		DisplayName: req.DisplayName,
 		Role:        req.Role,
 		Timezone:    "UTC",
@@ -35,9 +43,9 @@ func CreateAdmin(req models.CreateAdminRequest) (*models.Admin, error) {
 	}
 
 	_, err = db.Pool.Exec(context.Background(), `
-		INSERT INTO admins (id, username, email, password_hash, display_name, role, active, timezone, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, admin.ID, admin.Username, admin.Email, hash, admin.DisplayName, admin.Role, admin.Active, admin.Timezone, admin.CreatedAt, admin.UpdatedAt)
+		INSERT INTO admins (id, username, email, password_hash, first_name, last_name, display_name, role, active, timezone, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`, admin.ID, admin.Username, admin.Email, hash, admin.FirstName, admin.LastName, admin.DisplayName, admin.Role, admin.Active, admin.Timezone, admin.CreatedAt, admin.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("insert admin: %w", err)
 	}
@@ -48,10 +56,10 @@ func CreateAdmin(req models.CreateAdminRequest) (*models.Admin, error) {
 func GetAdminByUsername(username string) (*models.Admin, error) {
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
+		SELECT id, username, COALESCE(email, '') as email, display_name, first_name, last_name, social_links, role, timezone, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins WHERE username = $1
 	`, username).Scan(
-		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
+		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.FirstName, &admin.LastName, &admin.SocialLinks, &admin.Role, &admin.Timezone,
 		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt,
 	)
 	if err != nil {
@@ -63,10 +71,10 @@ func GetAdminByUsername(username string) (*models.Admin, error) {
 func GetAdminByID(id uuid.UUID) (*models.Admin, error) {
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
+		SELECT id, username, COALESCE(email, '') as email, display_name, first_name, last_name, social_links, role, timezone, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins WHERE id = $1
 	`, id).Scan(
-		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
+		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.FirstName, &admin.LastName, &admin.SocialLinks, &admin.Role, &admin.Timezone,
 		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt,
 	)
 	if err != nil {
@@ -78,10 +86,10 @@ func GetAdminByID(id uuid.UUID) (*models.Admin, error) {
 func GetAdminByEmail(email string) (*models.Admin, error) {
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
+		SELECT id, username, COALESCE(email, '') as email, display_name, first_name, last_name, social_links, role, timezone, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins WHERE email = $1
 	`, email).Scan(
-		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
+		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.FirstName, &admin.LastName, &admin.SocialLinks, &admin.Role, &admin.Timezone,
 		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt,
 	)
 	if err != nil {
@@ -92,7 +100,7 @@ func GetAdminByEmail(email string) (*models.Admin, error) {
 
 func ListAdmins() ([]models.Admin, error) {
 	rows, err := db.Pool.Query(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at
+		SELECT id, username, COALESCE(email, '') as email, display_name, first_name, last_name, social_links, role, timezone, active, last_login_at, last_login_ip, created_at, updated_at
 		FROM admins ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -104,7 +112,7 @@ func ListAdmins() ([]models.Admin, error) {
 	for rows.Next() {
 		var a models.Admin
 		err := rows.Scan(
-			&a.ID, &a.Username, &a.Email, &a.DisplayName, &a.Role,
+			&a.ID, &a.Username, &a.Email, &a.DisplayName, &a.FirstName, &a.LastName, &a.SocialLinks, &a.Role, &a.Timezone,
 			&a.Active, &a.LastLoginAt, &a.LastLoginIP, &a.CreatedAt, &a.UpdatedAt,
 		)
 		if err != nil {
@@ -159,10 +167,10 @@ func AuthenticateAdmin(username, password string) (*models.Admin, error) {
 	var hash string
 	admin := &models.Admin{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, username, email, display_name, role, active, last_login_at, last_login_ip, created_at, updated_at, password_hash
+		SELECT id, username, COALESCE(email, '') as email, display_name, first_name, last_name, social_links, role, timezone, active, last_login_at, last_login_ip, created_at, updated_at, password_hash
 		FROM admins WHERE username = $1
 	`, username).Scan(
-		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.Role,
+		&admin.ID, &admin.Username, &admin.Email, &admin.DisplayName, &admin.FirstName, &admin.LastName, &admin.SocialLinks, &admin.Role, &admin.Timezone,
 		&admin.Active, &admin.LastLoginAt, &admin.LastLoginIP, &admin.CreatedAt, &admin.UpdatedAt, &hash,
 	)
 	if err != nil {
@@ -285,4 +293,101 @@ func CompareTokenHash(token, hash string) bool {
 
 func ConstantTimeCompare(a, b string) bool {
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
+func ValidateSocialLinks(links []models.SocialLink) []string {
+	var errors []string
+	if len(links) > 10 {
+		errors = append(errors, "maximum 10 social links allowed")
+	}
+
+	seenPlatforms := make(map[string]bool)
+	for i, link := range links {
+		validPlatform := false
+		for _, platform := range models.ValidSocialPlatforms {
+			if link.Platform == platform {
+				validPlatform = true
+				break
+			}
+		}
+		if !validPlatform {
+			errors = append(errors, fmt.Sprintf("social link %d: invalid platform '%s'", i+1, link.Platform))
+		}
+
+		if seenPlatforms[link.Platform] {
+			errors = append(errors, fmt.Sprintf("social link %d: duplicate platform '%s'", i+1, link.Platform))
+		}
+		seenPlatforms[link.Platform] = true
+
+		if len(link.Handle) > 100 {
+			errors = append(errors, fmt.Sprintf("social link %d: handle exceeds 100 characters", i+1))
+		}
+	}
+
+	return errors
+}
+
+func UpdateAdminProfile(id uuid.UUID, req models.UpdateAdminProfileRequest) (*models.Admin, error) {
+	if req.SocialLinks != nil {
+		if validationErrors := ValidateSocialLinks(req.SocialLinks); len(validationErrors) > 0 {
+			return nil, fmt.Errorf("validation failed: %s", validationErrors[0])
+		}
+	}
+
+	if req.Email != nil && *req.Email != "" {
+		existing, err := GetAdminByEmail(*req.Email)
+		if err == nil && existing.ID != id {
+			return nil, fmt.Errorf("email already in use")
+		}
+	}
+
+	var updates []string
+	var args []interface{}
+	argIndex := 1
+
+	if req.FirstName != nil {
+		updates = append(updates, fmt.Sprintf("first_name = $%d", argIndex))
+		args = append(args, *req.FirstName)
+		argIndex++
+	}
+
+	if req.LastName != nil {
+		updates = append(updates, fmt.Sprintf("last_name = $%d", argIndex))
+		args = append(args, *req.LastName)
+		argIndex++
+	}
+
+	if req.Email != nil {
+		updates = append(updates, fmt.Sprintf("email = $%d", argIndex))
+		if *req.Email == "" {
+			args = append(args, nil)
+		} else {
+			args = append(args, *req.Email)
+		}
+		argIndex++
+	}
+
+	if req.SocialLinks != nil {
+		updates = append(updates, fmt.Sprintf("social_links = $%d", argIndex))
+		args = append(args, req.SocialLinks)
+		argIndex++
+	}
+
+	if len(updates) == 0 {
+		return GetAdminByID(id)
+	}
+
+	updates = append(updates, fmt.Sprintf("updated_at = $%d", argIndex))
+	args = append(args, time.Now())
+	argIndex++
+
+	query := fmt.Sprintf("UPDATE admins SET %s WHERE id = $%d", strings.Join(updates, ", "), argIndex)
+	args = append(args, id)
+
+	_, err := db.Pool.Exec(context.Background(), query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("update admin profile: %w", err)
+	}
+
+	return GetAdminByID(id)
 }

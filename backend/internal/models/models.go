@@ -122,18 +122,28 @@ type CreateClaimRequest struct {
 	InstagramHandle string `json:"instagram_handle"`
 }
 
+type SocialLink struct {
+	Platform string `json:"platform"`
+	Handle   string `json:"handle"`
+}
+
+var ValidSocialPlatforms = []string{"instagram", "tiktok", "x", "facebook", "youtube", "discord"}
+
 type Admin struct {
-	ID          uuid.UUID  `json:"id" db:"id"`
-	Username    string     `json:"username" db:"username"`
-	Email       string     `json:"email" db:"email"`
-	DisplayName *string    `json:"display_name,omitempty" db:"display_name"`
-	Role        string     `json:"role" db:"role"`
-	Timezone    string     `json:"timezone" db:"timezone"`
-	Active      bool       `json:"active" db:"active"`
-	LastLoginAt *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
-	LastLoginIP *string    `json:"last_login_ip,omitempty" db:"last_login_ip"`
-	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
+	ID          uuid.UUID    `json:"id" db:"id"`
+	Username    string       `json:"username" db:"username"`
+	Email       string       `json:"email" db:"email"`
+	DisplayName *string      `json:"display_name,omitempty" db:"display_name"`
+	FirstName   *string      `json:"first_name,omitempty" db:"first_name"`
+	LastName    *string      `json:"last_name,omitempty" db:"last_name"`
+	SocialLinks []SocialLink `json:"social_links,omitempty" db:"social_links"`
+	Role        string       `json:"role" db:"role"`
+	Timezone    string       `json:"timezone" db:"timezone"`
+	Active      bool         `json:"active" db:"active"`
+	LastLoginAt *time.Time   `json:"last_login_at,omitempty" db:"last_login_at"`
+	LastLoginIP *string      `json:"last_login_ip,omitempty" db:"last_login_ip"`
+	CreatedAt   time.Time    `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at" db:"updated_at"`
 }
 
 type AuditLog struct {
@@ -177,8 +187,10 @@ type AdminLoginRequest struct {
 
 type CreateAdminRequest struct {
 	Username    string  `json:"username"`
-	Email       string  `json:"email"`
+	Email       *string `json:"email,omitempty"`
 	Password    string  `json:"password"`
+	FirstName   *string `json:"first_name,omitempty"`
+	LastName    *string `json:"last_name,omitempty"`
 	DisplayName *string `json:"display_name,omitempty"`
 	Role        string  `json:"role"`
 }
@@ -187,6 +199,13 @@ type UpdateAdminRequest struct {
 	DisplayName *string `json:"display_name,omitempty"`
 	Role        *string `json:"role,omitempty"`
 	Active      *bool   `json:"active,omitempty"`
+}
+
+type UpdateAdminProfileRequest struct {
+	FirstName   *string      `json:"first_name,omitempty"`
+	LastName    *string      `json:"last_name,omitempty"`
+	Email       *string      `json:"email,omitempty"`
+	SocialLinks []SocialLink `json:"social_links,omitempty"`
 }
 
 type PasswordResetRequest struct {

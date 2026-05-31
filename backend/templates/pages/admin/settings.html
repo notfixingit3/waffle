@@ -16,7 +16,7 @@
   </div>
 
   <div class="tabs tabs-bordered mb-6">
-    <a class="tab tab-active" id="tab-timezone" onclick="switchTab('timezone')">Profile Timezone</a>
+    <a class="tab tab-active" id="tab-profile" onclick="switchTab('profile')">Profile</a>
     <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">My Login History</a>
     <a class="tab" id="tab-password" onclick="switchTab('password')">Change Password</a>
     {{ if eq .Role "super_admin" }}
@@ -24,12 +24,35 @@
     {{ end }}
   </div>
 
-  <div id="panel-timezone" class="card bg-base-100 shadow-sm border border-base-200 p-6">
-    <h2 class="text-lg font-semibold text-base-content mb-4">Timezone</h2>
-    <p class="text-sm opacity-60 mb-4">Select your timezone for accurate time display.</p>
+  <div id="panel-profile" class="card bg-base-100 shadow-sm border border-base-200 p-6">
+    <h2 class="text-lg font-semibold text-base-content mb-4">Profile</h2>
+    <p class="text-sm opacity-60 mb-4">Update your profile information.</p>
 
-    <form id="timezone-form" class="space-y-4">
+    <form id="profile-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="label"><span class="label-text">First Name</span></label>
+          <input type="text" name="first_name" id="first-name" class="input input-bordered w-full" placeholder="Enter first name" value="{{ if .FirstName }}{{ .FirstName }}{{ end }}">
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Last Name</span></label>
+          <input type="text" name="last_name" id="last-name" class="input input-bordered w-full" placeholder="Enter last name" value="{{ if .LastName }}{{ .LastName }}{{ end }}">
+        </div>
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Email</span></label>
+        <input type="email" name="email" id="email" class="input input-bordered w-full" placeholder="Enter email" value="{{ if .Email }}{{ .Email }}{{ end }}">
+      </div>
+
+      <div>
+        <label class="label"><span class="label-text">Social Links</span></label>
+        <div id="social-links-container" class="space-y-2"></div>
+        <button type="button" id="add-social-link" class="btn btn-sm btn-outline mt-2" onclick="addSocialLink()">+ Add Social Link</button>
+      </div>
+
       <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+
       <div>
         <label class="label"><span class="label-text">Timezone</span></label>
         <select name="timezone" id="timezone-select" class="select select-bordered w-full">
@@ -271,27 +294,27 @@
 {{ define "scripts" }}
 <script>
 function switchTab(tabName) {
-  var timezonePanel = document.getElementById('panel-timezone');
+  var profilePanel = document.getElementById('panel-profile');
   var historyPanel = document.getElementById('panel-login-history');
   var passwordPanel = document.getElementById('panel-password');
   var serverSettingsPanel = document.getElementById('panel-server-settings');
-  var timezoneTab = document.getElementById('tab-timezone');
+  var profileTab = document.getElementById('tab-profile');
   var historyTab = document.getElementById('tab-login-history');
   var passwordTab = document.getElementById('tab-password');
   var serverSettingsTab = document.getElementById('tab-server-settings');
 
-  timezonePanel.classList.add('hidden');
+  profilePanel.classList.add('hidden');
   historyPanel.classList.add('hidden');
   passwordPanel.classList.add('hidden');
   if (serverSettingsPanel) serverSettingsPanel.classList.add('hidden');
-  timezoneTab.classList.remove('tab-active');
+  profileTab.classList.remove('tab-active');
   historyTab.classList.remove('tab-active');
   passwordTab.classList.remove('tab-active');
   if (serverSettingsTab) serverSettingsTab.classList.remove('tab-active');
 
-  if (tabName === 'timezone') {
-    timezonePanel.classList.remove('hidden');
-    timezoneTab.classList.add('tab-active');
+  if (tabName === 'profile') {
+    profilePanel.classList.remove('hidden');
+    profileTab.classList.add('tab-active');
   } else if (tabName === 'login-history') {
     historyPanel.classList.remove('hidden');
     historyTab.classList.add('tab-active');
@@ -310,10 +333,8 @@ function switchTab(tabName) {
   }
 }
 
-document.getElementById('timezone-form').addEventListener('submit', function(e) {
+document.getElementById('profile-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  var select = document.getElementById('timezone-select');
-  var tz = select.value;
   var btn = document.getElementById('save-btn');
   var successBanner = document.getElementById('success-banner');
   var errorBanner = document.getElementById('error-banner');
@@ -325,27 +346,46 @@ document.getElementById('timezone-form').addEventListener('submit', function(e) 
   btn.disabled = true;
   btn.textContent = 'Saving...';
 
-  fetch('/api/admin/me/timezone', {
+  var socialLinks = [];
+  var socialRows = document.querySelectorAll('.social-link-row');
+  for (var i = 0; i < socialRows.length; i++) {
+    var platform = socialRows[i].querySelector('.social-platform').value;
+    var handle = socialRows[i].querySelector('.social-handle').value;
+    if (platform && handle) {
+      socialLinks.push({ platform: platform, handle: handle });
+    }
+  }
+
+  var payload = {
+    first_name: document.getElementById('first-name').value || null,
+    last_name: document.getElementById('last-name').value || null,
+    email: document.getElementById('email').value || null,
+    timezone: document.getElementById('timezone-select').value,
+    social_links: socialLinks
+  };
+
+  fetch('/api/admin/me/profile', {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
-    body: JSON.stringify({ timezone: tz })
+    body: JSON.stringify(payload)
   })
   .then(function(res) {
     return res.json().then(function(data) {
       if (res.ok) {
         successBanner.classList.remove('hidden');
+        successBanner.querySelector('span').textContent = 'Profile updated successfully';
         currentTzSpan.textContent = 'Current: ' + (data.timezone || 'UTC');
       } else {
-        errorText.textContent = data.error || 'Failed to update timezone';
+        errorText.textContent = data.error || 'Failed to update profile';
         errorBanner.classList.remove('hidden');
       }
     });
   })
   .catch(function() {
-    errorText.textContent = 'Failed to update timezone';
+    errorText.textContent = 'Failed to update profile';
     errorBanner.classList.remove('hidden');
   })
   .finally(function() {
@@ -353,6 +393,38 @@ document.getElementById('timezone-form').addEventListener('submit', function(e) 
     btn.textContent = 'Save';
   });
 });
+
+function addSocialLink(platform, handle) {
+  var container = document.getElementById('social-links-container');
+  var row = document.createElement('div');
+  row.className = 'social-link-row flex gap-2 items-center';
+  row.innerHTML =
+    '<select class="social-platform select select-bordered select-sm flex-1">' +
+    '<option value="">Select platform...</option>' +
+    '<option value="instagram">Instagram</option>' +
+    '<option value="tiktok">TikTok</option>' +
+    '<option value="x">X/Twitter</option>' +
+    '<option value="facebook">Facebook</option>' +
+    '<option value="youtube">YouTube</option>' +
+    '<option value="discord">Discord</option>' +
+    '</select>' +
+    '<input type="text" class="social-handle input input-bordered input-sm flex-1" placeholder="Handle">' +
+    '<button type="button" class="btn btn-sm btn-error btn-outline" onclick="this.parentElement.remove()">Remove</button>';
+  container.appendChild(row);
+  if (platform) {
+    row.querySelector('.social-platform').value = platform;
+  }
+  if (handle) {
+    row.querySelector('.social-handle').value = handle;
+  }
+}
+
+var existingSocialLinks = {{ if .SocialLinks }}{{ .SocialLinks }}{{ else }}[]{{ end }};
+if (existingSocialLinks && existingSocialLinks.length > 0) {
+  for (var i = 0; i < existingSocialLinks.length; i++) {
+    addSocialLink(existingSocialLinks[i].platform, existingSocialLinks[i].handle);
+  }
+}
 
 var LoginHistory = (function() {
   'use strict';

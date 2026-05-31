@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/syrup/backend/internal/models"
 	"github.com/syrup/backend/internal/services"
 )
 
@@ -20,6 +21,10 @@ func SettingsPage(c *gin.Context) {
 				if admin, err := services.GetAdminByID(id); err == nil {
 					data["Timezone"] = admin.Timezone
 					data["Role"] = admin.Role
+					data["FirstName"] = admin.FirstName
+					data["LastName"] = admin.LastName
+					data["Email"] = admin.Email
+					data["SocialLinks"] = admin.SocialLinks
 				}
 			}
 		}
@@ -77,6 +82,42 @@ func UpdateTimezoneAPI(c *gin.Context) {
 
 	admin, err := services.UpdateAdminTimezone(adminID, req.Timezone)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, admin)
+}
+
+func UpdateProfileAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	adminID, err := uuid.Parse(adminIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	var req models.UpdateAdminProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	admin, err := services.UpdateAdminProfile(adminID, req)
+	if err != nil {
+		if err.Error() == "email already in use" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		if len(err.Error()) >= 17 && err.Error()[:17] == "validation failed" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
