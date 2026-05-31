@@ -636,6 +636,50 @@ func ReportsPage(c *gin.Context) {
 	renderers["reports.html"].Render(c, "reports.html", data)
 }
 
+func UsersListPage(c *gin.Context) {
+	search := c.Query("search")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "25"))
+	if perPage < 1 {
+		perPage = 25
+	}
+	if perPage > 100 {
+		perPage = 100
+	}
+
+	limit := perPage
+	offset := (page - 1) * perPage
+
+	users, total, err := services.ListUsers(search, limit, offset)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to load users")
+		return
+	}
+
+	totalPages := 1
+	if total > 0 {
+		totalPages = (total + perPage - 1) / perPage
+	}
+
+	data := adminNavData(c)
+	data["title"] = "Users - Project Syrup"
+	data["Users"] = users
+	data["Search"] = search
+	data["Page"] = page
+	data["PerPage"] = perPage
+	data["Total"] = total
+	data["TotalPages"] = totalPages
+	data["HasPrev"] = page > 1
+	data["HasNext"] = page < totalPages
+	data["PrevPage"] = page - 1
+	data["NextPage"] = page + 1
+
+	renderers["users.html"].Render(c, "users.html", data)
+}
+
 func AdminManagementPage(c *gin.Context) {
 	admins, err := services.ListAdmins()
 	if err != nil {

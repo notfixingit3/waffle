@@ -185,6 +185,13 @@ type AdminLoginRequest struct {
 	Password string `json:"password"`
 }
 
+type User struct {
+	ID              uuid.UUID `json:"id" db:"id"`
+	InstagramHandle string    `json:"instagram_handle" db:"instagram_handle"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+}
+
 type CreateAdminRequest struct {
 	Username    string  `json:"username"`
 	Email       *string `json:"email,omitempty"`

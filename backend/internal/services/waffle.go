@@ -170,6 +170,10 @@ func ClaimSpots(waffleID uuid.UUID, spotNumbers []int, instagramHandle string) e
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 
+	if _, err := GetOrCreateUser(instagramHandle); err != nil {
+		slog.Error("Failed to create user record after claim", "handle", instagramHandle, "error", err)
+	}
+
 	return nil
 }
 

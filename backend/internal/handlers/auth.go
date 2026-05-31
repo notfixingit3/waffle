@@ -115,16 +115,6 @@ func LoginPost(c *gin.Context) {
 	username := strings.TrimSpace(c.PostForm("username"))
 	password := c.PostForm("password")
 
-	if services.IsLoginLockedOut(c.ClientIP(), username) {
-		tok := getCSRFToken(c)
-		renderers["login.html"].Render(c, "login.html", mergeMaps(pageData(), gin.H{
-			"CSRFToken": tok,
-			"Error":     "Account temporarily locked due to too many failed attempts. Please try again later.",
-			"Username":  username,
-		}))
-		return
-	}
-
 	admin, err := services.AuthenticateAdmin(username, password)
 	if err != nil {
 		services.RecordFailedLoginAttempt(c.ClientIP(), username)

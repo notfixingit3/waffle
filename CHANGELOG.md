@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.18] - 2026-05-31
+
+### Added
+- **Users Registry** — New `users` table with `GetOrCreateUser`, `ListUsers`, and `BackfillUsers` service functions, admin users list page and JSON API endpoint
+- **User Backfill** — Automatic backfill of existing `claimed_by_handle` values from `spots` table into `users` table on application startup
+
+### Fixed
+- **Duplicate Lockout Removal** — Resolved duplicate Instagram handle lockout preventing claim submissions for handles with existing pending/paid spots
+
+### Changed
+- **AGENTS.md Updates** — Expanded API conventions with all admin endpoints, added Users Registry implementation notes
+
 ## [v0.1.16] - 2026-05-31
 
 ### Changed
