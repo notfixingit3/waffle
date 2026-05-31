@@ -28,6 +28,7 @@ services:
       PORT: 8383
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-syrup}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     depends_on:
       postgres:
         condition: service_healthy

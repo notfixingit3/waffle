@@ -18,14 +18,35 @@ func IsPrivateIP(ip string) bool {
 	}
 
 	ip4 := parsed.To4()
-	if ip4 == nil {
-		return false
+	if ip4 != nil {
+		// RFC 1918: 10.0.0.0/8
+		// Loopback: 127.0.0.0/8
+		// RFC 1918: 172.16.0.0/12
+		// RFC 1918: 192.168.0.0/16
+		// CGNAT (RFC 6598): 100.64.0.0/10
+		return ip4[0] == 10 ||
+			ip4[0] == 127 ||
+			(ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31) ||
+			(ip4[0] == 192 && ip4[1] == 168) ||
+			(ip4[0] == 100 && ip4[1] >= 64 && ip4[1] <= 127)
 	}
 
-	return ip4[0] == 10 ||
-		ip4[0] == 127 ||
-		(ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31) ||
-		(ip4[0] == 192 && ip4[1] == 168)
+	// IPv6 loopback: ::1
+	if parsed.Equal(net.IPv6loopback) {
+		return true
+	}
+
+	// IPv6 link-local: fe80::/10
+	if parsed[0] == 0xfe && parsed[1]&0xc0 == 0x80 {
+		return true
+	}
+
+	// Unique Local Address (ULA): fc00::/7
+	if parsed[0]&0xfe == 0xfc {
+		return true
+	}
+
+	return false
 }
 
 func QueryWHOIS(ipAddress, server string) (*models.WHOISResult, error) {

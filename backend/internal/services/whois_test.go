@@ -39,10 +39,27 @@ func TestIsPrivateIP(t *testing.T) {
 		{"172.15.0.1", false},
 		{"192.167.255.255", false},
 		{"11.0.0.1", false},
-		// IPv6 addresses (not RFC1918, should not panic)
-		{"::1", false},
+		// IPv6 loopback ::1
+		{"::1", true},
+		// IPv6 link-local fe80::/10
+		{"fe80::1", true},
+		{"fe80::", true},
+		{"febf::1", true},
+		{"fec0::1", false},
+		// Unique Local Address (ULA) fc00::/7
+		{"fc00::", true},
+		{"fd00::1", true},
+		{"fdff::1", true},
+		{"fe00::1", false},
+		// Public IPv6
 		{"2001:db8::1", false},
-		{"fe80::1", false},
+		{"2607:f8b0::1", false},
+		// CGNAT (RFC 6598) 100.64.0.0/10
+		{"100.64.0.0", true},
+		{"100.64.0.1", true},
+		{"100.127.255.255", true},
+		{"100.128.0.0", false},
+		{"100.63.255.255", false},
 		// Edge cases
 		{"0.0.0.0", false},
 		{"255.255.255.255", false},

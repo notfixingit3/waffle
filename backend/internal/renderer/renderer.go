@@ -48,6 +48,8 @@ func New(funcs template.FuncMap) *Renderer {
 		"deref":      deref,
 		"add":        add,
 		"sub":        sub,
+		"mul":        mul,
+		"div":        div,
 		"json":       toJSON,
 	}
 
@@ -227,6 +229,17 @@ func add(a, b int) int {
 
 func sub(a, b int) int {
 	return a - b
+}
+
+func mul(a, b int) int {
+	return a * b
+}
+
+func div(a, b int) int {
+	if b == 0 {
+		return 0
+	}
+	return a / b
 }
 
 func toJSON(v interface{}) string {

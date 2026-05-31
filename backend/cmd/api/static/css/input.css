@@ -94,12 +94,13 @@ body {
   user-select: none;
 }
 
-/* 44px minimum per Apple HIG touch target guidelines */
-button,
-a,
-[role="button"],
-.spot-item,
-.admin-spot-item {
-  min-height: 44px;
-  min-width: 44px;
+@media (pointer: coarse), (max-width: 767px) {
+  button,
+  a,
+  [role="button"],
+  .spot-item,
+  .admin-spot-item {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

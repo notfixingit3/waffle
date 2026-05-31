@@ -28,7 +28,17 @@
   {{ if .Waffles }}
   <div class="grid gap-4">
     {{ range .Waffles }}
-    <div class="card bg-base-100 shadow-sm border border-base-200">
+    {{ $stats := index $.WaffleStats .ID.String }}
+    {{ $paid := 0 }}
+    {{ if $stats }}{{ $paid = index $stats "paid" }}{{ end }}
+    {{ $progress := 0 }}
+    {{ if gt .TotalSpots 0 }}{{ $progress = div (mul $paid 100) .TotalSpots }}{{ end }}
+    <div class="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+      {{ if .ImageURL }}
+      <a href="/admin/waffles/{{ .Slug }}">
+        <img src="{{ deref .ImageURL }}" alt="{{ .Title }} - waffle image" class="w-full h-48 object-cover" onerror="this.style.display='none'">
+      </a>
+      {{ end }}
       <div class="card-body p-6">
         <div class="flex items-center justify-between">
           <a href="/admin/waffles/{{ .Slug }}" class="flex-1 hover:opacity-80 transition-opacity">
@@ -51,6 +61,11 @@
           </div>
         </div>
 
+        <div class="mt-3">
+          <progress class="progress {{ if eq $progress 100 }}progress-success{{ else }}progress-primary{{ end }} w-full" value="{{ $progress }}" max="100"></progress>
+          <p class="text-xs text-base-content/60 mt-1 text-right">{{ $progress }}% filled ({{ $paid }}/{{ .TotalSpots }})</p>
+        </div>
+
         {{ if .CompletedAt }}
         <p class="text-sm opacity-60 mt-2">
           Completed: {{ formatDate "Jan 2, 2006" .CompletedAt }}
@@ -58,18 +73,18 @@
         {{ end }}
 
         <div class="flex items-center gap-2 mt-4 pt-4 border-t border-base-200">
-          <a href="/admin/waffles/{{ .Slug }}" class="btn btn-ghost btn-sm min-h-[44px]">
+          <a href="/admin/waffles/{{ .Slug }}" class="btn btn-ghost btn-sm">
             Manage
           </a>
 
           <form method="POST" action="/admin/waffles/{{ .ID }}/{{ if .Archived }}unarchive{{ else }}archive{{ end }}" class="inline">
             <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
-            <button type="submit" class="btn btn-ghost btn-sm min-h-[44px]">
+            <button type="submit" class="btn btn-ghost btn-sm">
               {{ if .Archived }}Unarchive{{ else }}Archive{{ end }}
             </button>
           </form>
 
-          <button type="button" data-delete-id="{{ .ID }}" class="delete-btn btn btn-error btn-sm ml-auto min-h-[44px]">
+          <button type="button" data-delete-id="{{ .ID }}" class="delete-btn btn btn-error btn-sm ml-auto">
             Delete
           </button>
         </div>
