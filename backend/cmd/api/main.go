@@ -26,7 +26,7 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "v0.1.16"
+var Version = "v0.1.17-dev"
 
 var roleHierarchy = map[string]int{
 	"super_admin":    3,
