@@ -16,7 +16,15 @@
   {{ else }}
   <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
     {{ range .waffles }}
-    <a href="/waffle/{{ .Slug }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-base-200">
+    {{ $stats := index $.waffleStats .ID.String }}
+    {{ $paid := 0 }}
+    {{ if $stats }}{{ $paid = index $stats "paid" }}{{ end }}
+    {{ $progress := 0 }}
+    {{ if gt .TotalSpots 0 }}{{ $progress = div (mul $paid 100) .TotalSpots }}{{ end }}
+    <a href="/waffle/{{ .Slug }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-base-200 overflow-hidden">
+      {{ if .ImageURL }}
+      <img src="{{ deref .ImageURL }}" alt="{{ .Title }} - waffle image" class="w-full h-48 object-cover" onerror="this.style.display='none'">
+      {{ end }}
       <div class="card-body">
         <div class="flex items-center justify-between mb-2">
           <h2 class="text-lg font-semibold text-base-content">{{ .Title }}</h2>
@@ -29,10 +37,12 @@
         {{ if .Description }}
         <p class="text-base-content/70 text-sm mb-3 line-clamp-2">{{ .Description }}</p>
         {{ end }}
-        <div class="flex items-center gap-4 text-sm text-base-content/60">
+        <div class="flex items-center gap-4 text-sm text-base-content/60 mb-3">
           <span>{{ .TotalSpots }} spots</span>
           <span>${{ .SpotPrice }} each</span>
         </div>
+        <progress class="progress {{ if eq $progress 100 }}progress-success{{ else }}progress-primary{{ end }} w-full" value="{{ $progress }}" max="100"></progress>
+        <p class="text-xs text-base-content/60 mt-1 text-right">{{ $progress }}% filled ({{ $paid }}/{{ .TotalSpots }})</p>
       </div>
     </a>
     {{ end }}

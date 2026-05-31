@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +27,7 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "v0.1.16"
+var Version = "v0.1.17-dev"
 
 var roleHierarchy = map[string]int{
 	"super_admin":    3,
@@ -67,7 +68,11 @@ func main() {
 	ws.InitHub()
 
 	r := gin.New()
-	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}) // #nosec G104 — SetTrustedProxies failure is fatal to startup; logged by Gin and exits on next error
+	proxies := parseTrustedProxies()
+	if err := r.SetTrustedProxies(proxies); err != nil {
+		slog.Warn("Failed to set trusted proxies, falling back to defaults", "error", err)
+		r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}) // #nosec G104
+	}
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Recovery())
 	r.Use(middleware.SecurityHeaders())
@@ -952,6 +957,34 @@ func deactivateAdmin(c *gin.Context) {
 	handlers.RecordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
+}
+
+func parseTrustedProxies() []string {
+	envVal := os.Getenv("TRUSTED_PROXIES")
+	if envVal == "" {
+		return []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}
+	}
+
+	parts := strings.Split(envVal, ",")
+	var proxies []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if _, _, err := net.ParseCIDR(p); err != nil {
+			slog.Warn("Invalid CIDR in TRUSTED_PROXIES, skipping", "cidr", p, "error", err)
+			continue
+		}
+		proxies = append(proxies, p)
+	}
+
+	if len(proxies) == 0 {
+		slog.Warn("TRUSTED_PROXIES contained no valid CIDRs, falling back to defaults")
+		return []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}
+	}
+
+	return proxies
 }
 
 func boolPtr(b bool) *bool {

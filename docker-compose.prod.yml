@@ -28,6 +28,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       GIN_MODE: release
       COOKIE_SECURE: "true"
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     depends_on:
       postgres:
         condition: service_healthy

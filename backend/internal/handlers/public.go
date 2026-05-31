@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -63,8 +64,17 @@ func AboutPage(c *gin.Context) {
 
 // HomePage renders the public home page.
 func HomePage(c *gin.Context) {
+	scheme := "https"
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	host := c.Request.Host
+
 	renderers["home.html"].Render(c, "home.html", mergeMaps(pageData(), gin.H{
-		"title": "Project Syrup - The Waffle Maker",
+		"title":       "Project Syrup - The Waffle Maker",
+		"Host":        host,
+		"Description": "Browse and claim spots on Instagram waffle drops",
+		"OGImage":     scheme + "://" + host + "/static/img/logo.png",
 	}))
 }
 
@@ -76,9 +86,19 @@ func WaffleListPage(c *gin.Context) {
 		return
 	}
 
+	waffleStats := make(map[string]map[string]interface{})
+	for _, w := range waffles {
+		stats, err := services.GetWaffleStats(w.ID)
+		if err != nil {
+			stats = map[string]interface{}{}
+		}
+		waffleStats[w.ID.String()] = stats
+	}
+
 	renderers["waffles.html"].Render(c, "waffles.html", mergeMaps(pageData(), gin.H{
-		"title":   "Active Waffles - Project Syrup",
-		"waffles": waffles,
+		"title":       "Active Waffles - Project Syrup",
+		"waffles":     waffles,
+		"waffleStats": waffleStats,
 	}))
 }
 
@@ -103,11 +123,35 @@ func WaffleDetailPage(c *gin.Context) {
 		stats = map[string]interface{}{}
 	}
 
+	scheme := "https"
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	host := c.Request.Host
+
+	description := waffle.Title + " spot board"
+	if waffle.Description != nil && *waffle.Description != "" {
+		description = *waffle.Description
+	}
+
+	ogImage := ""
+	if waffle.ImageURL != nil && *waffle.ImageURL != "" {
+		img := *waffle.ImageURL
+		if strings.HasPrefix(img, "http") {
+			ogImage = img
+		} else {
+			ogImage = scheme + "://" + host + img
+		}
+	}
+
 	renderers["waffle_detail.html"].Render(c, "waffle_detail.html", mergeMaps(pageData(), gin.H{
-		"title":     waffle.Title + " - Project Syrup",
-		"waffle":    waffle,
-		"spots":     spots,
-		"stats":     stats,
+		"title":       waffle.Title + " - Project Syrup",
+		"waffle":      waffle,
+		"spots":       spots,
+		"stats":       stats,
+		"Host":        host,
+		"Description": description,
+		"OGImage":     ogImage,
 	}))
 }
 

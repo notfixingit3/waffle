@@ -2,6 +2,12 @@
 
 {{ define "title" }}{{ .title }}{{ end }}
 
+{{ define "head" }}
+{{ template "head.html" . }}
+<meta property="og:title" content="{{ .title }}">
+<meta property="og:url" content="https://{{ .Host }}/waffle/{{ .waffle.Slug }}">
+{{ end }}
+
 {{ define "content" }}
 <div class="waffle-detail max-w-4xl mx-auto" data-waffle-id="{{ .waffle.ID }}" data-waffle-slug="{{ .waffle.Slug }}">
   {{/* Winner banner */}}
@@ -57,6 +63,11 @@
     </div>
   </div>
 
+  {{ $paidCount := 0 }}
+  {{ if .stats }}{{ $paidCount = index .stats "paid" }}{{ end }}
+  {{ $progress := 0 }}
+  {{ if gt .waffle.TotalSpots 0 }}{{ $progress = div (mul $paidCount 100) .waffle.TotalSpots }}{{ end }}
+
   {{/* Stats bar */}}
   <div class="card bg-base-100 shadow-sm mb-4">
     <div class="card-body p-4">
@@ -73,6 +84,10 @@
           <div class="text-2xl font-bold text-error">{{ index .stats "paid" }}</div>
           <div class="text-xs text-base-content/60">Paid</div>
         </div>
+      </div>
+      <div class="mt-4">
+        <progress class="progress {{ if eq $progress 100 }}progress-success{{ else }}progress-primary{{ end }} w-full" value="{{ $progress }}" max="100"></progress>
+        <p class="text-xs text-base-content/60 mt-1 text-center">{{ $progress }}% filled ({{ $paidCount }}/{{ .waffle.TotalSpots }})</p>
       </div>
     </div>
   </div>

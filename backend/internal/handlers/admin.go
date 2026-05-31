@@ -92,10 +92,20 @@ func AdminDashboard(c *gin.Context) {
 		waffles = []models.Waffle{}
 	}
 
+	waffleStats := make(map[string]map[string]interface{})
+	for _, w := range waffles {
+		stats, err := services.GetWaffleStats(w.ID)
+		if err != nil {
+			stats = map[string]interface{}{}
+		}
+		waffleStats[w.ID.String()] = stats
+	}
+
 	data := adminNavData(c)
 	data["title"] = "Dashboard - Project Syrup"
 	data["Waffles"] = waffles
 	data["Archived"] = archived
+	data["WaffleStats"] = waffleStats
 	renderers["dashboard.html"].Render(c, "dashboard.html", data)
 }
 
