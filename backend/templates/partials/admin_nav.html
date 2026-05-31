@@ -29,7 +29,7 @@
           <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-[1] w-48 p-2 shadow mt-2">
             <li><a href="/admin/audit" class="{{ if eq .CurrentPath "/admin/audit" }} active{{ end }}">Audit Log</a></li>
             {{ if eq .Role "super_admin" }}
-            <li><a href="/admin/admins" class="{{ if eq .CurrentPath "/admin/admins" }} active{{ end }}">Users</a></li>
+            <li><a href="/admin/admins" class="{{ if eq .CurrentPath "/admin/admins" }} active{{ end }}">Admin Users</a></li>
             <li><a href="/admin/settings#server-settings" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">Server Settings</a></li>
             {{ end }}
           </ul>
