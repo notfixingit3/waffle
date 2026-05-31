@@ -179,7 +179,7 @@ func TestFooterTemplate(t *testing.T) {
 	}
 }
 
-func TestFooterTemplateDevMode(t *testing.T) {
+func TestFooterTemplateVersion(t *testing.T) {
 	tmpl := setupRendererFooter(t)
 
 	var buf bytes.Buffer
@@ -188,16 +188,12 @@ func TestFooterTemplateDevMode(t *testing.T) {
 		"TotalWaffles":  5,
 		"ActiveWaffles": 3,
 		"Version":       "v1.0.0-dev",
-		"DevMode":       true,
 	})
 	if err != nil {
 		t.Fatalf("failed to render footer.html: %v", err)
 	}
 
-	if !bytes.Contains(buf.Bytes(), []byte("DEV")) {
-		t.Fatal("rendered output missing DEV badge in dev mode")
-	}
-	if bytes.Contains(buf.Bytes(), []byte("v1.0.0-dev")) {
-		t.Fatal("rendered output should not show version in dev mode")
+	if !bytes.Contains(buf.Bytes(), []byte("v1.0.0-dev")) {
+		t.Fatal("rendered output missing version string")
 	}
 }
