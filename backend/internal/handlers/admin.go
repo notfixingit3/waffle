@@ -35,10 +35,16 @@ func adminNavData(c *gin.Context) gin.H {
 	displayName := "Admin"
 	if idStr, ok := adminIDStr.(string); ok {
 		if id, err := uuid.Parse(idStr); err == nil {
-			if admin, err := services.GetAdminByID(id); err == nil && admin.DisplayName != nil {
-				displayName = *admin.DisplayName
-			} else if err == nil {
-				displayName = admin.Username
+			if admin, err := services.GetAdminByID(id); err == nil {
+				if admin.DisplayName != nil && *admin.DisplayName != "" {
+					displayName = *admin.DisplayName
+				} else if admin.FirstName != nil && *admin.FirstName != "" && admin.LastName != nil && *admin.LastName != "" {
+					displayName = *admin.FirstName + " " + *admin.LastName
+				} else if admin.FirstName != nil && *admin.FirstName != "" {
+					displayName = *admin.FirstName
+				} else {
+					displayName = admin.Username
+				}
 			}
 		}
 	}
@@ -663,6 +669,8 @@ func CreateAdminPost(c *gin.Context) {
 	username := strings.TrimSpace(c.PostForm("username"))
 	email := strings.TrimSpace(c.PostForm("email"))
 	password := c.PostForm("password")
+	firstName := strings.TrimSpace(c.PostForm("first_name"))
+	lastName := strings.TrimSpace(c.PostForm("last_name"))
 	displayName := strings.TrimSpace(c.PostForm("display_name"))
 	role := c.PostForm("role")
 
@@ -675,6 +683,8 @@ func CreateAdminPost(c *gin.Context) {
 		renderAdminManagementWithError(c, strings.Join(errors, "; "), gin.H{
 			"Username":    username,
 			"Email":       email,
+			"FirstName":   firstName,
+			"LastName":    lastName,
 			"DisplayName": displayName,
 			"Role":        role,
 		})
@@ -686,10 +696,27 @@ func CreateAdminPost(c *gin.Context) {
 		displayNamePtr = &displayName
 	}
 
+	var emailPtr *string
+	if email != "" {
+		emailPtr = &email
+	}
+
+	var firstNamePtr *string
+	if firstName != "" {
+		firstNamePtr = &firstName
+	}
+
+	var lastNamePtr *string
+	if lastName != "" {
+		lastNamePtr = &lastName
+	}
+
 	admin, err := services.CreateAdmin(models.CreateAdminRequest{
 		Username:    username,
-		Email:       email,
+		Email:       emailPtr,
 		Password:    password,
+		FirstName:   firstNamePtr,
+		LastName:    lastNamePtr,
 		DisplayName: displayNamePtr,
 		Role:        role,
 	})
@@ -697,6 +724,8 @@ func CreateAdminPost(c *gin.Context) {
 		renderAdminManagementWithError(c, "Failed to create admin: "+err.Error(), gin.H{
 			"Username":    username,
 			"Email":       email,
+			"FirstName":   firstName,
+			"LastName":    lastName,
 			"DisplayName": displayName,
 			"Role":        role,
 		})
@@ -769,6 +798,38 @@ func DeactivateAdminAPI(c *gin.Context) {
 	}
 
 	RecordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
+
+	c.JSON(http.StatusOK, admin)
+}
+
+func UpdateAdminProfileAPI(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req models.UpdateAdminProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	admin, err := services.UpdateAdminProfile(id, req)
+	if err != nil {
+		if err.Error() == "email already in use" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		if len(err.Error()) >= 17 && err.Error()[:17] == "validation failed" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	RecordAudit(c, "update_admin_profile", "admin", id.String(), "updated profile for admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
 }

@@ -35,13 +35,17 @@
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="label"><span class="label-text font-medium">Total Spots</span></label>
+        <label class="label"><span class="label-text font-medium">Total Spots</span>
+          <span class="tooltip" data-tip="Number of spots available for buyers to claim. Cannot be changed after creation."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="number" value="{{ .waffle.TotalSpots }}" disabled
           class="input input-bordered w-full bg-base-200">
         <p class="text-sm opacity-60 mt-1">Cannot be changed after creation</p>
       </div>
       <div>
-        <label class="label"><span class="label-text font-medium">Price per Spot ($) <span class="text-error">*</span></span></label>
+        <label class="label"><span class="label-text font-medium">Price per Spot ($) <span class="text-error">*</span></span>
+          <span class="tooltip" data-tip="Dollar amount each buyer pays per spot. Shown on the public waffle page."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+        </label>
         <input type="number" name="spot_price" value="{{ .waffle.SpotPrice }}" min="1" required
           class="input input-bordered w-full">
         {{ if .Errors.SpotPrice }}
@@ -60,7 +64,9 @@
     </div>
 
     <div>
-      <label class="label"><span class="label-text font-medium">Instagram Media Links</span></label>
+      <label class="label"><span class="label-text font-medium">Instagram Media Links</span>
+        <span class="tooltip" data-tip="Full Instagram post URL (e.g., https://www.instagram.com/p/ABC123/). These appear as buttons on the public page."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+      </label>
       <div class="flex gap-2">
         <input type="url" id="media-link-input" placeholder="https://www.instagram.com/p/ABC123/"
           class="input input-bordered w-full">

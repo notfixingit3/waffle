@@ -18,6 +18,7 @@
 package renderer
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -47,6 +48,7 @@ func New(funcs template.FuncMap) *Renderer {
 		"deref":      deref,
 		"add":        add,
 		"sub":        sub,
+		"json":       toJSON,
 	}
 
 	for k, v := range funcs {
@@ -225,6 +227,14 @@ func add(a, b int) int {
 
 func sub(a, b int) int {
 	return a - b
+}
+
+func toJSON(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 // NewFromFiles creates a Renderer, parses the given template files, and returns it.

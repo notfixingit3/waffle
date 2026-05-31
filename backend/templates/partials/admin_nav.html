@@ -18,8 +18,21 @@
         <a href="/admin/dashboard" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
         <a href="/admin/waffles/new" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
         <a href="/admin/reports" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
-        {{ if eq .Role "super_admin" }}
-        <a href="/admin/admins" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
+        {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
+        <div class="dropdown">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm{{ if or (eq .CurrentPath "/admin/audit") (eq .CurrentPath "/admin/admins") (eq .CurrentPath "/admin/settings") }} btn-active{{ end }}">Admin Tools
+            <svg class="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-[1] w-48 p-2 shadow mt-2">
+            <li><a href="/admin/audit" class="{{ if eq .CurrentPath "/admin/audit" }} active{{ end }}">Audit Log</a></li>
+            {{ if eq .Role "super_admin" }}
+            <li><a href="/admin/admins" class="{{ if eq .CurrentPath "/admin/admins" }} active{{ end }}">Users</a></li>
+            <li><a href="/admin/settings#server-settings" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">Server Settings</a></li>
+            {{ end }}
+          </ul>
+        </div>
         {{ end }}
       </div>
 
@@ -33,11 +46,8 @@
             </svg>
           </div>
           <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-[1] w-52 p-2 shadow mt-2">
-            <li><a href="/admin/settings" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">Settings</a></li>
+            <li><a href="/admin/settings" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">Profile Settings</a></li>
             <li><a href="/admin/settings#login-history" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">My Login History</a></li>
-            {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
-            <li><a href="/admin/audit" class="{{ if eq .CurrentPath "/admin/audit" }} active{{ end }}">Audit Log</a></li>
-            {{ end }}
             <li><a href="/about">About</a></li>
             <li>
               <button type="button" class="theme-toggle" onclick="ThemeToggle.toggle()" aria-label="Toggle theme">
@@ -70,15 +80,22 @@
     <a href="/admin/dashboard" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
     <a href="/admin/waffles/new" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
     <a href="/admin/reports" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
-    {{ if eq .Role "super_admin" }}
-    <a href="/admin/admins" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
+    {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
+    <div class="collapse collapse-arrow bg-transparent">
+      <input type="checkbox" />
+      <div class="collapse-title btn btn-ghost btn-sm w-full text-left p-0 min-h-0 h-auto font-medium{{ if or (eq .CurrentPath "/admin/audit") (eq .CurrentPath "/admin/admins") (eq .CurrentPath "/admin/settings") }} btn-active{{ end }}">Admin Tools</div>
+      <div class="collapse-content p-0 pl-4 space-y-1">
+        <a href="/admin/audit" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/audit" }} btn-active{{ end }}">Audit Log</a>
+        {{ if eq .Role "super_admin" }}
+        <a href="/admin/admins" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Users</a>
+        <a href="/admin/settings#server-settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Server Settings</a>
+        {{ end }}
+      </div>
+    </div>
     {{ end }}
     <div class="border-t border-neutral-focus pt-2 mt-2 space-y-1">
-      <a href="/admin/settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Settings</a>
+      <a href="/admin/settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Profile Settings</a>
       <a href="/admin/settings#login-history" class="btn btn-ghost btn-sm w-full text-left">My Login History</a>
-      {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
-      <a href="/admin/audit" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/audit" }} btn-active{{ end }}">Audit Log</a>
-      {{ end }}
       <a href="/about" class="btn btn-ghost btn-sm w-full text-left">About</a>
       <button type="button" class="btn btn-ghost btn-sm w-full text-left theme-toggle" onclick="ThemeToggle.toggle()" aria-label="Toggle theme">
         <span class="flex items-center gap-2">

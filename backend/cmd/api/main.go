@@ -26,7 +26,7 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-var Version = "v0.1.11"
+var Version = "v0.1.16"
 
 var roleHierarchy = map[string]int{
 	"super_admin":    3,
@@ -222,6 +222,7 @@ func main() {
 	adminAuth.GET("/me/login-history", handlers.GetMyLoginHistoryAPI)
 	adminAuth.POST("/change-password", changePassword)
 	adminAuth.PATCH("/me/timezone", handlers.UpdateTimezoneAPI)
+	adminAuth.PATCH("/me/profile", handlers.UpdateProfileAPI)
 	adminAuth.GET("/login-history", handlers.GetAllLoginHistoryAPI)
 	adminAuth.GET("/audit", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogAPI)
 	adminAuth.GET("/audit/:id", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogEntryAPI)
@@ -229,14 +230,18 @@ func main() {
 	adminAuth.GET("/settings/whois-server", handlers.GetWhoisSettingsAPI)
 
 	adminSuperSettings := admin.Group("/settings", middleware.RequireAuth, middleware.RequireSuperAdmin)
+	adminSuperSettings.GET("/", handlers.GetAllSettingsAPI)
+	adminSuperSettings.PATCH("/:key", handlers.UpdateSettingAPI)
 	adminSuperSettings.PATCH("/whois-server", handlers.UpdateWhoisSettingsAPI)
 
 	adminUsers := admin.Group("/admins", middleware.RequireAuth, middleware.RequireSuperAdmin)
 	adminUsers.GET("/", listAdmins)
+	adminUsers.GET("/:id", getAdmin)
 	adminUsers.POST("/", createAdmin)
 	adminUsers.PATCH("/:id", updateAdmin)
 	adminUsers.DELETE("/:id", deactivateAdmin)
 	adminUsers.PATCH("/:id/password", handlers.ResetAdminPasswordAPI)
+	adminUsers.PATCH("/:id/profile", handlers.UpdateAdminProfileAPI)
 
 	adminWaffles := admin.Group("/waffles", middleware.RequireAuth)
 	adminWaffles.POST("/", createWaffle)
@@ -832,6 +837,20 @@ func listAdmins(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"admins": admins})
 }
 
+func getAdmin(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	admin, err := services.GetAdminByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "admin not found"})
+		return
+	}
+	c.JSON(http.StatusOK, admin)
+}
+
 func createAdmin(c *gin.Context) {
 	var req models.CreateAdminRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -839,8 +858,8 @@ func createAdmin(c *gin.Context) {
 		return
 	}
 
-	if req.Username == "" || req.Email == "" || req.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username, email, and password are required"})
+	if req.Username == "" || req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required"})
 		return
 	}
 

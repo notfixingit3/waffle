@@ -3,7 +3,7 @@
 {{ define "title" }}User Management - Project Syrup{{ end }}
 
 {{ define "content" }}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-base-content">User Management</h1>
     <button type="button" onclick="toggleCreateForm()"
@@ -17,6 +17,73 @@
     <span>{{ .Error }}</span>
   </div>
   {{ end }}
+
+  <section class="mb-4" aria-label="Role permissions">
+    <details class="collapse collapse-arrow lg:hidden bg-base-100 shadow-sm border border-base-200">
+      <summary class="collapse-title px-4 py-3 min-h-0">
+        <span id="role-permissions-title" class="font-semibold text-base-content">Which role should I choose?</span>
+        <span class="block text-xs opacity-70 mt-1">Choose the least access needed. Tap for permissions.</span>
+      </summary>
+      <div class="collapse-content px-4 pb-4 pt-0">
+        <div class="space-y-3 text-sm">
+          <div>
+            <p class="font-semibold text-secondary">Super Admin</p>
+            <p class="opacity-70">Owner-level access: users, roles, archive/delete, winner edits, and system settings.</p>
+          </div>
+          <div>
+            <p class="font-semibold">Admin</p>
+            <p class="opacity-70">Trusted operator: manage waffles/spots, reports, audit logs, and login history.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-info">Waffle Manager</p>
+            <p class="opacity-70">Helper access: manage waffles/spots and enter initial winners; no user controls, audit log, archive/delete, or winner edits.</p>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="hidden lg:block card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200">
+        <div>
+          <h2 id="role-permissions-title-desktop" class="font-semibold text-base-content">Role permissions</h2>
+          <p class="text-xs opacity-70">Choose the least access someone needs.</p>
+        </div>
+        <span class="badge badge-outline">Super admin only</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table table-sm text-sm">
+          <thead>
+            <tr>
+              <th class="whitespace-normal">Role</th>
+              <th class="whitespace-normal">Best for</th>
+              <th class="whitespace-normal">Can do</th>
+              <th class="whitespace-normal">Limits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-secondary">Super Admin</span></td>
+              <td>Owner</td>
+              <td class="whitespace-normal">Everything, including users, roles, archive/delete, winner edits, and system settings</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-ghost">Admin</span></td>
+              <td>Trusted operator</td>
+              <td class="whitespace-normal">Manage waffles/spots, reports, audit logs, and login history</td>
+              <td class="whitespace-normal">No user or system settings controls</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-info">Waffle Manager</span></td>
+              <td>Drop helper</td>
+              <td class="whitespace-normal">Manage waffles/spots and enter initial winners</td>
+              <td class="whitespace-normal">No users, audit log, archive/delete, or winner edits</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 
   <div id="create-form" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6 mb-6">
     <h2 class="text-lg font-semibold text-base-content mb-4">Create New User</h2>
@@ -37,7 +104,19 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="label"><span class="label-text">Password <span class="text-error">*</span></span></label>
+            <label class="label"><span class="label-text">First Name</span></label>
+            <input type="text" name="first_name" value="{{ .FirstName }}"
+              class="input input-bordered w-full">
+          </div>
+          <div>
+            <label class="label"><span class="label-text">Last Name</span></label>
+            <input type="text" name="last_name" value="{{ .LastName }}"
+              class="input input-bordered w-full">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="label"><span class="label-text">Password <span class="text-error">*</span></span><span class="tooltip" data-tip="Initial password for the new user. They will be prompted to change it on first login."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span></label>
             <input type="password" name="password" required minlength="8"
               class="input input-bordered w-full">
           </div>
@@ -51,11 +130,13 @@
           <label class="label"><span class="label-text">Role</span></label>
           <select name="role"
             class="select select-bordered w-full"
+            aria-describedby="role-help"
             data-original-role="{{ .Role }}">
             <option value="admin"{{ if eq "admin" .Role }} selected{{ end }}>Admin</option>
             <option value="super_admin"{{ if eq "super_admin" .Role }} selected{{ end }}>Super Admin</option>
             <option value="waffle_manager"{{ if eq "waffle_manager" .Role }} selected{{ end }}>Waffle Manager</option>
           </select>
+          <p id="role-help" class="text-xs opacity-60 mt-2">Most helpers should be Waffle Manager. Use Admin for trusted operators, and Super Admin only for account owners.</p>
         </div>
         <div class="flex items-center gap-3">
           <button type="submit"
@@ -74,10 +155,11 @@
         <thead>
           <tr>
             <th class="text-left">User</th>
+            <th class="text-left">Name</th>
+            <th class="text-left">Social</th>
             <th class="text-left">Role</th>
             <th class="text-left">Status</th>
             <th class="text-left">Last Login</th>
-            <th class="text-left">Last IP</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
@@ -89,6 +171,24 @@
                 <p class="font-medium text-base-content">{{ if .DisplayName }}{{ .DisplayName }}{{ else }}{{ .Username }}{{ end }}</p>
                 <p class="text-sm opacity-60">{{ .Email }}</p>
               </div>
+            </td>
+            <td class="px-4 py-3">
+              {{ if or .FirstName .LastName }}
+                <p class="text-sm">{{ if .FirstName }}{{ .FirstName }}{{ end }}{{ if and .FirstName .LastName }} {{ end }}{{ if .LastName }}{{ .LastName }}{{ end }}</p>
+              {{ else }}
+                <span class="text-sm opacity-40">—</span>
+              {{ end }}
+            </td>
+            <td class="px-4 py-3">
+              {{ if .SocialLinks }}
+                <div class="flex gap-1">
+                  {{ range .SocialLinks }}
+                    <span class="badge badge-sm badge-outline" title="{{ .Platform }}: {{ .Handle }}">{{ .Platform }}</span>
+                  {{ end }}
+                </div>
+              {{ else }}
+                <span class="text-sm opacity-40">—</span>
+              {{ end }}
             </td>
             <td class="px-4 py-3">
               <span class="badge {{ if eq .Role "super_admin" }}badge-secondary{{ else if eq .Role "waffle_manager" }}badge-info{{ else }}badge-ghost{{ end }}">
@@ -103,13 +203,10 @@
             <td class="px-4 py-3 opacity-60">
               {{ if .LastLoginAt }}{{ formatDate "Jan 2, 2006" .LastLoginAt }}{{ else }}Never{{ end }}
             </td>
-            <td class="px-4 py-3 opacity-60">
-              {{ if .LastLoginIP }}{{ .LastLoginIP }}{{ else }}—{{ end }}
-            </td>
             <td class="px-4 py-3 text-right">
               <div class="flex items-center justify-end gap-2">
                 <select
-                  class="role-select select select-bordered select-sm"
+                  class="role-select select select-bordered select-sm tooltip" data-tip="Changes this user's access level. Demoting requires password confirmation."
                   data-admin-id="{{ .ID }}"
                   data-original-role="{{ .Role }}"
                   {{ if not .Active }}disabled{{ end }}>
@@ -119,13 +216,18 @@
                 </select>
                 {{ if .Active }}
                 {{ if ne (printf "%s" .ID) $.CurrentAdminID }}
+                <button type="button" onclick="openEditProfileModal('{{ .ID }}', '{{ .Username }}', '{{ if .DisplayName }}{{ .DisplayName }}{{ end }}', '{{ if .FirstName }}{{ .FirstName }}{{ end }}', '{{ if .LastName }}{{ .LastName }}{{ end }}', '{{ if .Email }}{{ .Email }}{{ end }}')"
+                  class="btn btn-ghost btn-xs tooltip" data-tip="Edit user's profile information."
+                  data-admin-id="{{ .ID }}">
+                  Edit Profile
+                </button>
                 <button type="button" onclick="toggleResetForm('{{ .ID }}')"
-                  class="btn btn-ghost btn-xs">
+                  class="btn btn-ghost btn-xs tooltip" data-tip="Resets the user's password. They will use the new password on next login.">
                   Reset Password
                 </button>
                 {{ end }}
                 <button type="button" onclick="deactivateAdmin('{{ .ID }}', '{{ if .DisplayName }}{{ .DisplayName }}{{ else }}{{ .Username }}{{ end }}')"
-                  class="btn btn-error btn-xs btn-outline">
+                  class="btn btn-error btn-xs btn-outline tooltip" data-tip="Disables this user's account immediately. They cannot log in until re-activated.">
                   Deactivate
                 </button>
                 {{ end }}
@@ -134,7 +236,7 @@
           </tr>
           {{ if ne (printf "%s" .ID) $.CurrentAdminID }}
           <tr id="reset-form-{{ .ID }}" class="hidden">
-            <td colspan="6" class="px-4 py-3 bg-base-200">
+            <td colspan="7" class="px-4 py-3 bg-base-200">
               <div class="flex items-center gap-2">
                 <input type="password" placeholder="New password (8+ chars)"
                   class="input input-bordered flex-1">
@@ -166,7 +268,7 @@
         <p id="password-modal-message" class="text-sm opacity-70 mt-1"></p>
         <div class="mt-4">
           <label class="label">
-            <span class="label-text">Current Password</span>
+            <span class="label-text">Current Password</span><span class="tooltip" data-tip="Enter YOUR password to confirm this action."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
           </label>
           <input type="password" id="password-modal-input" placeholder="Enter your password"
             class="input input-bordered w-full">
@@ -175,6 +277,58 @@
         <div class="card-actions justify-end mt-4">
           <button type="button" onclick="hidePasswordModal()" class="btn btn-ghost btn-sm">Cancel</button>
           <button type="button" onclick="confirmPasswordModal()" class="btn btn-error btn-sm">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="edit-profile-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="card bg-base-100 shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="card-body">
+        <h3 class="card-title text-lg">Edit Profile</h3>
+        <p class="text-sm opacity-70 mt-1">Update profile information for <span id="edit-profile-username" class="font-medium"></span></p>
+        
+        <div id="edit-profile-error" class="alert alert-error mt-4 hidden">
+          <span id="edit-profile-error-text"></span>
+        </div>
+        <div id="edit-profile-success" class="alert alert-success mt-4 hidden">
+          <span>Profile updated successfully</span>
+        </div>
+
+        <form id="edit-profile-form" class="space-y-4 mt-4">
+          <input type="hidden" id="edit-profile-admin-id">
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label"><span class="label-text">First Name</span></label>
+              <input type="text" id="edit-profile-first-name" class="input input-bordered w-full" placeholder="Enter first name">
+            </div>
+            <div>
+              <label class="label"><span class="label-text">Last Name</span></label>
+              <input type="text" id="edit-profile-last-name" class="input input-bordered w-full" placeholder="Enter last name">
+            </div>
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">Email</span></label>
+            <input type="email" id="edit-profile-email" class="input input-bordered w-full" placeholder="Enter email">
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">Display Name</span></label>
+            <input type="text" id="edit-profile-display-name" class="input input-bordered w-full" placeholder="Enter display name">
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">Social Links</span></label>
+            <div id="edit-profile-social-links" class="space-y-2"></div>
+            <button type="button" class="btn btn-sm btn-outline mt-2" onclick="addEditProfileSocialLink()">+ Add Social Link</button>
+          </div>
+        </form>
+
+        <div class="card-actions justify-end mt-6">
+          <button type="button" onclick="closeEditProfileModal()" class="btn btn-ghost btn-sm">Cancel</button>
+          <button type="button" onclick="saveEditProfile()" class="btn btn-primary btn-sm" id="edit-profile-save-btn">Save</button>
         </div>
       </div>
     </div>
@@ -376,5 +530,157 @@ document.querySelectorAll('.role-select').forEach(select => {
     }
   });
 });
+
+var EditProfileModal = (function() {
+  'use strict';
+
+  function open(adminId, username, displayName, firstName, lastName, email) {
+    document.getElementById('edit-profile-admin-id').value = adminId;
+    document.getElementById('edit-profile-username').textContent = username;
+    document.getElementById('edit-profile-display-name').value = displayName || '';
+    document.getElementById('edit-profile-first-name').value = firstName || '';
+    document.getElementById('edit-profile-last-name').value = lastName || '';
+    document.getElementById('edit-profile-email').value = email || '';
+
+    var container = document.getElementById('edit-profile-social-links');
+    container.innerHTML = '';
+
+    // Fetch admin details to get social links
+    fetch('/api/admin/admins/' + adminId, {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res) {
+      if (res.ok) {
+        return res.json().then(function(data) {
+          if (data.social_links && data.social_links.length > 0) {
+            for (var i = 0; i < data.social_links.length; i++) {
+              addSocialLinkRow(container, data.social_links[i].platform, data.social_links[i].handle);
+            }
+          }
+        });
+      }
+    })
+    .catch(function() {
+      // Ignore fetch errors, user can still edit other fields
+    });
+
+    document.getElementById('edit-profile-error').classList.add('hidden');
+    document.getElementById('edit-profile-success').classList.add('hidden');
+    document.getElementById('edit-profile-modal').classList.remove('hidden');
+  }
+
+  function close() {
+    document.getElementById('edit-profile-modal').classList.add('hidden');
+  }
+
+  function addSocialLinkRow(container, platform, handle) {
+    var row = document.createElement('div');
+    row.className = 'social-link-row flex gap-2 items-center';
+    row.innerHTML =
+      '<select class="social-platform select select-bordered select-sm flex-1">' +
+      '<option value="">Select platform...</option>' +
+      '<option value="instagram">Instagram</option>' +
+      '<option value="tiktok">TikTok</option>' +
+      '<option value="x">X/Twitter</option>' +
+      '<option value="facebook">Facebook</option>' +
+      '<option value="youtube">YouTube</option>' +
+      '<option value="discord">Discord</option>' +
+      '</select>' +
+      '<input type="text" class="social-handle input input-bordered input-sm flex-1" placeholder="Handle">' +
+      '<button type="button" class="btn btn-sm btn-error btn-outline" onclick="this.parentElement.remove()">Remove</button>';
+    container.appendChild(row);
+    if (platform) {
+      row.querySelector('.social-platform').value = platform;
+    }
+    if (handle) {
+      row.querySelector('.social-handle').value = handle;
+    }
+  }
+
+  function save() {
+    var btn = document.getElementById('edit-profile-save-btn');
+    var errorBanner = document.getElementById('edit-profile-error');
+    var errorText = document.getElementById('edit-profile-error-text');
+    var successBanner = document.getElementById('edit-profile-success');
+
+    errorBanner.classList.add('hidden');
+    successBanner.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    var adminId = document.getElementById('edit-profile-admin-id').value;
+    var socialLinks = [];
+    var rows = document.querySelectorAll('#edit-profile-social-links .social-link-row');
+    for (var i = 0; i < rows.length; i++) {
+      var platform = rows[i].querySelector('.social-platform').value;
+      var handle = rows[i].querySelector('.social-handle').value;
+      if (platform && handle) {
+        socialLinks.push({ platform: platform, handle: handle });
+      }
+    }
+
+    var payload = {
+      display_name: document.getElementById('edit-profile-display-name').value || null,
+      first_name: document.getElementById('edit-profile-first-name').value || null,
+      last_name: document.getElementById('edit-profile-last-name').value || null,
+      email: document.getElementById('edit-profile-email').value || null,
+      social_links: socialLinks
+    };
+
+    fetch('/api/admin/admins/' + adminId + '/profile', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          successBanner.classList.remove('hidden');
+          setTimeout(function() {
+            window.location.reload();
+          }, 1000);
+        } else {
+          errorText.textContent = data.error || 'Failed to update profile';
+          errorBanner.classList.remove('hidden');
+        }
+      });
+    })
+    .catch(function() {
+      errorText.textContent = 'Failed to update profile';
+      errorBanner.classList.remove('hidden');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Save';
+    });
+  }
+
+  return {
+    open: open,
+    close: close,
+    addSocialLinkRow: addSocialLinkRow,
+    save: save
+  };
+})();
+
+function openEditProfileModal(adminId, username, displayName, firstName, lastName, email) {
+  EditProfileModal.open(adminId, username, displayName, firstName, lastName, email);
+}
+
+function closeEditProfileModal() {
+  EditProfileModal.close();
+}
+
+function addEditProfileSocialLink() {
+  var container = document.getElementById('edit-profile-social-links');
+  EditProfileModal.addSocialLinkRow(container, '', '');
+}
+
+function saveEditProfile() {
+  EditProfileModal.save();
+}
 </script>
 {{ end }}
