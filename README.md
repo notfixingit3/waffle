@@ -266,6 +266,8 @@ Project Syrup exists because two glass artists kept running great waffles the ha
 </td>
 <td align="center" width="50%">
   <a href="https://www.instagram.com/crysis_designs/">
+    <img src="backend/cmd/api/static/img/crysis.jpg" alt="Crysis Designs Logo" width="100" style="border-radius: 50%;" />
+    <br />
     <strong>Crysis Designs</strong>
   </a>
   <br />
