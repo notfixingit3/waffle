@@ -268,21 +268,22 @@ var AdminSpotActions = (function() {
   }
 
   function executeSetWinner() {
-    var input = document.getElementById('winner-spot-input');
+    var select = document.getElementById('winner-spot-select');
     var errorEl = document.getElementById('winner-error');
     var successEl = document.getElementById('winner-success');
 
     errorEl.classList.add('hidden');
     successEl.classList.add('hidden');
 
-    var spotNumber = parseInt(input.value, 10);
+    var spotNumber = parseInt(select.value, 10);
     if (isNaN(spotNumber) || spotNumber < 1) {
-      errorEl.textContent = 'Please enter a valid spot number.';
+      errorEl.textContent = 'Please select a winning spot.';
       errorEl.classList.remove('hidden');
       return;
     }
 
-    if (!confirm('Set spot #' + spotNumber + ' as the WINNER? This will complete the waffle and mark all other paid spots as losers. This cannot be undone.')) return;
+    var selectedText = select.options[select.selectedIndex].text;
+    if (!confirm('Set ' + selectedText + ' as the WINNER? This will complete the waffle and mark all other paid spots as losers. This cannot be undone.')) return;
 
     var btn = document.getElementById('set-winner-btn');
     btn.disabled = true;

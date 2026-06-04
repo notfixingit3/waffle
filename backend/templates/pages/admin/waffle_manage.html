@@ -197,13 +197,15 @@
 
     <div class="flex gap-3 items-end">
       <div class="flex-1">
-        <label for="winner-spot-input" class="label"><span class="label-text">Winning Spot Number</span></label>
-        <input type="number" id="winner-spot-input" min="1" max="{{ .waffle.TotalSpots }}"
-          class="input input-bordered w-full"
-          placeholder="Enter spot number">
+        <label for="winner-spot-select" class="label"><span class="label-text">Winning Spot</span></label>
+        <select id="winner-spot-select" class="select select-bordered w-full">
+          <option value="">— Select a bidder —</option>
+          {{ range .spots }}{{ if eq .Status "paid" }}
+          <option value="{{ .Number }}">Spot #{{ .Number }}{{ if .ClaimedByHandle }} — @{{ deref .ClaimedByHandle }}{{ end }}</option>
+          {{ end }}{{ end }}
+        </select>
       </div>
-      <button type="button" id="set-winner-btn"
-        class="btn btn-primary">
+      <button type="button" id="set-winner-btn" class="btn btn-primary">
         Set Winner
       </button>
     </div>
