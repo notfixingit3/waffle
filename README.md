@@ -316,6 +316,28 @@ Project Syrup is built out of passion for the glass art community. If this app h
 
 ---
 
+## Third-Party Libraries & Licenses
+
+Project Syrup utilizes several excellent open-source third-party libraries:
+
+### Backend (Go)
+- **[Gin](https://github.com/gin-gonic/gin)** — MIT License
+- **[Gin CORS middleware](https://github.com/gin-contrib/cors)** — MIT License
+- **[Golang JWT](https://github.com/golang-jwt/jwt)** — MIT License
+- **[Golang Migrate](https://github.com/golang-migrate/migrate)** — MIT License
+- **[Google UUID](https://github.com/google/uuid)** — BSD 3-Clause License
+- **[Gorilla WebSocket](https://github.com/gorilla/websocket)** — BSD 2-Clause License
+- **[pgx (PostgreSQL Driver)](https://github.com/jackc/pgx)** — MIT License
+- **[Go Crypto Subrepository](https://golang.org/x/crypto)** — BSD 3-Clause License
+- **[Go Rate Limit Subrepository](https://golang.org/x/time)** — BSD 3-Clause License
+
+### Frontend & Styling
+- **[Tailwind CSS](https://tailwindcss.com/)** — MIT License
+- **[DaisyUI](https://daisyui.com/)** — MIT License
+- **[Inter Font](https://rsms.me/inter/)** — SIL Open Font License 1.1
+
+---
+
 ## License
 
 MIT — do whatever you want, just don't blame me when your waffle fills up in 30 seconds.
