@@ -252,30 +252,26 @@ This is a personal project, but issues and PRs are welcome. The codebase priorit
 Project Syrup exists because two glass artists kept running great waffles the hard way.
 
 <table>
-<tr>
-<td align="center" width="50%">
-  <a href="https://www.instagram.com/dani_boo_glass/">
-    <img src="backend/cmd/api/static/img/dani.png" alt="Dani Boo Glass Logo" width="100" />
-    <br />
-    <strong>Dani Boo Glass</strong>
-  </a>
-  <br />
-  <a href="https://www.instagram.com/dani_boo_glass/">
-    <img src="https://img.shields.io/badge/Instagram-dani__boo__glass-E4405F?logo=instagram&logoColor=white" alt="Dani Boo Glass on Instagram" />
-  </a>
-</td>
-<td align="center" width="50%">
-  <a href="https://www.instagram.com/crysis_designs/">
-    <img src="backend/cmd/api/static/img/crysis.png" alt="Crysis Designs Logo" width="100" />
-    <br />
-    <strong>Crysis Designs</strong>
-  </a>
-  <br />
-  <a href="https://www.instagram.com/crysis_designs/">
-    <img src="https://img.shields.io/badge/Instagram-crysis__designs-E4405F?logo=instagram&logoColor=white" alt="Crysis Designs on Instagram" />
-  </a>
-</td>
-</tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://www.instagram.com/dani_boo_glass/">
+        <img src="backend/cmd/api/static/img/dani.png" alt="Dani Boo Glass Logo" width="100" />
+      </a>
+      <h3>Dani Boo Glass</h3>
+      <a href="https://www.instagram.com/dani_boo_glass/">
+        <img src="https://img.shields.io/badge/Instagram-dani__boo__glass-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Dani Boo Glass on Instagram" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://www.instagram.com/crysis_designs/">
+        <img src="backend/cmd/api/static/img/crysis.png" alt="Crysis Designs Logo" width="100" />
+      </a>
+      <h3>Crysis Designs</h3>
+      <a href="https://www.instagram.com/crysis_designs/">
+        <img src="https://img.shields.io/badge/Instagram-crysis__designs-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Crysis Designs on Instagram" />
+      </a>
+    </td>
+  </tr>
 </table>
 
 Special shout out to [Dani Boo Glass](https://www.instagram.com/dani_boo_glass/) and [Crysis Designs](https://www.instagram.com/crysis_designs/) for creating the original Waffle and for driving me nuts watching them copy/paste spot lists over and over again in chat.
