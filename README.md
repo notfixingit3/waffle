@@ -122,6 +122,19 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 
 Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github.com/notfixingit3/waffle/pkgs/container/waffle) for `linux/amd64` and `linux/arm64`.
 
+### Upgrading to v0.1.19+
+
+Beginning in `v0.1.19`, database migrations are embedded directly in the Go application binary.
+
+If you are upgrading an existing deployment from a version prior to `v0.1.19`:
+1. **Update `docker-compose.prod.yml`:** The volume mount for migrations (`- ./backend/migrations:/app/migrations:ro`) has been removed and is no longer needed. You can safely delete it from your local compose file.
+2. **Clean up files (Optional):** You no longer need to copy the `backend/migrations/` directory to your server. Any existing `migrations/` directory on your server can be safely deleted.
+3. **Pull and redeploy:**
+   ```bash
+   docker compose -f docker-compose.prod.yml pull
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
 ## Release Channels
 
 The following channels are available for the Docker image:
