@@ -14,11 +14,23 @@
   {{ if eq .waffle.Status "completed" }}
   <div class="alert alert-warning mb-6 text-center">
     <div class="text-3xl mb-1">🏆</div>
+    {{ if gt .waffle.ItemCount 1 }}
+    <p class="text-lg font-bold mb-2">Winners:</p>
+    <div class="flex flex-col gap-1 items-center">
+      {{ range $idx, $w := .waffle.Winners }}
+      <div class="text-sm font-medium">
+        Item #{{ add $idx 1 }}: <span class="font-bold">Spot #{{ $w.SpotNumber }}</span>
+        {{ if $w.InstagramHandle }} — <span class="opacity-80">@{{ $w.InstagramHandle }}</span>{{ end }}
+      </div>
+      {{ end }}
+    </div>
+    {{ else }}
     <p class="text-lg font-bold">
       Winner: Spot #{{ deref .waffle.WinningSpotNumber }}
     </p>
     {{ if .waffle.WinningInstagramHandle }}
     <p class="text-sm mt-1">@{{ deref .waffle.WinningInstagramHandle }}</p>
+    {{ end }}
     {{ end }}
   </div>
   {{ end }}
@@ -52,10 +64,12 @@
 
       {{ if .waffle.InstagramMediaLinks }}
       <div class="flex flex-wrap gap-2 mt-3">
-        {{ range .waffle.InstagramMediaLinks }}
-        <a href="{{ . }}" target="_blank" rel="noopener noreferrer"
+        {{ $itemCount := .waffle.ItemCount }}
+        {{ $linksCount := len .waffle.InstagramMediaLinks }}
+        {{ range $idx, $link := .waffle.InstagramMediaLinks }}
+        <a href="{{ $link }}" target="_blank" rel="noopener noreferrer"
            class="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full hover:bg-accent/20 transition-colors border border-accent">
-          📸 IG Post
+          📸 {{ if and (gt $itemCount 1) (eq $linksCount $itemCount) }}Item #{{ add $idx 1 }} IG Post{{ else }}IG Post{{ end }}
         </a>
         {{ end }}
       </div>

@@ -14,6 +14,13 @@ import (
 
 func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 	slug := generateSlug(req.Title)
+	itemCount := req.ItemCount
+	if itemCount <= 0 {
+		itemCount = 1
+	}
+	if itemCount > 10 {
+		itemCount = 10
+	}
 	
 	waffle := &models.Waffle{
 		ID:                    uuid.New(),
@@ -26,6 +33,7 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 		PaymentInfo:           req.PaymentInfo,
 		InstagramMediaLinks:   req.InstagramMediaLinks,
 		Status:                models.WaffleStatusActive,
+		ItemCount:             itemCount,
 		CreatedAt:             time.Now(),
 	}
 
@@ -36,10 +44,10 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 	defer tx.Rollback(context.Background())
 
 	_, err = tx.Exec(context.Background(), `
-		INSERT INTO waffles (id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, instagram_media_links, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO waffles (id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, instagram_media_links, created_at, item_count)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, waffle.ID, waffle.Slug, waffle.Title, waffle.Description, waffle.ImageURL,
-		waffle.TotalSpots, waffle.SpotPrice, waffle.PaymentInfo, waffle.Status, waffle.InstagramMediaLinks, waffle.CreatedAt)
+		waffle.TotalSpots, waffle.SpotPrice, waffle.PaymentInfo, waffle.Status, waffle.InstagramMediaLinks, waffle.CreatedAt, waffle.ItemCount)
 	if err != nil {
 		return nil, fmt.Errorf("insert waffle: %w", err)
 	}
@@ -64,13 +72,13 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 func GetWaffleBySlug(slug string) (*models.Waffle, error) {
 	waffle := &models.Waffle{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at
+		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 		FROM waffles WHERE slug = $1
 	`, slug).Scan(
 		&waffle.ID, &waffle.Slug, &waffle.Title, &waffle.Description, &waffle.ImageURL,
 		&waffle.TotalSpots, &waffle.SpotPrice, &waffle.PaymentInfo, &waffle.Status,
 		&waffle.WinningSpotNumber, &waffle.WinningInstagramHandle, &waffle.InstagramMediaLinks, &waffle.Archived,
-		&waffle.CreatedAt, &waffle.CompletedAt,
+		&waffle.CreatedAt, &waffle.CompletedAt, &waffle.ItemCount, &waffle.WinningSpotNumbers, &waffle.WinningInstagramHandles,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get waffle: %w", err)
@@ -81,13 +89,13 @@ func GetWaffleBySlug(slug string) (*models.Waffle, error) {
 func GetWaffleByID(id uuid.UUID) (*models.Waffle, error) {
 	waffle := &models.Waffle{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at
+		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 		FROM waffles WHERE id = $1
 	`, id).Scan(
 		&waffle.ID, &waffle.Slug, &waffle.Title, &waffle.Description, &waffle.ImageURL,
 		&waffle.TotalSpots, &waffle.SpotPrice, &waffle.PaymentInfo, &waffle.Status,
 		&waffle.WinningSpotNumber, &waffle.WinningInstagramHandle, &waffle.InstagramMediaLinks, &waffle.Archived,
-		&waffle.CreatedAt, &waffle.CompletedAt,
+		&waffle.CreatedAt, &waffle.CompletedAt, &waffle.ItemCount, &waffle.WinningSpotNumbers, &waffle.WinningInstagramHandles,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get waffle: %w", err)
@@ -214,56 +222,78 @@ func ReleaseSpot(spotID uuid.UUID) error {
 	return nil
 }
 
-func SetWinner(waffleID uuid.UUID, winningSpotNumber int) error {
+func SetWinner(waffleID uuid.UUID, winningSpotNumbers []int) error {
+	if len(winningSpotNumbers) == 0 {
+		return fmt.Errorf("no winning spot numbers provided")
+	}
+
 	tx, err := db.Pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback(context.Background())
 
-	var totalSpots, paidSpots int
+	var totalSpots, paidSpots, itemCount int
+	var status string
 	err = tx.QueryRow(context.Background(), `
-		SELECT 
-			(SELECT total_spots FROM waffles WHERE id = $1),
+		SELECT total_spots, status, item_count,
 			(SELECT COUNT(*) FROM spots WHERE waffle_id = $1 AND status = $2)
-	`, waffleID, models.SpotStatusPaid).Scan(&totalSpots, &paidSpots)
+		FROM waffles WHERE id = $1
+	`, waffleID, models.SpotStatusPaid).Scan(&totalSpots, &status, &itemCount, &paidSpots)
 	if err != nil {
 		return fmt.Errorf("check filled status: %w", err)
+	}
+	if status != string(models.WaffleStatusActive) {
+		return fmt.Errorf("waffle is not active")
 	}
 	if totalSpots != paidSpots {
 		return fmt.Errorf("cannot set winner: only %d of %d spots are paid", paidSpots, totalSpots)
 	}
-
-	var winningSpotID uuid.UUID
-	var winningHandle string
-	err = tx.QueryRow(context.Background(), `
-		SELECT id, claimed_by_handle FROM spots 
-		WHERE waffle_id = $1 AND number = $2 AND status = $3
-		FOR UPDATE
-	`, waffleID, winningSpotNumber, models.SpotStatusPaid).Scan(&winningSpotID, &winningHandle)
-	if err != nil {
-		return fmt.Errorf("winning spot not found or not paid: %w", err)
+	if len(winningSpotNumbers) != itemCount {
+		return fmt.Errorf("must provide exactly %d winning spot numbers, got %d", itemCount, len(winningSpotNumbers))
 	}
 
-	_, err = tx.Exec(context.Background(), `
-		UPDATE spots SET status = $1 WHERE id = $2
-	`, models.SpotStatusWinner, winningSpotID)
-	if err != nil {
-		return fmt.Errorf("mark winner: %w", err)
+	var winningSpotIDs []uuid.UUID
+	var winningHandles []string
+	for _, spotNum := range winningSpotNumbers {
+		var spotID uuid.UUID
+		var handle string
+		err = tx.QueryRow(context.Background(), `
+			SELECT id, claimed_by_handle FROM spots 
+			WHERE waffle_id = $1 AND number = $2 AND status = $3
+			FOR UPDATE
+		`, waffleID, spotNum, models.SpotStatusPaid).Scan(&spotID, &handle)
+		if err != nil {
+			return fmt.Errorf("winning spot #%d not found or not paid: %w", spotNum, err)
+		}
+		winningSpotIDs = append(winningSpotIDs, spotID)
+		winningHandles = append(winningHandles, handle)
+	}
+
+	for _, spotID := range winningSpotIDs {
+		_, err = tx.Exec(context.Background(), `
+			UPDATE spots SET status = $1 WHERE id = $2
+		`, models.SpotStatusWinner, spotID)
+		if err != nil {
+			return fmt.Errorf("mark winner: %w", err)
+		}
 	}
 
 	_, err = tx.Exec(context.Background(), `
 		UPDATE spots SET status = $1 
-		WHERE waffle_id = $2 AND status = $3 AND id != $4
-	`, models.SpotStatusLoser, waffleID, models.SpotStatusPaid, winningSpotID)
+		WHERE waffle_id = $2 AND status = $3
+	`, models.SpotStatusLoser, waffleID, models.SpotStatusPaid)
 	if err != nil {
 		return fmt.Errorf("mark losers: %w", err)
 	}
 
+	firstWinningSpot := winningSpotNumbers[0]
+	firstWinningHandle := winningHandles[0]
+
 	_, err = tx.Exec(context.Background(), `
-		UPDATE waffles SET status = $1, winning_spot_number = $2, winning_instagram_handle = $3, completed_at = $4
-		WHERE id = $5
-	`, models.WaffleStatusCompleted, winningSpotNumber, winningHandle, time.Now(), waffleID)
+		UPDATE waffles SET status = $1, winning_spot_number = $2, winning_instagram_handle = $3, completed_at = $4, winning_spot_numbers = $5, winning_instagram_handles = $6
+		WHERE id = $7
+	`, models.WaffleStatusCompleted, firstWinningSpot, firstWinningHandle, time.Now(), winningSpotNumbers, winningHandles, waffleID)
 	if err != nil {
 		return fmt.Errorf("complete waffle: %w", err)
 	}
@@ -303,10 +333,17 @@ func NormalizeInstagramHandle(handle string) string {
 }
 
 func UpdateWaffle(id uuid.UUID, req models.UpdateWaffleRequest) (*models.Waffle, error) {
+	itemCount := req.ItemCount
+	if itemCount <= 0 {
+		itemCount = 1
+	}
+	if itemCount > 10 {
+		itemCount = 10
+	}
 	_, err := db.Pool.Exec(context.Background(), `
-		UPDATE waffles SET title = $1, description = $2, image_url = $3, spot_price = $4, payment_info = $5, instagram_media_links = $6
-		WHERE id = $7
-	`, req.Title, req.Description, req.ImageURL, req.SpotPrice, req.PaymentInfo, req.InstagramMediaLinks, id)
+		UPDATE waffles SET title = $1, description = $2, image_url = $3, spot_price = $4, payment_info = $5, instagram_media_links = $6, item_count = $7
+		WHERE id = $8
+	`, req.Title, req.Description, req.ImageURL, req.SpotPrice, req.PaymentInfo, req.InstagramMediaLinks, itemCount, id)
 	if err != nil {
 		return nil, fmt.Errorf("update waffle: %w", err)
 	}
@@ -394,12 +431,12 @@ func ListWaffles(includeArchived bool) ([]models.Waffle, error) {
 	var query string
 	if includeArchived {
 		query = `
-			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at
+			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 			FROM waffles WHERE archived = true ORDER BY created_at DESC
 		`
 	} else {
 		query = `
-			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at
+			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 			FROM waffles WHERE archived = false ORDER BY created_at DESC
 		`
 	}
@@ -417,7 +454,7 @@ func ListWaffles(includeArchived bool) ([]models.Waffle, error) {
 			&waffle.ID, &waffle.Slug, &waffle.Title, &waffle.Description, &waffle.ImageURL,
 			&waffle.TotalSpots, &waffle.SpotPrice, &waffle.PaymentInfo, &waffle.Status,
 			&waffle.WinningSpotNumber, &waffle.WinningInstagramHandle, &waffle.InstagramMediaLinks, &waffle.Archived,
-			&waffle.CreatedAt, &waffle.CompletedAt,
+			&waffle.CreatedAt, &waffle.CompletedAt, &waffle.ItemCount, &waffle.WinningSpotNumbers, &waffle.WinningInstagramHandles,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan waffle: %w", err)
@@ -493,7 +530,7 @@ func ClearWinner(waffleID uuid.UUID) error {
 	}
 
 	_, err = tx.Exec(context.Background(), `
-		UPDATE waffles SET status = $1, winning_spot_number = NULL, winning_instagram_handle = NULL, completed_at = NULL
+		UPDATE waffles SET status = $1, winning_spot_number = NULL, winning_instagram_handle = NULL, completed_at = NULL, winning_spot_numbers = '[]', winning_instagram_handles = '[]'
 		WHERE id = $2
 	`, models.WaffleStatusActive, waffleID)
 	if err != nil {
@@ -521,7 +558,11 @@ func ClearWinner(waffleID uuid.UUID) error {
 	return nil
 }
 
-func ChangeWinner(waffleID uuid.UUID, newWinningSpotNumber int) error {
+func ChangeWinner(waffleID uuid.UUID, newWinningSpotNumbers []int) error {
+	if len(newWinningSpotNumbers) == 0 {
+		return fmt.Errorf("no winning spot numbers provided")
+	}
+
 	tx, err := db.Pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -529,46 +570,71 @@ func ChangeWinner(waffleID uuid.UUID, newWinningSpotNumber int) error {
 	defer tx.Rollback(context.Background())
 
 	var status string
+	var itemCount int
 	err = tx.QueryRow(context.Background(), `
-		SELECT status FROM waffles WHERE id = $1 FOR UPDATE
-	`, waffleID).Scan(&status)
+		SELECT status, item_count FROM waffles WHERE id = $1 FOR UPDATE
+	`, waffleID).Scan(&status, &itemCount)
 	if err != nil {
-		return fmt.Errorf("get waffle status: %w", err)
+		return fmt.Errorf("get waffle details: %w", err)
 	}
 	if status != string(models.WaffleStatusCompleted) {
 		return fmt.Errorf("waffle is not completed")
 	}
 
-	var newWinningSpotID uuid.UUID
-	var newWinningHandle string
-	err = tx.QueryRow(context.Background(), `
-		SELECT id, claimed_by_handle FROM spots
-		WHERE waffle_id = $1 AND number = $2 AND status = $3
-		FOR UPDATE
-	`, waffleID, newWinningSpotNumber, models.SpotStatusLoser).Scan(&newWinningSpotID, &newWinningHandle)
-	if err != nil {
-		return fmt.Errorf("new winning spot not found or not a loser: %w", err)
+	if len(newWinningSpotNumbers) != itemCount {
+		return fmt.Errorf("must provide exactly %d winning spot numbers, got %d", itemCount, len(newWinningSpotNumbers))
 	}
 
+	// Reset all winner/loser spots back to paid temporarily, so we can re-evaluate them
 	_, err = tx.Exec(context.Background(), `
 		UPDATE spots SET status = $1
+		WHERE waffle_id = $2 AND status IN ($3, $4)
+	`, models.SpotStatusPaid, waffleID, models.SpotStatusWinner, models.SpotStatusLoser)
+	if err != nil {
+		return fmt.Errorf("reset spots: %w", err)
+	}
+
+	var winningSpotIDs []uuid.UUID
+	var winningHandles []string
+	for _, spotNum := range newWinningSpotNumbers {
+		var spotID uuid.UUID
+		var handle string
+		err = tx.QueryRow(context.Background(), `
+			SELECT id, claimed_by_handle FROM spots 
+			WHERE waffle_id = $1 AND number = $2 AND status = $3
+			FOR UPDATE
+		`, waffleID, spotNum, models.SpotStatusPaid).Scan(&spotID, &handle)
+		if err != nil {
+			return fmt.Errorf("new winning spot #%d not found or not paid: %w", spotNum, err)
+		}
+		winningSpotIDs = append(winningSpotIDs, spotID)
+		winningHandles = append(winningHandles, handle)
+	}
+
+	for _, spotID := range winningSpotIDs {
+		_, err = tx.Exec(context.Background(), `
+			UPDATE spots SET status = $1 WHERE id = $2
+		`, models.SpotStatusWinner, spotID)
+		if err != nil {
+			return fmt.Errorf("promote new winner: %w", err)
+		}
+	}
+
+	_, err = tx.Exec(context.Background(), `
+		UPDATE spots SET status = $1 
 		WHERE waffle_id = $2 AND status = $3
-	`, models.SpotStatusLoser, waffleID, models.SpotStatusWinner)
+	`, models.SpotStatusLoser, waffleID, models.SpotStatusPaid)
 	if err != nil {
-		return fmt.Errorf("demote old winner: %w", err)
+		return fmt.Errorf("mark losers: %w", err)
 	}
 
-	_, err = tx.Exec(context.Background(), `
-		UPDATE spots SET status = $1 WHERE id = $2
-	`, models.SpotStatusWinner, newWinningSpotID)
-	if err != nil {
-		return fmt.Errorf("promote new winner: %w", err)
-	}
+	firstWinningSpot := newWinningSpotNumbers[0]
+	firstWinningHandle := winningHandles[0]
 
 	_, err = tx.Exec(context.Background(), `
-		UPDATE waffles SET winning_spot_number = $1, winning_instagram_handle = $2
-		WHERE id = $3
-	`, newWinningSpotNumber, newWinningHandle, waffleID)
+		UPDATE waffles SET winning_spot_number = $1, winning_instagram_handle = $2, winning_spot_numbers = $3, winning_instagram_handles = $4
+		WHERE id = $5
+	`, firstWinningSpot, firstWinningHandle, newWinningSpotNumbers, winningHandles, waffleID)
 	if err != nil {
 		return fmt.Errorf("update waffle winner: %w", err)
 	}

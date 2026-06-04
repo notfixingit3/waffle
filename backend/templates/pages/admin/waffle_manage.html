@@ -9,10 +9,21 @@
   <div class="card bg-secondary/10 border-2 border-secondary rounded-xl p-4 mb-6 text-center">
     <div class="text-3xl mb-1">🏆</div>
     <p class="text-lg font-bold text-secondary">Completed!</p>
+    {{ if gt .waffle.ItemCount 1 }}
+    <div class="flex flex-col gap-1 items-center mt-2 text-sm text-secondary/80">
+      {{ range $idx, $w := .waffle.Winners }}
+      <div>
+        Item #{{ add $idx 1 }}: <span class="font-bold">Spot #{{ $w.SpotNumber }}</span>
+        {{ if $w.InstagramHandle }} — <span>@{{ $w.InstagramHandle }}</span>{{ end }}
+      </div>
+      {{ end }}
+    </div>
+    {{ else }}
     <p class="text-sm text-secondary/80 mt-1">
       Winner: Spot #{{ deref .waffle.WinningSpotNumber }}
       {{ if .waffle.WinningInstagramHandle }} — @{{ deref .waffle.WinningInstagramHandle }}{{ end }}
     </p>
+    {{ end }}
   </div>
   {{ end }}
 
@@ -47,10 +58,12 @@
 
     {{ if .waffle.InstagramMediaLinks }}
     <div class="flex flex-wrap gap-2">
-      {{ range .waffle.InstagramMediaLinks }}
-      <a href="{{ . }}" target="_blank" rel="noopener noreferrer"
+      {{ $itemCount := .waffle.ItemCount }}
+      {{ $linksCount := len .waffle.InstagramMediaLinks }}
+      {{ range $idx, $link := .waffle.InstagramMediaLinks }}
+      <a href="{{ $link }}" target="_blank" rel="noopener noreferrer"
          class="btn btn-xs btn-primary btn-soft">
-        IG Post
+        📸 {{ if and (gt $itemCount 1) (eq $linksCount $itemCount) }}Item #{{ add $idx 1 }} IG Post{{ else }}IG Post{{ end }}
       </a>
       {{ end }}
     </div>
@@ -58,22 +71,24 @@
   </div>
 
   {{/* Stats bar */}}
-  <div class="stats shadow border border-base-200 mb-4 w-full">
-    <div class="stat text-center">
-      <div class="stat-value text-success">{{ index .stats "available" }}</div>
-      <div class="stat-title">Available</div>
-    </div>
-    <div class="stat text-center">
-      <div class="stat-value text-warning">{{ index .stats "pending" }}</div>
-      <div class="stat-title">Pending</div>
-    </div>
-    <div class="stat text-center">
-      <div class="stat-value text-error">{{ index .stats "paid" }}</div>
-      <div class="stat-title">Paid</div>
-    </div>
-    <div class="stat text-center">
-      <div class="stat-value text-secondary" id="total-revenue">$0</div>
-      <div class="stat-title">Total</div>
+  <div class="card bg-base-100 shadow-sm border border-base-200 p-4 mb-4">
+    <div class="grid grid-cols-4 gap-2 text-center stats">
+      <div>
+        <div class="text-xl sm:text-2xl font-bold text-success stat-value">{{ index .stats "available" }}</div>
+        <div class="text-xs opacity-60">Available</div>
+      </div>
+      <div>
+        <div class="text-xl sm:text-2xl font-bold text-warning stat-value">{{ index .stats "pending" }}</div>
+        <div class="text-xs opacity-60">Pending</div>
+      </div>
+      <div>
+        <div class="text-xl sm:text-2xl font-bold text-error stat-value">{{ index .stats "paid" }}</div>
+        <div class="text-xs opacity-60">Paid</div>
+      </div>
+      <div>
+        <div class="text-xl sm:text-2xl font-bold text-secondary stat-value" id="total-revenue">$0</div>
+        <div class="text-xs opacity-60">Total</div>
+      </div>
     </div>
   </div>
 
@@ -189,30 +204,75 @@
     </div>
   </div>
 
-  {{/* Set Winner (only for active waffles with all spots paid) */}}
-  {{ if eq .waffle.Status "active" }}
+  {{/* Winner management section */}}
   <div id="winner-section" class="card bg-base-100 shadow-sm border border-base-200 p-5 mb-4">
+    {{ if eq .waffle.Status "active" }}
     <h2 class="text-lg font-semibold text-base-content mb-2">Set Winner</h2>
     <p class="text-sm opacity-60 mb-4">All spots must be paid before setting a winner.</p>
 
-    <div class="flex gap-3 items-end">
-      <div class="flex-1">
-        <label for="winner-spot-select" class="label"><span class="label-text">Winning Spot</span></label>
-        <select id="winner-spot-select" class="select select-bordered w-full">
-          <option value="">— Select a bidder —</option>
-          {{ range .spots }}{{ if eq .Status "paid" }}
-          <option value="{{ .Number }}">Spot #{{ .Number }}{{ if .ClaimedByHandle }} — @{{ deref .ClaimedByHandle }}{{ end }}</option>
-          {{ end }}{{ end }}
-        </select>
+    <div class="flex flex-col gap-4">
+      <div id="winner-selects-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {{ $itemCount := .waffle.ItemCount }}
+        {{ range $idx, $seqVal := seq 1 $itemCount }}
+        <div class="flex flex-col">
+          <label for="winner-spot-select-{{ $idx }}" class="label pt-0 pb-1">
+            <span class="label-text font-medium text-xs">Winner for Item #{{ add $idx 1 }}</span>
+          </label>
+          <select id="winner-spot-select-{{ $idx }}" class="winner-spot-select select select-bordered w-full select-sm">
+            <option value="">— Select a bidder —</option>
+            {{ range $.spots }}{{ if eq .Status "paid" }}
+            <option value="{{ .Number }}">Spot #{{ .Number }}{{ if .ClaimedByHandle }} — @{{ deref .ClaimedByHandle }}{{ end }}</option>
+            {{ end }}{{ end }}
+          </select>
+        </div>
+        {{ end }}
       </div>
-      <button type="button" id="set-winner-btn" class="btn btn-primary">
-        Set Winner
-      </button>
+      <div class="flex justify-end mt-2">
+        <button type="button" id="set-winner-btn" class="btn btn-primary btn-sm md:btn-md">
+          Set Winner
+        </button>
+      </div>
     </div>
+    {{ else if eq .waffle.Status "completed" }}
+    <h2 class="text-lg font-semibold text-base-content mb-2">Manage Winners</h2>
+    <p class="text-sm opacity-60 mb-4">You can change the winners or clear them to reactivate the waffle.</p>
+
+    <div class="flex flex-col gap-4">
+      <div id="winner-selects-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {{ $itemCount := .waffle.ItemCount }}
+        {{ range $idx, $seqVal := seq 1 $itemCount }}
+        {{ $currentWinnerSpot := 0 }}
+        {{ if lt $idx (len $.waffle.WinningSpotNumbers) }}
+          {{ $currentWinnerSpot = index $.waffle.WinningSpotNumbers $idx }}
+        {{ end }}
+        <div class="flex flex-col">
+          <label for="winner-spot-select-{{ $idx }}" class="label pt-0 pb-1">
+            <span class="label-text font-medium text-xs">Winner for Item #{{ add $idx 1 }}</span>
+          </label>
+          <select id="winner-spot-select-{{ $idx }}" class="winner-spot-select select select-bordered w-full select-sm">
+            <option value="">— Select a bidder —</option>
+            {{ range $.spots }}
+            <option value="{{ .Number }}" {{ if eq .Number $currentWinnerSpot }}selected{{ end }}>
+              Spot #{{ .Number }}{{ if .ClaimedByHandle }} — @{{ deref .ClaimedByHandle }}{{ end }}
+            </option>
+            {{ end }}
+          </select>
+        </div>
+        {{ end }}
+      </div>
+      <div class="flex justify-between items-center mt-2 gap-2">
+        <button type="button" id="clear-winner-btn" class="btn btn-error btn-outline btn-sm">
+          Clear Winner & Reopen Waffle
+        </button>
+        <button type="button" id="change-winner-btn" class="btn btn-secondary btn-sm">
+          Change Winner
+        </button>
+      </div>
+    </div>
+    {{ end }}
     <p id="winner-error" class="hidden text-error text-sm mt-2"></p>
     <p id="winner-success" class="hidden text-success text-sm mt-2"></p>
   </div>
-  {{ end }}
 </div>
 {{ end }}
 

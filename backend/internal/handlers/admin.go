@@ -173,6 +173,7 @@ func EditWafflePost(c *gin.Context) {
 	description := strings.TrimSpace(c.PostForm("description"))
 	paymentInfo := strings.TrimSpace(c.PostForm("payment_info"))
 	spotPriceStr := c.PostForm("spot_price")
+	itemCountStr := c.PostForm("item_count")
 
 	var errors gin.H
 	var hasError bool
@@ -189,6 +190,14 @@ func EditWafflePost(c *gin.Context) {
 		}
 		errors["SpotPrice"] = "Price per spot must be greater than 0"
 		hasError = true
+	}
+
+	itemCount, _ := strconv.Atoi(itemCountStr)
+	if itemCount <= 0 {
+		itemCount = 1
+	}
+	if itemCount > 10 {
+		itemCount = 10
 	}
 
 	mediaLinks := c.PostFormArray("instagram_media_links[]")
@@ -214,6 +223,7 @@ func EditWafflePost(c *gin.Context) {
 		data["Description"] = description
 		data["SpotPrice"] = spotPriceStr
 		data["PaymentInfo"] = paymentInfo
+		data["ItemCount"] = itemCountStr
 		data["InstagramMediaLinks"] = cleanLinks
 		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
 		return
@@ -232,6 +242,7 @@ func EditWafflePost(c *gin.Context) {
 		Description:         descPtr,
 		SpotPrice:           spotPrice,
 		PaymentInfo:         paymentPtr,
+		ItemCount:           itemCount,
 		InstagramMediaLinks: cleanLinks,
 	}
 
@@ -322,15 +333,33 @@ func SetWinnerAPI(c *gin.Context) {
 		return
 	}
 
-	if err := services.SetWinner(id, req.WinningSpotNumber); err != nil {
+	var winningSpotNumbers []int
+	if len(req.WinningSpotNumbers) > 0 {
+		winningSpotNumbers = req.WinningSpotNumbers
+	} else if req.WinningSpotNumber > 0 {
+		winningSpotNumbers = []int{req.WinningSpotNumber}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "winning_spot_number or winning_spot_numbers is required"})
+		return
+	}
+
+	if err := services.SetWinner(id, winningSpotNumbers); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	waffle, err := services.GetWaffleByID(id)
 	if err == nil {
-		ws.BroadcastWaffleCompleted(waffle.Slug, req.WinningSpotNumber)
-		RecordAudit(c, "set_winner", "waffle", id.String(), "winner set to spot #"+strconv.Itoa(req.WinningSpotNumber))
+		ws.BroadcastWaffleCompleted(waffle.Slug, winningSpotNumbers)
+		
+		spotsStr := ""
+		for idx, num := range winningSpotNumbers {
+			if idx > 0 {
+				spotsStr += ", "
+			}
+			spotsStr += "#" + strconv.Itoa(num)
+		}
+		RecordAudit(c, "set_winner", "waffle", id.String(), "winner set to spots: "+spotsStr)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "winner set successfully"})
@@ -370,15 +399,33 @@ func ChangeWinnerAPI(c *gin.Context) {
 		return
 	}
 
-	if err := services.ChangeWinner(id, req.WinningSpotNumber); err != nil {
+	var winningSpotNumbers []int
+	if len(req.WinningSpotNumbers) > 0 {
+		winningSpotNumbers = req.WinningSpotNumbers
+	} else if req.WinningSpotNumber > 0 {
+		winningSpotNumbers = []int{req.WinningSpotNumber}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "winning_spot_number or winning_spot_numbers is required"})
+		return
+	}
+
+	if err := services.ChangeWinner(id, winningSpotNumbers); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	waffle, err := services.GetWaffleByID(id)
 	if err == nil {
-		ws.BroadcastWinnerChanged(waffle.Slug, req.WinningSpotNumber)
-		RecordAudit(c, "change_winner", "waffle", id.String(), "winner changed to spot #"+strconv.Itoa(req.WinningSpotNumber))
+		ws.BroadcastWinnerChanged(waffle.Slug, winningSpotNumbers)
+		
+		spotsStr := ""
+		for idx, num := range winningSpotNumbers {
+			if idx > 0 {
+				spotsStr += ", "
+			}
+			spotsStr += "#" + strconv.Itoa(num)
+		}
+		RecordAudit(c, "change_winner", "waffle", id.String(), "winner changed to spots: "+spotsStr)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "winner changed successfully"})
@@ -408,6 +455,7 @@ func CreateWafflePost(c *gin.Context) {
 
 	totalSpotsStr := c.PostForm("total_spots")
 	spotPriceStr := c.PostForm("spot_price")
+	itemCountStr := c.PostForm("item_count")
 
 	var errors gin.H
 	var hasError bool
@@ -435,6 +483,14 @@ func CreateWafflePost(c *gin.Context) {
 		hasError = true
 	}
 
+	itemCount, _ := strconv.Atoi(itemCountStr)
+	if itemCount <= 0 {
+		itemCount = 1
+	}
+	if itemCount > 10 {
+		itemCount = 10
+	}
+
 	mediaLinks := c.PostFormArray("instagram_media_links[]")
 	var cleanLinks []string
 	for _, link := range mediaLinks {
@@ -454,6 +510,7 @@ func CreateWafflePost(c *gin.Context) {
 			"TotalSpots":          totalSpotsStr,
 			"SpotPrice":           spotPriceStr,
 			"PaymentInfo":         paymentInfo,
+			"ItemCount":           itemCountStr,
 			"InstagramMediaLinks": cleanLinks,
 			"Errors":              errors,
 		}
@@ -475,6 +532,7 @@ func CreateWafflePost(c *gin.Context) {
 		TotalSpots:          totalSpots,
 		SpotPrice:           spotPrice,
 		PaymentInfo:         paymentPtr,
+		ItemCount:           itemCount,
 		InstagramMediaLinks: cleanLinks,
 	}
 
@@ -486,6 +544,7 @@ func CreateWafflePost(c *gin.Context) {
 			"TotalSpots":          totalSpotsStr,
 			"SpotPrice":           spotPriceStr,
 			"PaymentInfo":         paymentInfo,
+			"ItemCount":           itemCountStr,
 			"InstagramMediaLinks": cleanLinks,
 			"Error":               "Failed to create waffle: " + err.Error(),
 		}

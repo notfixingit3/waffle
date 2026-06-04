@@ -32,6 +32,16 @@ var AdminSpotActions = (function() {
     if (setWinnerBtn) {
       setWinnerBtn.addEventListener('click', executeSetWinner);
     }
+
+    var clearWinnerBtn = document.getElementById('clear-winner-btn');
+    if (clearWinnerBtn) {
+      clearWinnerBtn.addEventListener('click', executeClearWinner);
+    }
+
+    var changeWinnerBtn = document.getElementById('change-winner-btn');
+    if (changeWinnerBtn) {
+      changeWinnerBtn.addEventListener('click', executeChangeWinner);
+    }
   }
 
   function handleGridClick(e) {
@@ -268,22 +278,32 @@ var AdminSpotActions = (function() {
   }
 
   function executeSetWinner() {
-    var select = document.getElementById('winner-spot-select');
     var errorEl = document.getElementById('winner-error');
     var successEl = document.getElementById('winner-success');
 
     errorEl.classList.add('hidden');
     successEl.classList.add('hidden');
 
-    var spotNumber = parseInt(select.value, 10);
-    if (isNaN(spotNumber) || spotNumber < 1) {
-      errorEl.textContent = 'Please select a winning spot.';
-      errorEl.classList.remove('hidden');
-      return;
+    var selects = document.querySelectorAll('.winner-spot-select');
+    var spotNumbers = [];
+    for (var i = 0; i < selects.length; i++) {
+      var val = parseInt(selects[i].value, 10);
+      if (isNaN(val) || val < 1) {
+        errorEl.textContent = 'Please select a winning spot for all items.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      spotNumbers.push(val);
     }
 
-    var selectedText = select.options[select.selectedIndex].text;
-    if (!confirm('Set ' + selectedText + ' as the WINNER? This will complete the waffle and mark all other paid spots as losers. This cannot be undone.')) return;
+    var uniqueSpots = new Set(spotNumbers);
+    if (uniqueSpots.size < spotNumbers.length) {
+      if (!confirm('You have selected the same spot number for multiple items. Are you sure you want to proceed?')) {
+        return;
+      }
+    }
+
+    if (!confirm('Set the selected spot(s) as winner(s)? This will complete the waffle and mark all other paid spots as losers. This cannot be undone.')) return;
 
     var btn = document.getElementById('set-winner-btn');
     btn.disabled = true;
@@ -292,7 +312,7 @@ var AdminSpotActions = (function() {
     fetch('/api/admin/waffles/' + config.waffleId + '/winner', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ winning_spot_number: spotNumber })
+      body: JSON.stringify({ winning_spot_numbers: spotNumbers })
     })
     .then(function(res) {
       return res.json().then(function(data) {
@@ -321,6 +341,120 @@ var AdminSpotActions = (function() {
       errorEl.classList.remove('hidden');
       btn.disabled = false;
       btn.textContent = 'Set Winner';
+    });
+  }
+
+  function executeChangeWinner() {
+    var errorEl = document.getElementById('winner-error');
+    var successEl = document.getElementById('winner-success');
+
+    errorEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+
+    var selects = document.querySelectorAll('.winner-spot-select');
+    var spotNumbers = [];
+    for (var i = 0; i < selects.length; i++) {
+      var val = parseInt(selects[i].value, 10);
+      if (isNaN(val) || val < 1) {
+        errorEl.textContent = 'Please select a winning spot for all items.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      spotNumbers.push(val);
+    }
+
+    var uniqueSpots = new Set(spotNumbers);
+    if (uniqueSpots.size < spotNumbers.length) {
+      if (!confirm('You have selected the same spot number for multiple items. Are you sure you want to proceed?')) {
+        return;
+      }
+    }
+
+    if (!confirm('Change the winning spot(s) to the selected spot(s)? This will recalculate winners, losers, and buyer stats. This cannot be undone.')) return;
+
+    var btn = document.getElementById('change-winner-btn');
+    btn.disabled = true;
+    btn.textContent = 'Changing Winner...';
+
+    fetch('/api/admin/waffles/' + config.waffleId + '/change-winner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ winning_spot_numbers: spotNumbers })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      if (!result.ok) {
+        errorEl.textContent = result.data.error || 'Failed to change winner';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Change Winner';
+        return;
+      }
+
+      successEl.textContent = 'Winner changed successfully!';
+      successEl.classList.remove('hidden');
+      btn.disabled = true;
+
+      setTimeout(function() {
+        window.location.reload();
+      }, 2000);
+    })
+    .catch(function() {
+      errorEl.textContent = 'Network error. Please try again.';
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Change Winner';
+    });
+  }
+
+  function executeClearWinner() {
+    var errorEl = document.getElementById('winner-error');
+    var successEl = document.getElementById('winner-success');
+
+    errorEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+
+    if (!confirm('Clear the winners and reopen this waffle? All spots will return to PAID status, and buyer win/loss stats will be reverted. This cannot be undone.')) return;
+
+    var btn = document.getElementById('clear-winner-btn');
+    btn.disabled = true;
+    btn.textContent = 'Clearing Winner...';
+
+    fetch('/api/admin/waffles/' + config.waffleId + '/clear-winner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      if (!result.ok) {
+        errorEl.textContent = result.data.error || 'Failed to clear winner';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Clear Winner & Reopen Waffle';
+        return;
+      }
+
+      successEl.textContent = 'Winners cleared and waffle reopened!';
+      successEl.classList.remove('hidden');
+      btn.disabled = true;
+
+      setTimeout(function() {
+        window.location.reload();
+      }, 2000);
+    })
+    .catch(function() {
+      errorEl.textContent = 'Network error. Please try again.';
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Clear Winner & Reopen Waffle';
     });
   }
 
