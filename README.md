@@ -280,7 +280,9 @@ Special shout out to [Dani Boo Glass](https://www.instagram.com/dani_boo_glass/)
 
 ## Support
 
-If this project helps you run smoother waffles, consider buying me a coffee:
+If Project Syrup helps you run smoother waffles or more exciting races, the best support is sponsoring Tom's next Wubble, Jelli, or Pocket Monstor. PM Crysis Designs on Instagram and say you want to sponsor Tom's next piece.
+
+You can also support the development directly by buying me a coffee:
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/notfixingit)
 
