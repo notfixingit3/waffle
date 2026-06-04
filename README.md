@@ -255,7 +255,7 @@ Project Syrup exists because two glass artists kept running great waffles the ha
 <tr>
 <td align="center" width="50%">
   <a href="https://www.instagram.com/dani_boo_glass/">
-    <img src="backend/cmd/api/static/img/dani.jpg" alt="Dani Boo Glass Logo" width="100" style="border-radius: 50%;" />
+    <img src="backend/cmd/api/static/img/dani.png" alt="Dani Boo Glass Logo" width="100" />
     <br />
     <strong>Dani Boo Glass</strong>
   </a>
@@ -266,7 +266,7 @@ Project Syrup exists because two glass artists kept running great waffles the ha
 </td>
 <td align="center" width="50%">
   <a href="https://www.instagram.com/crysis_designs/">
-    <img src="backend/cmd/api/static/img/crysis.jpg" alt="Crysis Designs Logo" width="100" style="border-radius: 50%;" />
+    <img src="backend/cmd/api/static/img/crysis.png" alt="Crysis Designs Logo" width="100" />
     <br />
     <strong>Crysis Designs</strong>
   </a>
