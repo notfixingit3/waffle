@@ -280,7 +280,7 @@ Special shout out to [Dani Boo Glass](https://www.instagram.com/dani_boo_glass/)
 
 ## Support
 
-If Project Syrup helps you run smoother waffles or more exciting races, the best support is sponsoring Tom's next Wubble, Jelli, or Pocket Monstor. PM Crysis Designs on Instagram and say you want to sponsor Tom's next piece.
+If Project Syrup helps you run smoother waffles or more exciting races, the best support is sponsoring Tom's next Wubble, Jelli, or Pocket Monstor. PM [Crysis Designs](https://www.instagram.com/crysis_designs/) on Instagram and say you want to sponsor Tom's next piece.
 
 You can also support the development directly by buying me a coffee:
 
