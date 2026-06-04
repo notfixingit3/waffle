@@ -255,6 +255,8 @@ Project Syrup exists because two glass artists kept running great waffles the ha
 <tr>
 <td align="center" width="50%">
   <a href="https://www.instagram.com/dani_boo_glass/">
+    <img src="backend/cmd/api/static/img/dani.jpg" alt="Dani Boo Glass Logo" width="100" style="border-radius: 50%;" />
+    <br />
     <strong>Dani Boo Glass</strong>
   </a>
   <br />
