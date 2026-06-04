@@ -32,8 +32,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/migrations:/app/migrations:ro
     restart: unless-stopped
 
 volumes:

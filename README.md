@@ -107,18 +107,7 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 **Prerequisites:** Docker and Docker Compose v2+.
 
 1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
-2. Copy the migration files to the server. The app runs migrations from `/app/migrations` on startup, and `docker-compose.prod.yml` mounts `./backend/migrations` there, so production deployments must keep the host migration directory current before restarting the container:
-   ```bash
-   # From your workstation checkout
-   ssh user@your-server 'mkdir -p /path/to/waffle/backend/migrations'
-   rsync -av --delete ./backend/migrations/ user@your-server:/path/to/waffle/backend/migrations/
-   ```
-   If you deploy directly from a git checkout on the server, update the checkout instead:
-   ```bash
-   git pull --ff-only
-   ```
-   Verify that `backend/migrations` sits next to `docker-compose.prod.yml` before running `docker compose up -d`.
-3. Create a `.env` file (see [`.env.example`](.env.example) for reference):
+2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
    ```bash
    WAFFLE_VERSION=v0.1.16
    DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable

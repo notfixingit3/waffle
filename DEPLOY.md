@@ -35,9 +35,9 @@ docker compose -f docker-compose.yml up -d --build
 # View logs
 docker compose logs -f
 
-# Update
-docker compose pull
-docker compose up -d
+# Update to a new release — migrations run automatically on startup
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Option 2: Railway

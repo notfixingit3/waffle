@@ -26,6 +26,7 @@ import (
 	"github.com/syrup/backend/internal/renderer"
 	"github.com/syrup/backend/internal/services"
 	ws "github.com/syrup/backend/internal/websocket"
+	"github.com/syrup/backend/migrations"
 )
 
 var Version = "v0.1.18"
@@ -59,7 +60,7 @@ func main() {
 	}
 	defer database.Close()
 
-	if err := db.RunMigrations(database); err != nil {
+	if err := db.RunMigrations(database, migrations.FS); err != nil {
 		slog.Error("Failed to run migrations", "error", err)
 		os.Exit(1)
 	}
