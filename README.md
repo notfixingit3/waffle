@@ -114,13 +114,26 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
    JWT_SECRET=your-secure-random-secret-here
    ADMIN_PASSWORD=your-secure-admin-password
    ```
-3. Start the services:
+4. Start the services:
    ```bash
    docker compose -f docker-compose.prod.yml up -d
    ```
-4. Open `/admin/login` and change the default admin password immediately
+5. Open `/admin/login` and change the default admin password immediately
 
 Pre-built images are available at [`ghcr.io/notfixingit3/waffle`](https://github.com/notfixingit3/waffle/pkgs/container/waffle) for `linux/amd64` and `linux/arm64`.
+
+### Upgrading to v0.1.19+
+
+Beginning in `v0.1.19`, database migrations are embedded directly in the Go application binary.
+
+If you are upgrading an existing deployment from a version prior to `v0.1.19`:
+1. **Update `docker-compose.prod.yml`:** The volume mount for migrations (`- ./backend/migrations:/app/migrations:ro`) has been removed and is no longer needed. You can safely delete it from your local compose file.
+2. **Clean up files (Optional):** You no longer need to copy the `backend/migrations/` directory to your server. Any existing `migrations/` directory on your server can be safely deleted.
+3. **Pull and redeploy:**
+   ```bash
+   docker compose -f docker-compose.prod.yml pull
+   docker compose -f docker-compose.prod.yml up -d
+   ```
 
 ## Release Channels
 
@@ -252,26 +265,26 @@ This is a personal project, but issues and PRs are welcome. The codebase priorit
 Project Syrup exists because two glass artists kept running great waffles the hard way.
 
 <table>
-<tr>
-<td align="center" width="50%">
-  <a href="https://www.instagram.com/dani_boo_glass/">
-    <strong>Dani Boo Glass</strong>
-  </a>
-  <br />
-  <a href="https://www.instagram.com/dani_boo_glass/">
-    <img src="https://img.shields.io/badge/Instagram-dani__boo__glass-E4405F?logo=instagram&logoColor=white" alt="Dani Boo Glass on Instagram" />
-  </a>
-</td>
-<td align="center" width="50%">
-  <a href="https://www.instagram.com/crysis_designs/">
-    <strong>Crysis Designs</strong>
-  </a>
-  <br />
-  <a href="https://www.instagram.com/crysis_designs/">
-    <img src="https://img.shields.io/badge/Instagram-crysis__designs-E4405F?logo=instagram&logoColor=white" alt="Crysis Designs on Instagram" />
-  </a>
-</td>
-</tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://www.instagram.com/dani_boo_glass/">
+        <img src="backend/cmd/api/static/img/dani.png" alt="Dani Boo Glass Logo" width="100" />
+      </a>
+      <h3>Dani Boo Glass</h3>
+      <a href="https://www.instagram.com/dani_boo_glass/">
+        <img src="https://img.shields.io/badge/Instagram-dani__boo__glass-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Dani Boo Glass on Instagram" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://www.instagram.com/crysis_designs/">
+        <img src="backend/cmd/api/static/img/crysis.png" alt="Crysis Designs Logo" width="100" />
+      </a>
+      <h3>Crysis Designs</h3>
+      <a href="https://www.instagram.com/crysis_designs/">
+        <img src="https://img.shields.io/badge/Instagram-crysis__designs-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Crysis Designs on Instagram" />
+      </a>
+    </td>
+  </tr>
 </table>
 
 Special shout out to [Dani Boo Glass](https://www.instagram.com/dani_boo_glass/) and [Crysis Designs](https://www.instagram.com/crysis_designs/) for creating the original Waffle and for driving me nuts watching them copy/paste spot lists over and over again in chat.
@@ -280,9 +293,48 @@ Special shout out to [Dani Boo Glass](https://www.instagram.com/dani_boo_glass/)
 
 ## Support
 
-If this project helps you run smoother waffles, consider buying me a coffee:
+Project Syrup is built out of passion for the glass art community. If this app helps you run smoother waffles or more exciting races, here is how you can support the project:
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/notfixingit)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <h3>🎨 Sponsor a Glass Piece</h3>
+      <p>Sponsor Tom's next <strong>Wubble</strong>, <strong>Jelli</strong>, or <strong>Pocket Monstor</strong>.</p>
+      <a href="https://www.instagram.com/crysis_designs/">
+        <img src="https://img.shields.io/badge/Instagram-PM%20Crysis%20Designs-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="PM Crysis Designs on Instagram" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <h3>☕ Support Development</h3>
+      <p>Help cover hosting costs and directly support the development of this application.</p>
+      <a href="https://www.buymeacoffee.com/notfixingit">
+        <img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+---
+
+## Third-Party Libraries & Licenses
+
+Project Syrup utilizes several excellent open-source third-party libraries:
+
+### Backend (Go)
+- **[Gin](https://github.com/gin-gonic/gin)** — MIT License
+- **[Gin CORS middleware](https://github.com/gin-contrib/cors)** — MIT License
+- **[Golang JWT](https://github.com/golang-jwt/jwt)** — MIT License
+- **[Golang Migrate](https://github.com/golang-migrate/migrate)** — MIT License
+- **[Google UUID](https://github.com/google/uuid)** — BSD 3-Clause License
+- **[Gorilla WebSocket](https://github.com/gorilla/websocket)** — BSD 2-Clause License
+- **[pgx (PostgreSQL Driver)](https://github.com/jackc/pgx)** — MIT License
+- **[Go Crypto Subrepository](https://golang.org/x/crypto)** — BSD 3-Clause License
+- **[Go Rate Limit Subrepository](https://golang.org/x/time)** — BSD 3-Clause License
+
+### Frontend & Styling
+- **[Tailwind CSS](https://tailwindcss.com/)** — MIT License
+- **[DaisyUI](https://daisyui.com/)** — MIT License
+- **[Inter Font](https://rsms.me/inter/)** — SIL Open Font License 1.1
 
 ---
 

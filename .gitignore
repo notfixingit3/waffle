@@ -2,6 +2,9 @@
 backend/cmd/api/static/css/node_modules/
 backend/cmd/api/static/css/package.json
 backend/cmd/api/static/css/package-lock.json
+backend/node_modules/
+backend/package.json
+backend/package-lock.json
 
 # Local environment
 .env

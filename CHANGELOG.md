@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ⚠️ Upgrade Notes
+
+**Migrations are now embedded in the binary.**
+The app no longer reads migration files from the filesystem at runtime. If your
+`docker-compose.prod.yml` has the following volume mount you can safely remove it —
+it is no longer needed and the line is not present in the updated compose file:
+
+```yaml
+# Remove this — no longer required
+volumes:
+  - ./backend/migrations:/app/migrations:ro
+```
+
+You also no longer need to `rsync` or copy the `backend/migrations/` directory to
+your server before deploying. Updating is now a single step:
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+The old volume mount is harmless if left in place — the app just won't read from it.
+But removing it keeps your compose file clean and avoids confusion.
+
+### Added
+- **Embedded Migrations** — SQL migration files are compiled directly into the binary
+  via `//go:embed`. No filesystem mount or file-sync step required at deploy time.
+- **Winner Dropdown** — The Set Winner field on the waffle manage page is now a
+  dropdown listing all paid spots with their Instagram handles instead of a free-text
+  spot number input.
+
+### Changed
+- **CI/CD Workflow** — Tag naming convention now drives release type: tags matching
+  `v*.*.*-*` (e.g. `v0.1.19-rc.1`) produce a GitHub pre-release and image with the
+  versioned tag only; plain `v*.*.*` tags produce a stable release and also move the
+  `latest` and `major.minor` Docker image tags. Old releases are never deleted.
+- **Version in Footer** — The Docker build now correctly stamps the image with the
+  git tag so the footer shows the real version instead of always displaying `dev`.
+- **Dark-only Theme** — Light/dark toggle removed. The app now runs the warm dark
+  theme exclusively, aligned with the projectsyrup.app design language.
+- **Re-theme** — Base colors updated from purple-grey to warm dark brown to match
+  projectsyrup.app (amber accent, warm cream text, glass header).
+
+## [v0.1.18] - 2026-05-31
+
+### Added
+- **Users Registry** — New `users` table with `GetOrCreateUser`, `ListUsers`, and `BackfillUsers` service functions, admin users list page and JSON API endpoint
+- **User Backfill** — Automatic backfill of existing `claimed_by_handle` values from `spots` table into `users` table on application startup
+
+### Fixed
+- **Duplicate Lockout Removal** — Resolved duplicate Instagram handle lockout preventing claim submissions for handles with existing pending/paid spots
+
+### Changed
+- **AGENTS.md Updates** — Expanded API conventions with all admin endpoints, added Users Registry implementation notes
+
 ## [v0.1.16] - 2026-05-31
 
 ### Changed

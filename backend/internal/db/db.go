@@ -3,14 +3,15 @@ package db
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 var Pool *pgxpool.Pool
@@ -49,7 +50,10 @@ func Ping(ctx context.Context) error {
 	return Pool.Ping(ctx)
 }
 
-func RunMigrations(pool *pgxpool.Pool) error {
+// RunMigrations applies all pending up-migrations from the embedded FS.
+// It is safe to call on an already-migrated database; ErrNoChange is treated
+// as success. It never calls Down or Drop, so existing data is never at risk.
+func RunMigrations(pool *pgxpool.Pool, migrationsFS fs.FS) error {
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	defer sqlDB.Close()
 
@@ -58,11 +62,12 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		return fmt.Errorf("unable to create migration driver: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file:///app/migrations",
-		"pgx",
-		driver,
-	)
+	src, err := iofs.New(migrationsFS, ".")
+	if err != nil {
+		return fmt.Errorf("unable to create migration source: %w", err)
+	}
+
+	m, err := migrate.NewWithInstance("iofs", src, "pgx", driver)
 	if err != nil {
 		return fmt.Errorf("unable to create migration instance: %w", err)
 	}

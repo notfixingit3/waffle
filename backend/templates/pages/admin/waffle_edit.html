@@ -33,6 +33,24 @@
         class="textarea textarea-bordered w-full">{{ if .waffle.Description }}{{ deref .waffle.Description }}{{ end }}</textarea>
     </div>
 
+    <div>
+      <label class="label"><span class="label-text font-medium">Number of Items <span class="text-error">*</span></span>
+        <span class="tooltip" data-tip="Number of items being waffled. Default is 1. Maximum is 10."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+      </label>
+      <select name="item_count" id="item_count" class="select select-bordered w-full">
+        <option value="1" {{ if eq .waffle.ItemCount 1 }}selected{{ end }}>1 Item (Default)</option>
+        <option value="2" {{ if eq .waffle.ItemCount 2 }}selected{{ end }}>2 Items</option>
+        <option value="3" {{ if eq .waffle.ItemCount 3 }}selected{{ end }}>3 Items</option>
+        <option value="4" {{ if eq .waffle.ItemCount 4 }}selected{{ end }}>4 Items</option>
+        <option value="5" {{ if eq .waffle.ItemCount 5 }}selected{{ end }}>5 Items</option>
+        <option value="6" {{ if eq .waffle.ItemCount 6 }}selected{{ end }}>6 Items</option>
+        <option value="7" {{ if eq .waffle.ItemCount 7 }}selected{{ end }}>7 Items</option>
+        <option value="8" {{ if eq .waffle.ItemCount 8 }}selected{{ end }}>8 Items</option>
+        <option value="9" {{ if eq .waffle.ItemCount 9 }}selected{{ end }}>9 Items</option>
+        <option value="10" {{ if eq .waffle.ItemCount 10 }}selected{{ end }}>10 Items</option>
+      </select>
+    </div>
+
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="label"><span class="label-text font-medium">Total Spots</span>
@@ -63,29 +81,55 @@
       <p class="text-sm opacity-60 mt-1">Shown to buyers so they know how to pay</p>
     </div>
 
-    <div>
-      <label class="label"><span class="label-text font-medium">Instagram Media Links</span>
-        <span class="tooltip" data-tip="Full Instagram post URL (e.g., https://www.instagram.com/p/ABC123/). These appear as buttons on the public page."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
+    <div id="instagram-media-links-section">
+      <label class="label">
+        <span class="label-text font-medium text-lg">Instagram Links</span>
+        <span class="tooltip" data-tip="Provide Instagram posts for the items being waffled."><span class="text-xs opacity-50 cursor-help inline-block min-w-[44px] min-h-[44px] flex items-center justify-center">ℹ️</span></span>
       </label>
-      <div class="flex gap-2">
-        <input type="url" id="media-link-input" placeholder="https://www.instagram.com/p/ABC123/"
-          class="input input-bordered w-full">
-        <button type="button" id="add-media-link" class="btn btn-primary">Add</button>
-      </div>
-      <p class="text-sm opacity-60 mt-1">Links to Instagram posts showing what is being waffled</p>
 
-      <div id="media-links-list" class="mt-3 space-y-2">
-        {{ range .waffle.InstagramMediaLinks }}
-        <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg media-link-row">
-          <a href="{{ . }}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary hover:underline truncate flex-1 mr-2">{{ . }}</a>
-          <input type="hidden" name="instagram_media_links[]" value="{{ . }}">
-          <button type="button" class="remove-media-link text-error hover:text-error/80 p-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
+      <!-- Link Mode Selection (hidden if Item Count is 1) -->
+      <div id="link-mode-group" class="form-control mb-4 hidden">
+        <span class="label-text font-medium mb-2">Link Mode:</span>
+        <div class="flex gap-4">
+          <label class="label cursor-pointer justify-start gap-2">
+            <input type="radio" name="link_mode" value="single" class="radio radio-primary" checked>
+            <span class="label-text">1 Master Link for All Items</span>
+          </label>
+          <label class="label cursor-pointer justify-start gap-2">
+            <input type="radio" name="link_mode" value="separate" class="radio radio-primary">
+            <span class="label-text">Separate Link for Each Item</span>
+          </label>
         </div>
-        {{ end }}
+      </div>
+
+      <!-- Single Link Mode UI -->
+      <div id="single-link-ui" class="space-y-2">
+        <div class="flex gap-2">
+          <input type="url" id="media-link-input" placeholder="https://www.instagram.com/p/ABC123/" class="input input-bordered w-full">
+          <button type="button" id="add-media-link" class="btn btn-primary">Add</button>
+        </div>
+        <p class="text-sm opacity-60 mt-1">Add one or more links to posts showing what is being waffled</p>
+        <div id="media-links-list" class="mt-3 space-y-2">
+          {{ range .waffle.InstagramMediaLinks }}
+          <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg media-link-row">
+            <a href="{{ . }}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary hover:underline truncate flex-1 mr-2">{{ . }}</a>
+            <input type="hidden" name="instagram_media_links[]" value="{{ . }}">
+            <button type="button" class="remove-media-link text-error hover:text-error/80 p-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+
+      <!-- Separate Link Mode UI -->
+      <div id="separate-links-ui" class="space-y-3 hidden">
+        <p class="text-sm opacity-60">Specify the Instagram link for each individual item:</p>
+        <div id="separate-links-inputs" class="space-y-3">
+          <!-- Dynamically generated input fields -->
+        </div>
       </div>
     </div>
 
@@ -101,7 +145,6 @@
 
 {{ define "scripts" }}
 <script>
-(function() {
   var mediaInput = document.getElementById('media-link-input');
   var addBtn = document.getElementById('add-media-link');
   var mediaList = document.getElementById('media-links-list');
@@ -127,15 +170,113 @@
     });
   }
 
-  addBtn.addEventListener('click', addMediaLink);
-  mediaInput.addEventListener('keydown', function(e) {
+  if (addBtn) addBtn.addEventListener('click', addMediaLink);
+  if (mediaInput) mediaInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       addMediaLink();
     }
   });
 
-  mediaList.querySelectorAll('.remove-media-link').forEach(attachRemove);
+  if (mediaList) mediaList.querySelectorAll('.remove-media-link').forEach(attachRemove);
+
+  // Multiple items link configuration logic
+  var itemCountSelect = document.getElementById('item_count');
+  var linkModeGroup = document.getElementById('link-mode-group');
+  var singleLinkUI = document.getElementById('single-link-ui');
+  var separateLinksUI = document.getElementById('separate-links-ui');
+  var separateLinksInputs = document.getElementById('separate-links-inputs');
+  var linkModeRadios = document.getElementsByName('link_mode');
+
+  function updateLinksUI() {
+    var count = parseInt(itemCountSelect.value, 10);
+    if (count <= 1) {
+      if (linkModeGroup) linkModeGroup.classList.add('hidden');
+      if (singleLinkUI) singleLinkUI.classList.remove('hidden');
+      if (separateLinksUI) separateLinksUI.classList.add('hidden');
+      setRadioValue('link_mode', 'single');
+    } else {
+      if (linkModeGroup) linkModeGroup.classList.remove('hidden');
+      var mode = getRadioValue('link_mode');
+      if (mode === 'single') {
+        if (singleLinkUI) singleLinkUI.classList.remove('hidden');
+        if (separateLinksUI) separateLinksUI.classList.add('hidden');
+      } else {
+        if (singleLinkUI) singleLinkUI.classList.add('hidden');
+        if (separateLinksUI) separateLinksUI.classList.remove('hidden');
+        renderSeparateInputs(count);
+      }
+    }
+  }
+
+  function getRadioValue(name) {
+    var radios = document.getElementsByName(name);
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].checked) return radios[i].value;
+    }
+    return 'single';
+  }
+
+  function setRadioValue(name, val) {
+    var radios = document.getElementsByName(name);
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].checked = (radios[i].value === val);
+    }
+  }
+
+  function renderSeparateInputs(count) {
+    var existingLinks = [];
+    if (separateLinksUI && separateLinksUI.classList.contains('hidden')) {
+      if (mediaList) {
+        var hiddenInputs = mediaList.querySelectorAll('input[type="hidden"]');
+        hiddenInputs.forEach(function(inp) {
+          existingLinks.push(inp.value);
+        });
+      }
+    } else if (separateLinksInputs) {
+      var inputs = separateLinksInputs.querySelectorAll('input');
+      inputs.forEach(function(inp) {
+        existingLinks.push(inp.value);
+      });
+    }
+
+    if (separateLinksInputs) {
+      separateLinksInputs.innerHTML = '';
+      for (var i = 1; i <= count; i++) {
+        var val = existingLinks[i - 1] || '';
+        var div = document.createElement('div');
+        div.className = 'flex flex-col gap-1';
+        div.innerHTML = '<label class="text-xs font-semibold opacity-70">Item #' + i + ' Instagram Link</label>' +
+          '<input type="url" name="instagram_media_links[]" value="' + val.replace(/"/g, '&quot;') + '" placeholder="https://www.instagram.com/p/ABC123_item' + i + '" class="input input-bordered w-full">';
+        separateLinksInputs.appendChild(div);
+      }
+    }
+  }
+
+  if (itemCountSelect) {
+    itemCountSelect.addEventListener('change', updateLinksUI);
+  }
+  for (var i = 0; i < linkModeRadios.length; i++) {
+    linkModeRadios[i].addEventListener('change', updateLinksUI);
+  }
+
+  // Pre-populate if necessary
+  var preLinksCount = mediaList ? mediaList.querySelectorAll('.media-link-row').length : 0;
+  var initCount = itemCountSelect ? parseInt(itemCountSelect.value, 10) : 1;
+  if (initCount > 1 && preLinksCount > 1) {
+    setRadioValue('link_mode', 'separate');
+    var existingLinks = [];
+    if (mediaList) {
+      var hiddenInputs = mediaList.querySelectorAll('input[type="hidden"]');
+      hiddenInputs.forEach(function(inp) {
+        existingLinks.push(inp.value);
+      });
+    }
+    renderSeparateInputs(initCount);
+    if (mediaList) mediaList.innerHTML = '';
+  }
+
+  updateLinksUI();
 })();
 </script>
 {{ end }}

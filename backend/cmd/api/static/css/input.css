@@ -16,18 +16,19 @@
   name: "syrup";
   default: true;
   color-scheme: dark;
-  --color-base-100: oklch(20% 0.02 270);
-  --color-base-200: oklch(15% 0.02 270);
-  --color-base-300: oklch(25% 0.02 270);
-  --color-base-content: oklch(95% 0.02 270);
-  --color-primary: oklch(55.39% 0.164 41.7);
-  --color-primary-content: oklch(100% 0 0);
-  --color-secondary: oklch(70% 0.15 330);
-  --color-secondary-content: oklch(100% 0 0);
+  /* Warm dark brown palette matching projectsyrup.app */
+  --color-base-100: oklch(13% 0.014 65);   /* #1a1612 — elevated surface */
+  --color-base-200: oklch(8.5% 0.01 65);   /* #0f0c0a — page background */
+  --color-base-300: oklch(18% 0.018 65);   /* #241f1a — cards/raised surfaces */
+  --color-base-content: oklch(91% 0.012 82); /* #e8e0d3 — warm cream text */
+  --color-primary: oklch(78% 0.17 80);     /* #f59e0b — syrup amber */
+  --color-primary-content: oklch(12% 0.02 65); /* dark text on amber buttons */
+  --color-secondary: oklch(58% 0.18 40);   /* #c2410c — burnt orange */
+  --color-secondary-content: oklch(97% 0 0);
   --color-accent: oklch(65% 0.18 180);
   --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(25% 0.02 270);
-  --color-neutral-content: oklch(95% 0.02 270);
+  --color-neutral: oklch(15% 0.016 65);    /* warm dark neutral for nav */
+  --color-neutral-content: oklch(91% 0.012 82);
   --color-success: oklch(64% 0.2 145);
   --color-success-content: oklch(100% 0 0);
   --color-warning: oklch(75% 0.18 75);
@@ -36,38 +37,35 @@
   --color-error-content: oklch(100% 0 0);
   --color-info: oklch(65% 0.17 240);
   --color-info-content: oklch(100% 0 0);
-  --radius-box: 0.5rem;
-  --radius-btn: 0.5rem;
-}
-@plugin "daisyui/theme" {
-  name: "syrup-light";
-  prefersdark: false;
-  color-scheme: light;
-  --color-base-100: oklch(95% 0.02 270);
-  --color-base-200: oklch(90% 0.02 270);
-  --color-base-300: oklch(85% 0.02 270);
-  --color-base-content: oklch(20% 0.02 270);
-  --color-primary: oklch(55.39% 0.164 41.7);
-  --color-primary-content: oklch(100% 0 0);
-  --color-secondary: oklch(70% 0.15 330);
-  --color-secondary-content: oklch(100% 0 0);
-  --color-accent: oklch(65% 0.18 180);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(25% 0.02 270);
-  --color-neutral-content: oklch(95% 0.02 270);
-  --color-success: oklch(64% 0.2 145);
-  --color-success-content: oklch(100% 0 0);
-  --color-warning: oklch(75% 0.18 75);
-  --color-warning-content: oklch(25% 0.05 75);
-  --color-error: oklch(55% 0.22 25);
-  --color-error-content: oklch(100% 0 0);
-  --color-info: oklch(65% 0.17 240);
-  --color-info-content: oklch(100% 0 0);
-  --radius-box: 0.5rem;
+  --radius-box: 0.75rem;
   --radius-btn: 0.5rem;
 }
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Project Syrup design tokens */
+:root {
+  --ps-border: rgba(163, 140, 110, 0.18);
+  --ps-border-hover: rgba(245, 158, 11, 0.35);
+  --ps-glass-bg: rgba(26, 22, 18, 0.82);
+  --ps-glass-strong: rgba(26, 22, 18, 0.92);
+  --ps-amber-glow: rgba(245, 158, 11, 0.25);
+}
+
+/* Glass morphism — matches projectsyrup.app */
+.ps-glass {
+  background: var(--ps-glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--ps-border);
+}
+
+.ps-glass-strong {
+  background: var(--ps-glass-strong);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--ps-border);
 }
 
 /* Mobile touch optimization — prevent double-tap zoom on interactive elements */

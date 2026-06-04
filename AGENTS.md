@@ -193,7 +193,7 @@ Example: `{"type": "SPOT_UPDATED", "payload": {"spot_number": 12, "status": "pai
 - Bearer token in Authorization header also accepted for API clients
 - CSRF protection on all form POST endpoints via cookie/form token with constant-time comparison
 - Multi-admin auth with role-based access control (super_admin, admin roles)
-- Rate limit public claim endpoint (planned — not yet implemented as middleware)
+- Rate limit public claim endpoint (implemented via `RateLimitClaims` middleware — token-bucket per IP with 5-min stale cleanup)
 - Sanitize all user input (Instagram handles normalized via NormalizeInstagramHandle)
 - Validate all state changes server-side
 - Never trust frontend state

@@ -42,10 +42,33 @@ type Waffle struct {
 	Status                 WaffleStatus `json:"status" db:"status"`
 	WinningSpotNumber      *int         `json:"winning_spot_number,omitempty" db:"winning_spot_number"`
 	WinningInstagramHandle *string      `json:"winning_instagram_handle,omitempty" db:"winning_instagram_handle"`
+	ItemCount              int          `json:"item_count" db:"item_count"`
+	WinningSpotNumbers     []int        `json:"winning_spot_numbers,omitempty" db:"winning_spot_numbers"`
+	WinningInstagramHandles []string     `json:"winning_instagram_handles,omitempty" db:"winning_instagram_handles"`
 	InstagramMediaLinks    []string     `json:"instagram_media_links,omitempty" db:"instagram_media_links"`
 	Archived               bool         `json:"archived" db:"archived"`
 	CreatedAt              time.Time    `json:"created_at" db:"created_at"`
 	CompletedAt            *time.Time   `json:"completed_at,omitempty" db:"completed_at"`
+}
+
+type WinnerInfo struct {
+	SpotNumber      int
+	InstagramHandle string
+}
+
+func (w Waffle) Winners() []WinnerInfo {
+	var winners []WinnerInfo
+	for i := 0; i < len(w.WinningSpotNumbers); i++ {
+		handle := ""
+		if i < len(w.WinningInstagramHandles) {
+			handle = w.WinningInstagramHandles[i]
+		}
+		winners = append(winners, WinnerInfo{
+			SpotNumber:      w.WinningSpotNumbers[i],
+			InstagramHandle: handle,
+		})
+	}
+	return winners
 }
 
 type Spot struct {
@@ -103,6 +126,7 @@ type CreateWaffleRequest struct {
 	TotalSpots          int      `json:"total_spots"`
 	SpotPrice           int      `json:"spot_price"`
 	PaymentInfo         *string  `json:"payment_info,omitempty"`
+	ItemCount           int      `json:"item_count"`
 	InstagramMediaLinks []string `json:"instagram_media_links,omitempty"`
 }
 
@@ -112,6 +136,7 @@ type UpdateWaffleRequest struct {
 	ImageURL            *string  `json:"image_url,omitempty"`
 	SpotPrice           int      `json:"spot_price"`
 	PaymentInfo         *string  `json:"payment_info,omitempty"`
+	ItemCount           int      `json:"item_count"`
 	InstagramMediaLinks []string `json:"instagram_media_links,omitempty"`
 	Archived            *bool    `json:"archived,omitempty"`
 }
@@ -185,6 +210,13 @@ type AdminLoginRequest struct {
 	Password string `json:"password"`
 }
 
+type User struct {
+	ID              uuid.UUID `json:"id" db:"id"`
+	InstagramHandle string    `json:"instagram_handle" db:"instagram_handle"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+}
+
 type CreateAdminRequest struct {
 	Username    string  `json:"username"`
 	Email       *string `json:"email,omitempty"`
@@ -218,7 +250,8 @@ type PasswordResetConfirm struct {
 }
 
 type SetWinnerRequest struct {
-	WinningSpotNumber int `json:"winning_spot_number"`
+	WinningSpotNumber  int   `json:"winning_spot_number"`
+	WinningSpotNumbers []int `json:"winning_spot_numbers"`
 }
 
 type DroughtEntry struct {

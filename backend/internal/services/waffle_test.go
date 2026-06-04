@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/models"
+	"github.com/syrup/backend/migrations"
 )
 
 func TestMain(m *testing.M) {
@@ -18,6 +20,10 @@ func TestMain(m *testing.M) {
 		os.Exit(0)
 	}
 	defer pool.Close()
+
+	if err := db.RunMigrations(pool, migrations.FS); err != nil {
+		panic("Failed to run database migrations for tests: " + err.Error())
+	}
 
 	os.Exit(m.Run())
 }
@@ -148,7 +154,7 @@ func setupCompletedWaffle(t *testing.T) (waffle *models.Waffle, spots []models.S
 	}
 
 	// Set spot 3 as winner
-	if err := SetWinner(waffle.ID, 3); err != nil {
+	if err := SetWinner(waffle.ID, []int{3}); err != nil {
 		t.Fatalf("SetWinner: %v", err)
 	}
 
@@ -290,7 +296,7 @@ func TestChangeWinner_Success(t *testing.T) {
 	}
 
 	// Change winner to spot 5 (which should now be loser)
-	if err := ChangeWinner(waffle.ID, 5); err != nil {
+	if err := ChangeWinner(waffle.ID, []int{5}); err != nil {
 		t.Fatalf("ChangeWinner: %v", err)
 	}
 
@@ -340,7 +346,7 @@ func TestChangeWinner_FailsOnActiveWaffle(t *testing.T) {
 
 	waffle := setupActiveWaffle(t)
 
-	err := ChangeWinner(waffle.ID, 1)
+	err := ChangeWinner(waffle.ID, []int{1})
 	if err == nil {
 		t.Fatal("expected error changing winner on active waffle, got nil")
 	}
@@ -352,8 +358,159 @@ func TestChangeWinner_NewSpotNotAvailable(t *testing.T) {
 	waffle, _ := setupCompletedWaffle(t)
 
 	// Spot 99 does not exist
-	err := ChangeWinner(waffle.ID, 99)
+	err := ChangeWinner(waffle.ID, []int{99})
 	if err == nil {
 		t.Fatal("expected error for non-existent spot, got nil")
+	}
+}
+
+func TestSetWinner_MultipleItems_Success(t *testing.T) {
+	defer cleanupWinnerTestWaffles(t)
+
+	// Create waffle with 3 items
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      winnerTestSlugPrefix + "multi-item",
+		TotalSpots: 6,
+		SpotPrice:  10,
+		ItemCount:  3,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	// Claim and pay all spots
+	for i := 1; i <= 6; i++ {
+		handle := fmt.Sprintf("buyer_%d", i)
+		if err := ClaimSpots(waffle.ID, []int{i}, handle); err != nil {
+			t.Fatalf("ClaimSpot %d: %v", i, err)
+		}
+		spots, err := GetSpotsByWaffleID(waffle.ID)
+		if err != nil {
+			t.Fatalf("GetSpots: %v", err)
+		}
+		for _, s := range spots {
+			if s.Number == i {
+				if err := MarkSpotPaid(s.ID); err != nil {
+					t.Fatalf("MarkPaid %d: %v", i, err)
+				}
+			}
+		}
+	}
+
+	// Set 3 winners: spot 2, spot 4, spot 5
+	winningSpots := []int{2, 4, 5}
+	if err := SetWinner(waffle.ID, winningSpots); err != nil {
+		t.Fatalf("SetWinner for multiple items: %v", err)
+	}
+
+	// Reload waffle and verify winners
+	waffle, err = GetWaffleByID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetWaffleByID: %v", err)
+	}
+
+	if waffle.Status != models.WaffleStatusCompleted {
+		t.Errorf("expected status completed, got %s", waffle.Status)
+	}
+	if len(waffle.WinningSpotNumbers) != 3 {
+		t.Errorf("expected 3 winning spots, got %d", len(waffle.WinningSpotNumbers))
+	}
+	for i, expectedSpot := range winningSpots {
+		if waffle.WinningSpotNumbers[i] != expectedSpot {
+			t.Errorf("expected winner %d to be spot %d, got %d", i+1, expectedSpot, waffle.WinningSpotNumbers[i])
+		}
+	}
+
+	// Verify spots status: 2, 4, 5 should be winner, others loser
+	spots, err := GetSpotsByWaffleID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetSpots: %v", err)
+	}
+	for _, s := range spots {
+		isWinner := false
+		for _, w := range winningSpots {
+			if s.Number == w {
+				isWinner = true
+			}
+		}
+		if isWinner {
+			if s.Status != models.SpotStatusWinner {
+				t.Errorf("spot %d: expected winner status, got %s", s.Number, s.Status)
+			}
+		} else {
+			if s.Status != models.SpotStatusLoser {
+				t.Errorf("spot %d: expected loser status, got %s", s.Number, s.Status)
+			}
+		}
+	}
+}
+
+func TestChangeWinner_MultipleItems_Success(t *testing.T) {
+	defer cleanupWinnerTestWaffles(t)
+
+	// Create waffle with 2 items
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      winnerTestSlugPrefix + "change-multi",
+		TotalSpots: 4,
+		SpotPrice:  10,
+		ItemCount:  2,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	// Claim and pay all spots
+	for i := 1; i <= 4; i++ {
+		handle := fmt.Sprintf("buyer_%d", i)
+		if err := ClaimSpots(waffle.ID, []int{i}, handle); err != nil {
+			t.Fatalf("ClaimSpot %d: %v", i, err)
+		}
+		spots, err := GetSpotsByWaffleID(waffle.ID)
+		if err != nil {
+			t.Fatalf("GetSpots: %v", err)
+		}
+		for _, s := range spots {
+			if s.Number == i {
+				if err := MarkSpotPaid(s.ID); err != nil {
+					t.Fatalf("MarkPaid %d: %v", i, err)
+				}
+			}
+		}
+	}
+
+	// Set initial winners: spot 1 and 3
+	if err := SetWinner(waffle.ID, []int{1, 3}); err != nil {
+		t.Fatalf("SetWinner: %v", err)
+	}
+
+	// Change winners to spot 2 and 4
+	if err := ChangeWinner(waffle.ID, []int{2, 4}); err != nil {
+		t.Fatalf("ChangeWinner: %v", err)
+	}
+
+	// Reload waffle and verify new winners
+	waffle, err = GetWaffleByID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetWaffleByID: %v", err)
+	}
+	if len(waffle.WinningSpotNumbers) != 2 || waffle.WinningSpotNumbers[0] != 2 || waffle.WinningSpotNumbers[1] != 4 {
+		t.Errorf("expected winning spots [2, 4], got %v", waffle.WinningSpotNumbers)
+	}
+
+	// Verify spot status
+	spots, err := GetSpotsByWaffleID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetSpots: %v", err)
+	}
+	for _, s := range spots {
+		if s.Number == 2 || s.Number == 4 {
+			if s.Status != models.SpotStatusWinner {
+				t.Errorf("spot %d: expected winner, got %s", s.Number, s.Status)
+			}
+		} else {
+			if s.Status != models.SpotStatusLoser {
+				t.Errorf("spot %d: expected loser, got %s", s.Number, s.Status)
+			}
+		}
 	}
 }

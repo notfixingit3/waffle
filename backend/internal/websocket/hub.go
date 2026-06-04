@@ -240,10 +240,15 @@ func BroadcastSpotUpdate(slug string, spotNumber int, status string, claimedByHa
 	})
 }
 
-func BroadcastWaffleCompleted(slug string, winningSpotNumber int) {
+func BroadcastWaffleCompleted(slug string, winningSpotNumbers []int) {
 	room := "waffle:" + slug
+	first := 0
+	if len(winningSpotNumbers) > 0 {
+		first = winningSpotNumbers[0]
+	}
 	hub.Broadcast(room, "WAFFLE_COMPLETED", map[string]interface{}{
-		"winning_spot_number": winningSpotNumber,
+		"winning_spot_numbers": winningSpotNumbers,
+		"winning_spot_number":  first,
 	})
 }
 
@@ -264,9 +269,14 @@ func BroadcastWinnerCleared(slug string) {
 	})
 }
 
-func BroadcastWinnerChanged(slug string, winningSpotNumber int) {
+func BroadcastWinnerChanged(slug string, winningSpotNumbers []int) {
 	room := "waffle:" + slug
+	first := 0
+	if len(winningSpotNumbers) > 0 {
+		first = winningSpotNumbers[0]
+	}
 	hub.Broadcast(room, "WINNER_CHANGED", map[string]interface{}{
-		"winning_spot_number": winningSpotNumber,
+		"winning_spot_numbers": winningSpotNumbers,
+		"winning_spot_number":  first,
 	})
 }

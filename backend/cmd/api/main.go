@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -25,9 +26,10 @@ import (
 	"github.com/syrup/backend/internal/renderer"
 	"github.com/syrup/backend/internal/services"
 	ws "github.com/syrup/backend/internal/websocket"
+	"github.com/syrup/backend/migrations"
 )
 
-var Version = "v0.1.17-dev"
+var Version = "v0.1.18"
 
 var roleHierarchy = map[string]int{
 	"super_admin":    3,
@@ -58,9 +60,17 @@ func main() {
 	}
 	defer database.Close()
 
-	if err := db.RunMigrations(database); err != nil {
+	if err := db.RunMigrations(database, migrations.FS); err != nil {
 		slog.Error("Failed to run migrations", "error", err)
 		os.Exit(1)
+	}
+
+	log.Println("backfilling users...")
+	backfilledCount, backfillErr := services.BackfillUsers()
+	if backfillErr != nil {
+		slog.Error("Backfill users failed", "error", backfillErr)
+	} else {
+		log.Printf("backfilled %d users\n", backfilledCount)
 	}
 
 	services.PurgeOldEntries()
@@ -114,6 +124,7 @@ func main() {
 		"templates/pages/admin/settings.html",
 		"templates/pages/admin/login_history.html",
 		"templates/pages/admin/audit_log.html",
+		"templates/pages/admin/users.html",
 	}
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
@@ -197,6 +208,7 @@ func main() {
 	adminPages.GET("/settings", handlers.SettingsPage)
 	adminPages.GET("/login-history", handlers.LoginHistoryPage)
 	adminPages.GET("/audit", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.AuditLogPage)
+	adminPages.GET("/users", handlers.UsersListPage)
 
 	adminSuperPages := adminPages.Group("", middleware.RequireSuperAdmin)
 	adminSuperPages.GET("/admins", handlers.AdminManagementPage)
@@ -233,6 +245,7 @@ func main() {
 	adminAuth.GET("/audit/:id", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.GetAuditLogEntryAPI)
 	adminAuth.GET("/audit/export", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), exportAuditCSV)
 	adminAuth.GET("/settings/whois-server", handlers.GetWhoisSettingsAPI)
+	adminAuth.GET("/users", listUsers)
 
 	adminSuperSettings := admin.Group("/settings", middleware.RequireAuth, middleware.RequireSuperAdmin)
 	adminSuperSettings.GET("/", handlers.GetAllSettingsAPI)
@@ -674,11 +687,6 @@ func adminLogin(c *gin.Context) {
 		return
 	}
 
-	if services.IsLoginLockedOut(c.ClientIP(), req.Username) {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many failed attempts, please try again later"})
-		return
-	}
-
 	admin, err := services.AuthenticateAdmin(req.Username, req.Password)
 	if err != nil {
 		services.RecordFailedLoginAttempt(c.ClientIP(), req.Username)
@@ -985,6 +993,37 @@ func parseTrustedProxies() []string {
 	}
 
 	return proxies
+}
+
+func listUsers(c *gin.Context) {
+	search := c.Query("search")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "25"))
+	if perPage < 1 {
+		perPage = 25
+	}
+	if perPage > 100 {
+		perPage = 100
+	}
+
+	limit := perPage
+	offset := (page - 1) * perPage
+
+	users, total, err := services.ListUsers(search, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"users":    users,
+		"page":     page,
+		"per_page": perPage,
+		"total":    total,
+	})
 }
 
 func boolPtr(b bool) *bool {

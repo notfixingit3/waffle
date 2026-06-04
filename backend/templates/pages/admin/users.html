@@ -1,0 +1,85 @@
+{{ template "admin_base.html" . }}
+
+{{ define "title" }}Users - Project Syrup{{ end }}
+
+{{ define "content" }}
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-base-content">Users</h1>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm border border-base-200 p-4 mb-6">
+    <form method="GET" action="/admin/users" class="flex gap-2">
+      <input
+        type="text"
+        name="search"
+        value="{{ .Search }}"
+        placeholder="Search by Instagram handle..."
+        class="input input-bordered flex-1"
+      >
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      {{ if .Search }}
+      <a href="/admin/users" class="btn btn-ghost btn-sm">Clear</a>
+      {{ end }}
+    </form>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th class="text-left">Instagram Handle</th>
+            <th class="text-left">Created At</th>
+            <th class="text-left">Updated At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Users }}
+          <tr class="hover:bg-base-200/50 transition-colors">
+            <td class="px-4 py-3">
+              <a href="/buyer/{{ .InstagramHandle }}" class="font-medium text-base-content hover:text-primary transition-colors">
+                {{ .InstagramHandle }}
+              </a>
+            </td>
+            <td class="px-4 py-3 opacity-60">
+              {{ formatDate "Jan 2, 2006 3:04 PM" .CreatedAt }}
+            </td>
+            <td class="px-4 py-3 opacity-60">
+              {{ formatDate "Jan 2, 2006 3:04 PM" .UpdatedAt }}
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    {{ if not .Users }}
+    <div class="text-center py-8">
+      <p class="opacity-60 text-sm">No users found</p>
+    </div>
+    {{ end }}
+
+    {{ if gt .TotalPages 1 }}
+    <div class="flex items-center justify-between px-4 py-3 border-t border-base-200">
+      <p class="text-sm opacity-60">
+        Page {{ .Page }} of {{ .TotalPages }} ({{ .Total }} total)
+      </p>
+      <div class="join">
+        {{ if .HasPrev }}
+        <a href="/admin/users?page={{ .PrevPage }}{{ if .Search }}&search={{ .Search }}{{ end }}&per_page={{ .PerPage }}" class="join-item btn btn-sm btn-outline">Previous</a>
+        {{ else }}
+        <button class="join-item btn btn-sm btn-outline" disabled>Previous</button>
+        {{ end }}
+
+        {{ if .HasNext }}
+        <a href="/admin/users?page={{ .NextPage }}{{ if .Search }}&search={{ .Search }}{{ end }}&per_page={{ .PerPage }}" class="join-item btn btn-sm btn-outline">Next</a>
+        {{ else }}
+        <button class="join-item btn btn-sm btn-outline" disabled>Next</button>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
