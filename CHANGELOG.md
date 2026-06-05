@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+-
+
+### Changed
+-
+
+### Fixed
+-
+
+### Removed
+-
+
+## [v0.1.19] - 2026-06-04
+
 ### ⚠️ Upgrade Notes
 
 **Migrations are now embedded in the binary.**
@@ -235,6 +249,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.19]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.19
 [v0.1.16]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.16
 [v0.1.15]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.15
 [v0.1.14]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.14
