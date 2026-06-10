@@ -19,6 +19,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.22-beta.2] - 2026-06-10
+
+### Added
+- **Docker Version Auto-Detect** — Build process extracts version from main.go when VERSION=dev
+
+### Changed
+- **Admin Navigation** — Renamed "Admin Tools" to "Management", moved Payment Methods into dropdown
+
+## [v0.1.22-beta.1] - 2026-06-10
+
+### Added
+- **Stored Payment Methods** — Structured pool (Venmo, PayPal, CashApp, Zelle)
+- **Payment Method Admin Page** — /admin/payment-methods with CRUD and soft-delete
+- **Payment Method Public Display** — Grouped by type with icons and clickable links
+- **Payment Method Tests** — Full test coverage
+
+### Changed
+- **Waffle Create/Edit Forms** — Replaced payment_info textarea with multi-select checkboxes
+
 ## [v0.1.22-beta.0] - 2026-06-10
 
 ### Added
