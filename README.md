@@ -262,7 +262,7 @@ This is a personal project, but issues and PRs are welcome. The codebase priorit
 
 ### Community Contributors
 
-- **OrangeSoJuicy** ([Instagram](https://www.instagram.com/orangesojuicy/)) — UI feature idea for random spot claiming / "Pick Random Spots" ([feature commit](https://github.com/notfixingit3/waffle/commit/cd9edec20f0991ed59158886282b51ac55d83786)).
+- **OrangeSoJuicy** ([Instagram](https://www.instagram.com/mxkxng/)) — UI feature idea for random spot claiming / "Pick Random Spots" ([feature commit](https://github.com/notfixingit3/waffle/commit/cd9edec20f0991ed59158886282b51ac55d83786)).
 
 ---
 
