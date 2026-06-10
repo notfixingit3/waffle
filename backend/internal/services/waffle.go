@@ -185,6 +185,82 @@ func ClaimSpots(waffleID uuid.UUID, spotNumbers []int, instagramHandle string) e
 	return nil
 }
 
+func ClaimRandomSpots(waffleID uuid.UUID, count int, instagramHandle string) ([]int, error) {
+	instagramHandle = NormalizeInstagramHandle(instagramHandle)
+	if instagramHandle == "" {
+		return nil, fmt.Errorf("instagram handle is required")
+	}
+
+	if count <= 0 {
+		return nil, fmt.Errorf("count must be greater than 0")
+	}
+
+	tx, err := db.Pool.Begin(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
+
+	var waffleStatus string
+	err = tx.QueryRow(context.Background(), `
+		SELECT status FROM waffles WHERE id = $1 FOR UPDATE
+	`, waffleID).Scan(&waffleStatus)
+	if err != nil {
+		return nil, fmt.Errorf("get waffle status: %w", err)
+	}
+	if waffleStatus != string(models.WaffleStatusActive) {
+		return nil, fmt.Errorf("waffle is not active")
+	}
+
+	rows, err := tx.Query(context.Background(), `
+		SELECT id, number FROM spots WHERE waffle_id = $1 AND status = $2 ORDER BY RANDOM() LIMIT $3 FOR UPDATE
+	`, waffleID, models.SpotStatusAvailable, count)
+	if err != nil {
+		return nil, fmt.Errorf("query available spots: %w", err)
+	}
+	defer rows.Close()
+
+	var spotIDs []uuid.UUID
+	var spotNumbers []int
+	for rows.Next() {
+		var spotID uuid.UUID
+		var spotNumber int
+		if err := rows.Scan(&spotID, &spotNumber); err != nil {
+			return nil, fmt.Errorf("scan spot: %w", err)
+		}
+		spotIDs = append(spotIDs, spotID)
+		spotNumbers = append(spotNumbers, spotNumber)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate spots: %w", err)
+	}
+
+	if len(spotIDs) == 0 {
+		return []int{}, nil
+	}
+
+	for i, spotID := range spotIDs {
+		_, err = tx.Exec(context.Background(), `
+			UPDATE spots SET status = $1, claimed_by_handle = $2, claimed_at = $3
+			WHERE id = $4
+		`, models.SpotStatusPending, instagramHandle, time.Now(), spotID)
+		if err != nil {
+			return nil, fmt.Errorf("claim spot %d: %w", spotNumbers[i], err)
+		}
+	}
+
+	if err := tx.Commit(context.Background()); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	if _, err := GetOrCreateUser(instagramHandle); err != nil {
+		slog.Error("Failed to create user record after random claim", "handle", instagramHandle, "error", err)
+	}
+
+	return spotNumbers, nil
+}
+
 func MarkSpotPaid(spotID uuid.UUID) error {
 	_, err := db.Pool.Exec(context.Background(), `
 		UPDATE spots SET status = $1, paid_at = $2

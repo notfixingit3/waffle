@@ -147,6 +147,12 @@ type CreateClaimRequest struct {
 	InstagramHandle string `json:"instagram_handle"`
 }
 
+type RandomClaimRequest struct {
+	WaffleID        string `json:"waffle_id"`
+	Count           int    `json:"count"`
+	InstagramHandle string `json:"instagram_handle"`
+}
+
 type SocialLink struct {
 	Platform string `json:"platform"`
 	Handle   string `json:"handle"`
