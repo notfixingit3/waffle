@@ -210,14 +210,51 @@ Example: `{"type": "SPOT_UPDATED", "payload": {"spot_number": 12, "status": "pai
 - Readable names over clever ones
 - Comments only where logic is non-obvious
 
-## Commit Message Guidelines
+## Commit Message Guidelines (a.k.a. The Mystery Machine Rules)
 
-Every commit should include a random Scooby-Doo quote somewhere in the message body. Examples:
-- "Ruh-roh!"
-- "Zoinks!"
-- "Jinkies!"
-- "Would you do it for a Scooby Snack?"
-- "Puppy Power!"
+> **Velma says:** Every commit needs a Scooby-Doo quote hidden in the message body — like finding a clue in a haunted mansion. It's our thing. Don't skip it.
+
+**The Gang's Commit Checklist:**
+- ✅ Explain what you changed and (more importantly) *why*
+- ✅ Reference issue numbers if they exist
+- ✅ Keep the technical details accurate — Fred gets mad when PRs don't match the description
+- ✅ **Drop a Scooby quote somewhere in there** — make it feel like the gang wrote it, not a robot
+
+**Approved Clues (pick one, don't overthink it):**
+- "Ruh-roh!" — something went wrong / you fixed a bug
+- "Zoinks!" — big surprise / major change / you can't believe this worked
+- "Jinkies!" — you figured something out / clever solution
+- "Would you do it for a Scooby Snack?" — tedious chore that had to be done
+- "Puppy Power!" — new feature / something exciting
+- "And I would have gotten away with it too, if it weren't for you meddling kids!" — refactoring / removing bad code
+- "Scooby-Dooby-Doo!" — general purpose, we did it!
+- "Like, no way, man!" — when you disagree with your past self
+- "Creepers!" — something scary / edge case / security fix
+- "Let's split up, gang!" — parallelizing work / decomposing a big task into smaller PRs
+- "It was Old Man Jenkins all along!" — finally found the root cause of a sneaky bug
+- "Time for a Scooby Snack!" — debugging marathons / documentation / taking a breather
+- "That was close!" — narrowly avoided disaster (data loss, production bug, race condition)
+
+> **Shaggy adds:** Don't just paste the quote at the bottom like an afterthought. Work it into the message like you're telling the gang about the case. Example: "Fixed race condition in spot claims — Zoinks! Almost missed that one!"
+
+> **Scooby says:** *Raggy's right. Make it natural, not ro-ro-robotic.* 🐕
+
+## Local Testing & Release Workflow
+
+> **Daphne's Pre-Flight Checklist:** Before you bump that version string and push to origin, make sure the Mystery Machine actually *runs*, okay?
+
+**When making changes that affect the application:**
+1. Rebuild Docker containers locally: `docker compose up --build -d`
+2. Verify the app boots and passes health check (http://localhost:8383/health)
+3. Spot-check affected pages / endpoints
+4. THEN bump version, update docs, and push
+
+**Never do this:**
+- ❌ Bump version → push → *then* test
+- ❌ Commit README/CHANGELOG changes without running the build first
+- ❌ Skip local verification because "it's just a docs change" — docs can lie, containers don't
+
+> **Fred says:** *Measure twice, cut once. Test locally, tag after.* 🔧
 
 ## Future Todo / Roadmap
 
