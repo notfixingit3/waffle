@@ -1,0 +1,200 @@
+{{ template "admin_base.html" . }}
+
+{{ define "title" }}Payment Methods - Project Syrup{{ end }}
+
+{{ define "content" }}
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-base-content">Payment Methods</h1>
+    <button type="button" onclick="toggleAddForm()" class="btn btn-primary btn-sm" id="add-toggle-btn">
+      Add Payment Method
+    </button>
+  </div>
+
+  {{ if .Error }}
+  <div class="alert alert-error mb-4">
+    <span>{{ .Error }}</span>
+  </div>
+  {{ end }}
+
+  <div id="add-form" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-base-content mb-4">Add New Payment Method</h2>
+    <form method="POST" action="/admin/payment-methods" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="label"><span class="label-text">Type <span class="text-error">*</span></span></label>
+          <select name="type" required class="select select-bordered w-full">
+            <option value="venmo">Venmo</option>
+            <option value="paypal">PayPal</option>
+            <option value="cashapp">CashApp</option>
+            <option value="zelle">Zelle</option>
+          </select>
+        </div>
+        <div>
+          <label class="label"><span class="label-text">Display Name <span class="text-error">*</span></span></label>
+          <input type="text" name="display_name" required placeholder="e.g., Main Venmo"
+            class="input input-bordered w-full">
+        </div>
+      </div>
+      <div>
+        <label class="label"><span class="label-text">Handle or URL <span class="text-error">*</span></span></label>
+        <input type="text" name="handle_or_url" required placeholder="@username or payment link"
+          class="input input-bordered w-full">
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="btn btn-primary btn-sm">Add Payment Method</button>
+        <button type="button" onclick="toggleAddForm()" class="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th class="text-left">Type</th>
+            <th class="text-left">Display Name</th>
+            <th class="text-left">Handle/URL</th>
+            <th class="text-left">Status</th>
+            <th class="text-right">Usage</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .PaymentMethods }}
+          <tr class="hover:bg-base-200/50 transition-colors" data-payment-id="{{ .ID }}">
+            <td class="px-4 py-3">
+              <span class="badge badge-sm {{ if eq .Type "venmo" }}badge-info{{ else if eq .Type "paypal" }}badge-primary{{ else if eq .Type "cashapp" }}badge-success{{ else if eq .Type "zelle" }}badge-warning{{ else }}badge-ghost{{ end }} flex items-center gap-1.5">
+                <span class="payment-icon payment-icon-{{ .Type }}"></span>
+                {{ .Type }}
+              </span>
+            </td>
+            <td class="px-4 py-3 font-medium text-base-content">{{ .DisplayName }}</td>
+            <td class="px-4 py-3">
+              <span class="text-sm opacity-80">{{ .HandleOrURL }}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="badge {{ if .IsActive }}badge-success{{ else }}badge-error{{ end }}">
+                {{ if .IsActive }}Active{{ else }}Inactive{{ end }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <span class="text-sm opacity-70">{{ .UsageCount }} waffle{{ if ne .UsageCount 1 }}s{{ end }}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                {{ if .IsActive }}
+                <button type="button" onclick="toggleEditForm('{{ .ID }}')"
+                  class="btn btn-ghost btn-xs tooltip" data-tip="Edit payment method details">
+                  Edit
+                </button>
+                <button type="button" onclick="toggleDeactivateForm('{{ .ID }}')"
+                  class="btn btn-error btn-xs btn-outline tooltip" data-tip="Deactivate this payment method">
+                  Deactivate
+                </button>
+                {{ else }}
+                <span class="text-sm opacity-40">—</span>
+                {{ end }}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Inline edit form -->
+          <tr id="edit-form-{{ .ID }}" class="hidden">
+            <td colspan="6" class="px-4 py-3 bg-base-200">
+              <form method="POST" action="/admin/payment-methods/{{ .ID }}" class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="PATCH">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="label"><span class="label-text">Display Name</span></label>
+                    <input type="text" name="display_name" value="{{ .DisplayName }}"
+                      class="input input-bordered w-full">
+                  </div>
+                  <div>
+                    <label class="label"><span class="label-text">Handle or URL</span></label>
+                    <input type="text" name="handle_or_url" value="{{ .HandleOrURL }}"
+                      class="input input-bordered w-full">
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                  <button type="button" onclick="toggleEditForm('{{ .ID }}')" class="btn btn-ghost btn-sm">Cancel</button>
+                </div>
+              </form>
+            </td>
+          </tr>
+
+          <!-- Inline deactivate confirmation -->
+          <tr id="deactivate-form-{{ .ID }}" class="hidden">
+            <td colspan="6" class="px-4 py-3 bg-error/10">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-error">Deactivate "{{ .DisplayName }}"?</p>
+                  <p class="text-xs opacity-70">This payment method will no longer be available for new waffles. Existing waffles using it will not be affected.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <form method="POST" action="/admin/payment-methods/{{ .ID }}/deactivate" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
+                    <button type="submit" class="btn btn-error btn-sm">Deactivate</button>
+                  </form>
+                  <button type="button" onclick="toggleDeactivateForm('{{ .ID }}')" class="btn btn-ghost btn-sm">Cancel</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+    {{ if not .PaymentMethods }}
+    <div class="text-center py-8">
+      <p class="opacity-60 text-sm">No payment methods configured</p>
+      <button type="button" onclick="toggleAddForm()" class="btn btn-primary btn-sm mt-4">Add your first payment method</button>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
+
+{{ define "scripts" }}
+<script>
+function toggleAddForm() {
+  var form = document.getElementById('add-form');
+  var btn = document.getElementById('add-toggle-btn');
+  if (form.classList.contains('hidden')) {
+    form.classList.remove('hidden');
+    btn.textContent = 'Cancel';
+  } else {
+    form.classList.add('hidden');
+    btn.textContent = 'Add Payment Method';
+  }
+}
+
+function toggleEditForm(id) {
+  var formRow = document.getElementById('edit-form-' + id);
+  if (formRow) {
+    formRow.classList.toggle('hidden');
+    // Hide deactivate form if open
+    var deactivateRow = document.getElementById('deactivate-form-' + id);
+    if (deactivateRow && !deactivateRow.classList.contains('hidden')) {
+      deactivateRow.classList.add('hidden');
+    }
+  }
+}
+
+function toggleDeactivateForm(id) {
+  var formRow = document.getElementById('deactivate-form-' + id);
+  if (formRow) {
+    formRow.classList.toggle('hidden');
+    // Hide edit form if open
+    var editRow = document.getElementById('edit-form-' + id);
+    if (editRow && !editRow.classList.contains('hidden')) {
+      editRow.classList.add('hidden');
+    }
+  }
+}
+</script>
+{{ end }}

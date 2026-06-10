@@ -62,6 +62,21 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 		}
 	}
 
+	for _, pmID := range req.PaymentMethodIDs {
+		var exists bool
+		err := tx.QueryRow(context.Background(), `SELECT EXISTS(SELECT 1 FROM payment_methods WHERE id = $1 AND is_active = true)`, pmID).Scan(&exists)
+		if err != nil || !exists {
+			return nil, fmt.Errorf("invalid or inactive payment method: %s", pmID)
+		}
+	}
+
+	for _, pmID := range req.PaymentMethodIDs {
+		_, err := tx.Exec(context.Background(), `INSERT INTO waffle_payment_methods (waffle_id, payment_method_id) VALUES ($1, $2)`, waffle.ID, pmID)
+		if err != nil {
+			return nil, fmt.Errorf("link payment method %s: %w", pmID, err)
+		}
+	}
+
 	if err := tx.Commit(context.Background()); err != nil {
 		return nil, fmt.Errorf("commit transaction: %w", err)
 	}
@@ -416,12 +431,51 @@ func UpdateWaffle(id uuid.UUID, req models.UpdateWaffleRequest) (*models.Waffle,
 	if itemCount > 10 {
 		itemCount = 10
 	}
-	_, err := db.Pool.Exec(context.Background(), `
+
+	tx, err := db.Pool.Begin(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
+
+	_, err = tx.Exec(context.Background(), `
 		UPDATE waffles SET title = $1, description = $2, image_url = $3, spot_price = $4, payment_info = $5, instagram_media_links = $6, item_count = $7
 		WHERE id = $8
 	`, req.Title, req.Description, req.ImageURL, req.SpotPrice, req.PaymentInfo, req.InstagramMediaLinks, itemCount, id)
 	if err != nil {
 		return nil, fmt.Errorf("update waffle: %w", err)
+	}
+
+	_, err = tx.Exec(context.Background(), `
+		DELETE FROM waffle_payment_methods WHERE waffle_id = $1
+	`, id)
+	if err != nil {
+		return nil, fmt.Errorf("delete existing payment methods: %w", err)
+	}
+
+	for _, pmID := range req.PaymentMethodIDs {
+		var exists bool
+		err = tx.QueryRow(context.Background(), `
+			SELECT EXISTS(SELECT 1 FROM payment_methods WHERE id = $1)
+		`, pmID).Scan(&exists)
+		if err != nil {
+			return nil, fmt.Errorf("validate payment method %s: %w", pmID, err)
+		}
+		if !exists {
+			return nil, fmt.Errorf("invalid payment method ID: %s", pmID)
+		}
+
+		_, err = tx.Exec(context.Background(), `
+			INSERT INTO waffle_payment_methods (waffle_id, payment_method_id)
+			VALUES ($1, $2)
+		`, id, pmID)
+		if err != nil {
+			return nil, fmt.Errorf("insert payment method %s: %w", pmID, err)
+		}
+	}
+
+	if err := tx.Commit(context.Background()); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return GetWaffleByID(id)

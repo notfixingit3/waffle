@@ -138,6 +138,19 @@ func ManageWafflePage(c *gin.Context) {
 	renderers["waffle_manage.html"].Render(c, "waffle_manage.html", data)
 }
 
+func buildPaymentMethodOptions(allMethods []models.PaymentMethod, selectedIDs map[string]bool) []gin.H {
+	var options []gin.H
+	for _, m := range allMethods {
+		options = append(options, gin.H{
+			"ID":          m.ID.String(),
+			"DisplayName": m.DisplayName,
+			"Type":        m.Type,
+			"Selected":    selectedIDs[m.ID.String()],
+		})
+	}
+	return options
+}
+
 func EditWafflePage(c *gin.Context) {
 	slug := c.Param("slug")
 
@@ -147,10 +160,26 @@ func EditWafflePage(c *gin.Context) {
 		return
 	}
 
+	allMethods, err := services.ListPaymentMethods()
+	if err != nil {
+		allMethods = []models.PaymentMethod{}
+	}
+
+	currentMethods, err := services.GetPaymentMethodsForWaffle(waffle.ID)
+	if err != nil {
+		currentMethods = []models.PaymentMethod{}
+	}
+
+	selectedMap := make(map[string]bool)
+	for _, m := range currentMethods {
+		selectedMap[m.ID.String()] = true
+	}
+
 	data := adminNavData(c)
 	data["title"] = "Edit Waffle - " + waffle.Title + " - Project Syrup"
 	data["waffle"] = waffle
 	data["Slug"] = slug
+	data["AllPaymentMethods"] = buildPaymentMethodOptions(allMethods, selectedMap)
 
 	renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
 }
@@ -171,9 +200,17 @@ func EditWafflePost(c *gin.Context) {
 
 	title := strings.TrimSpace(c.PostForm("title"))
 	description := strings.TrimSpace(c.PostForm("description"))
-	paymentInfo := strings.TrimSpace(c.PostForm("payment_info"))
 	spotPriceStr := c.PostForm("spot_price")
 	itemCountStr := c.PostForm("item_count")
+
+	paymentMethodIDStrs := c.PostFormArray("payment_method_ids[]")
+	var paymentMethodIDs []uuid.UUID
+	for _, idStr := range paymentMethodIDStrs {
+		id, err := uuid.Parse(idStr)
+		if err == nil {
+			paymentMethodIDs = append(paymentMethodIDs, id)
+		}
+	}
 
 	var errors gin.H
 	var hasError bool
@@ -209,6 +246,12 @@ func EditWafflePost(c *gin.Context) {
 		}
 	}
 
+	allMethods, _ := services.ListPaymentMethods()
+	selectedMap := make(map[string]bool)
+	for _, id := range paymentMethodIDs {
+		selectedMap[id.String()] = true
+	}
+
 	if hasError {
 		if errors == nil {
 			errors = gin.H{}
@@ -222,28 +265,26 @@ func EditWafflePost(c *gin.Context) {
 		data["Title"] = title
 		data["Description"] = description
 		data["SpotPrice"] = spotPriceStr
-		data["PaymentInfo"] = paymentInfo
 		data["ItemCount"] = itemCountStr
 		data["InstagramMediaLinks"] = cleanLinks
+		data["AllPaymentMethods"] = buildPaymentMethodOptions(allMethods, selectedMap)
 		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
 		return
 	}
 
-	var descPtr, paymentPtr *string
+	var descPtr *string
 	if description != "" {
 		descPtr = &description
-	}
-	if paymentInfo != "" {
-		paymentPtr = &paymentInfo
 	}
 
 	req := models.UpdateWaffleRequest{
 		Title:               title,
 		Description:         descPtr,
 		SpotPrice:           spotPrice,
-		PaymentInfo:         paymentPtr,
+		PaymentInfo:         nil,
 		ItemCount:           itemCount,
 		InstagramMediaLinks: cleanLinks,
+		PaymentMethodIDs:    paymentMethodIDs,
 	}
 
 	updated, err := services.UpdateWaffle(waffle.ID, req)
@@ -256,8 +297,9 @@ func EditWafflePost(c *gin.Context) {
 		data["Title"] = title
 		data["Description"] = description
 		data["SpotPrice"] = spotPriceStr
-		data["PaymentInfo"] = paymentInfo
+		data["ItemCount"] = itemCountStr
 		data["InstagramMediaLinks"] = cleanLinks
+		data["AllPaymentMethods"] = buildPaymentMethodOptions(allMethods, selectedMap)
 		renderers["waffle_edit.html"].Render(c, "waffle_edit.html", data)
 		return
 	}
@@ -451,7 +493,6 @@ func CreateWafflePost(c *gin.Context) {
 
 	title := strings.TrimSpace(c.PostForm("title"))
 	description := strings.TrimSpace(c.PostForm("description"))
-	paymentInfo := strings.TrimSpace(c.PostForm("payment_info"))
 
 	totalSpotsStr := c.PostForm("total_spots")
 	spotPriceStr := c.PostForm("spot_price")
@@ -500,6 +541,25 @@ func CreateWafflePost(c *gin.Context) {
 		}
 	}
 
+	pmIDStrs := c.PostFormArray("payment_method_ids[]")
+	var pmIDs []uuid.UUID
+	for _, idStr := range pmIDStrs {
+		idStr = strings.TrimSpace(idStr)
+		if idStr == "" {
+			continue
+		}
+		pmID, err := uuid.Parse(idStr)
+		if err != nil {
+			if errors == nil {
+				errors = gin.H{}
+			}
+			errors["PaymentMethodIDs"] = "Invalid payment method ID: " + idStr
+			hasError = true
+			continue
+		}
+		pmIDs = append(pmIDs, pmID)
+	}
+
 	if hasError {
 		if errors == nil {
 			errors = gin.H{}
@@ -509,7 +569,6 @@ func CreateWafflePost(c *gin.Context) {
 			"Description":         description,
 			"TotalSpots":          totalSpotsStr,
 			"SpotPrice":           spotPriceStr,
-			"PaymentInfo":         paymentInfo,
 			"ItemCount":           itemCountStr,
 			"InstagramMediaLinks": cleanLinks,
 			"Errors":              errors,
@@ -518,12 +577,9 @@ func CreateWafflePost(c *gin.Context) {
 		return
 	}
 
-	var descPtr, paymentPtr *string
+	var descPtr *string
 	if description != "" {
 		descPtr = &description
-	}
-	if paymentInfo != "" {
-		paymentPtr = &paymentInfo
 	}
 
 	req := models.CreateWaffleRequest{
@@ -531,9 +587,9 @@ func CreateWafflePost(c *gin.Context) {
 		Description:         descPtr,
 		TotalSpots:          totalSpots,
 		SpotPrice:           spotPrice,
-		PaymentInfo:         paymentPtr,
 		ItemCount:           itemCount,
 		InstagramMediaLinks: cleanLinks,
+		PaymentMethodIDs:    pmIDs,
 	}
 
 	waffle, err := services.CreateWaffle(req)
@@ -543,9 +599,9 @@ func CreateWafflePost(c *gin.Context) {
 			"Description":         description,
 			"TotalSpots":          totalSpotsStr,
 			"SpotPrice":           spotPriceStr,
-			"PaymentInfo":         paymentInfo,
 			"ItemCount":           itemCountStr,
 			"InstagramMediaLinks": cleanLinks,
+			"PaymentMethodIDs":    pmIDs,
 			"Error":               "Failed to create waffle: " + err.Error(),
 		}
 		renderNewWaffleForm(c, errData)
@@ -945,6 +1001,171 @@ func UpdateAdminProfileAPI(c *gin.Context) {
 	RecordAudit(c, "update_admin_profile", "admin", id.String(), "updated profile for admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
+}
+
+func PaymentMethodsPage(c *gin.Context) {
+	methods, err := services.ListAllPaymentMethods()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to load payment methods")
+		return
+	}
+
+	methodUsage := make(map[string]int)
+	for _, m := range methods {
+		count, err := services.GetPaymentMethodUsageCount(m.ID)
+		if err == nil {
+			methodUsage[m.ID.String()] = count
+		}
+	}
+
+	data := adminNavData(c)
+	data["title"] = "Payment Methods - Project Syrup"
+	data["PaymentMethods"] = methods
+	data["MethodUsage"] = methodUsage
+	renderers["payment_methods.html"].Render(c, "payment_methods.html", data)
+}
+
+func CreatePaymentMethodPost(c *gin.Context) {
+	if !validateCSRF(c) {
+		renderPaymentMethodsPageWithError(c, "Invalid or missing CSRF token. Please try again.", nil)
+		return
+	}
+
+	pmType := strings.TrimSpace(c.PostForm("type"))
+	displayName := strings.TrimSpace(c.PostForm("display_name"))
+	handleOrURL := strings.TrimSpace(c.PostForm("handle_or_url"))
+
+	var errors []string
+	if pmType == "" {
+		errors = append(errors, "Type is required")
+	}
+	if displayName == "" {
+		errors = append(errors, "Display name is required")
+	}
+	if handleOrURL == "" {
+		errors = append(errors, "Handle or URL is required")
+	}
+
+	if len(errors) > 0 {
+		renderPaymentMethodsPageWithError(c, strings.Join(errors, "; "), gin.H{
+			"Type":         pmType,
+			"DisplayName":  displayName,
+			"HandleOrURL":  handleOrURL,
+		})
+		return
+	}
+
+	req := models.CreatePaymentMethodRequest{
+		Type:        pmType,
+		DisplayName: displayName,
+		HandleOrURL: handleOrURL,
+	}
+
+	pm, err := services.CreatePaymentMethod(req)
+	if err != nil {
+		renderPaymentMethodsPageWithError(c, "Failed to create payment method: "+err.Error(), gin.H{
+			"Type":         pmType,
+			"DisplayName":  displayName,
+			"HandleOrURL":  handleOrURL,
+		})
+		return
+	}
+
+	RecordAudit(c, "create_payment_method", "payment_method", pm.ID.String(), "created "+pm.DisplayName)
+
+	c.Redirect(http.StatusFound, "/admin/payment-methods")
+}
+
+func UpdatePaymentMethodPost(c *gin.Context) {
+	if !validateCSRF(c) {
+		renderPaymentMethodsPageWithError(c, "Invalid or missing CSRF token. Please try again.", nil)
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		renderPaymentMethodsPageWithError(c, "Invalid payment method ID.", nil)
+		return
+	}
+
+	displayName := strings.TrimSpace(c.PostForm("display_name"))
+	handleOrURL := strings.TrimSpace(c.PostForm("handle_or_url"))
+
+	if displayName == "" && handleOrURL == "" {
+		renderPaymentMethodsPageWithError(c, "At least one field (display name or handle/URL) must be provided.", nil)
+		return
+	}
+
+	var req models.UpdatePaymentMethodRequest
+	if displayName != "" {
+		req.DisplayName = &displayName
+	}
+	if handleOrURL != "" {
+		req.HandleOrURL = &handleOrURL
+	}
+
+	pm, err := services.UpdatePaymentMethod(id, req)
+	if err != nil {
+		renderPaymentMethodsPageWithError(c, "Failed to update payment method: "+err.Error(), nil)
+		return
+	}
+
+	RecordAudit(c, "update_payment_method", "payment_method", pm.ID.String(), "updated "+pm.DisplayName)
+
+	c.Redirect(http.StatusFound, "/admin/payment-methods")
+}
+
+func DeactivatePaymentMethodPost(c *gin.Context) {
+	if !validateCSRF(c) {
+		renderPaymentMethodsPageWithError(c, "Invalid or missing CSRF token. Please try again.", nil)
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		renderPaymentMethodsPageWithError(c, "Invalid payment method ID.", nil)
+		return
+	}
+
+	usageCount, err := services.GetPaymentMethodUsageCount(id)
+	if err == nil && usageCount > 0 {
+		renderPaymentMethodsPageWithError(c, fmt.Sprintf("Cannot deactivate this payment method — it is in use by %d waffle(s). Deactivate or reassign those waffles first.", usageCount), nil)
+		return
+	}
+
+	if err := services.DeactivatePaymentMethod(id); err != nil {
+		renderPaymentMethodsPageWithError(c, "Failed to deactivate payment method: "+err.Error(), nil)
+		return
+	}
+
+	RecordAudit(c, "deactivate_payment_method", "payment_method", id.String(), "deactivated payment method")
+
+	c.Redirect(http.StatusFound, "/admin/payment-methods")
+}
+
+func renderPaymentMethodsPageWithError(c *gin.Context, msg string, formData gin.H) {
+	methods, err := services.ListAllPaymentMethods()
+	if err != nil {
+		methods = []models.PaymentMethod{}
+	}
+
+	methodUsage := make(map[string]int)
+	for _, m := range methods {
+		count, err := services.GetPaymentMethodUsageCount(m.ID)
+		if err == nil {
+			methodUsage[m.ID.String()] = count
+		}
+	}
+
+	data := adminNavData(c)
+	data["title"] = "Payment Methods - Project Syrup"
+	data["PaymentMethods"] = methods
+	data["MethodUsage"] = methodUsage
+	data["Error"] = msg
+	for k, v := range formData {
+		data[k] = v
+	}
+	renderers["payment_methods.html"].Render(c, "payment_methods.html", data)
 }
 
 func ResetAdminPasswordAPI(c *gin.Context) {

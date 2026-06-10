@@ -18,6 +18,7 @@
         <a href="/admin/dashboard" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
         <a href="/admin/waffles/new" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
         <a href="/admin/reports" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
+        <a href="/admin/payment-methods" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/payment-methods" }} btn-active{{ end }}">Payment Methods</a>
         <a href="/admin/users" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/users" }} btn-active{{ end }}">Users</a>
         {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
         <div class="dropdown">
@@ -68,6 +69,7 @@
     <a href="/admin/dashboard" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/dashboard" }} btn-active{{ end }}">Dashboard</a>
     <a href="/admin/waffles/new" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/waffles/new" }} btn-active{{ end }}">New Waffle</a>
     <a href="/admin/reports" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/reports" }} btn-active{{ end }}">Reports</a>
+    <a href="/admin/payment-methods" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/payment-methods" }} btn-active{{ end }}">Payment Methods</a>
     <a href="/admin/users" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/users" }} btn-active{{ end }}">Users</a>
     {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
     <div class="collapse collapse-arrow bg-transparent">
