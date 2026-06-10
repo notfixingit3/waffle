@@ -79,6 +79,8 @@ var SpotSelection = (function() {
 
     var count = selectedSpots.size;
     var total = count * (config.spotPrice || 0);
+    var randomBtn = document.getElementById('claim-random-btn');
+    var randomInput = document.getElementById('random-spot-count');
 
     if (count > 0) {
       btn.disabled = false;
@@ -91,6 +93,9 @@ var SpotSelection = (function() {
       btn.textContent = 'Select Spots to Claim';
       summary.classList.add('hidden');
     }
+
+    if (randomBtn) randomBtn.disabled = count > 0;
+    if (randomInput) randomInput.disabled = count > 0;
   }
 
   function submitClaim() {
