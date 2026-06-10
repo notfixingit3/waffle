@@ -87,21 +87,21 @@
     <div class="card-body p-4">
       <div class="grid grid-cols-3 gap-3 text-center">
         <div>
-          <div class="text-2xl font-bold text-success">{{ index .stats "spots_remaining" }}</div>
+          <div class="text-2xl font-bold text-success" id="stat-count-available">{{ index .stats "spots_remaining" }}</div>
           <div class="text-xs text-base-content/60">Available</div>
         </div>
         <div>
-          <div class="text-2xl font-bold text-warning">{{ index .stats "pending" }}</div>
+          <div class="text-2xl font-bold text-warning" id="stat-count-pending">{{ index .stats "pending" }}</div>
           <div class="text-xs text-base-content/60">Pending</div>
         </div>
         <div>
-          <div class="text-2xl font-bold text-error">{{ index .stats "paid" }}</div>
+          <div class="text-2xl font-bold text-error" id="stat-count-paid">{{ index .stats "paid" }}</div>
           <div class="text-xs text-base-content/60">Paid</div>
         </div>
       </div>
       <div class="mt-4">
-        <progress class="progress {{ if eq $progress 100 }}progress-success{{ else }}progress-primary{{ end }} w-full" value="{{ $progress }}" max="100"></progress>
-        <p class="text-xs text-base-content/60 mt-1 text-center">{{ $progress }}% filled ({{ $paidCount }}/{{ .waffle.TotalSpots }})</p>
+        <progress id="stat-progress-bar" class="progress {{ if eq $progress 100 }}progress-success{{ else }}progress-primary{{ end }} w-full" value="{{ $progress }}" max="100"></progress>
+        <p id="stat-progress-text" class="text-xs text-base-content/60 mt-1 text-center">{{ $progress }}% filled ({{ $paidCount }}/{{ .waffle.TotalSpots }})</p>
       </div>
     </div>
   </div>
@@ -254,6 +254,49 @@
     }
   }
 
+  function updateStatsBar() {
+    var spots = document.querySelectorAll('[data-spot-status]');
+    var available = 0;
+    var pending = 0;
+    var paid = 0;
+    for (var i = 0; i < spots.length; i++) {
+      var status = spots[i].dataset.spotStatus;
+      if (status === 'available') {
+        available++;
+      } else if (status === 'pending') {
+        pending++;
+      } else if (status === 'paid') {
+        paid++;
+      }
+    }
+    var total = spots.length;
+    var progress = total > 0 ? Math.round((paid / total) * 100) : 0;
+
+    var availableEl = document.getElementById('stat-count-available');
+    if (availableEl) availableEl.textContent = available;
+    var pendingEl = document.getElementById('stat-count-pending');
+    if (pendingEl) pendingEl.textContent = pending;
+    var paidEl = document.getElementById('stat-count-paid');
+    if (paidEl) paidEl.textContent = paid;
+
+    var progressEl = document.getElementById('stat-progress-bar');
+    if (progressEl) {
+      progressEl.value = progress;
+      if (progress === 100) {
+        progressEl.classList.remove('progress-primary');
+        progressEl.classList.add('progress-success');
+      } else {
+        progressEl.classList.remove('progress-success');
+        progressEl.classList.add('progress-primary');
+      }
+    }
+
+    var progressTextEl = document.getElementById('stat-progress-text');
+    if (progressTextEl) {
+      progressTextEl.textContent = progress + '% filled (' + paid + '/' + total + ')';
+    }
+  }
+
   function loadCachedSpots(slug, container) {
     var cached = OfflineHandler.getCachedData(slug);
     if (!cached || !cached.data) return false;
@@ -334,6 +377,7 @@
         if (!spotEl) return;
 
         updateSpotElement(spotEl, data.status, data.claimed_by_handle || '');
+        updateStatsBar();
       });
     }
 
@@ -372,12 +416,14 @@
     }
 
     updateRandomClaimState();
+    updateStatsBar();
 
     // Observe spot grid changes to update random claim state
     var spotGrid = document.getElementById('spot-grid');
     if (spotGrid && typeof MutationObserver !== 'undefined') {
       var gridObserver = new MutationObserver(function() {
         updateRandomClaimState();
+        updateStatsBar();
       });
       gridObserver.observe(spotGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-spot-status', 'disabled'] });
     }
