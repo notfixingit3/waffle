@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
-## [v0.1.21-beta.0] - 2026-06-10
+## [v0.1.21] - 2026-06-10
 
 ### Added
 - **Random Spot Selection** — Public waffle pages now include a "Pick Random Spots"
@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   return the claimed spot numbers and requested/claimed counts.
 
 ### Changed
+- **Live Stats Updates** — Available/Pending/Paid counts and progress bar now
+  update in real-time when spots are claimed, paid, or released.
+- **Disable Random on Manual Selection** — The "Pick Random Spots" button is
+  disabled when manual spots are selected to prevent conflicting claim methods.
 - **Public Claim UI** — Random claims share the same Instagram handle input as
   manual spot selection while keeping manual and random claim actions independent.
 - **Release Attribution** — Random spot selection is credited as a community UI
