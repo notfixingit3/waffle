@@ -19,6 +19,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.21-beta.0] - 2026-06-10
+
+### Added
+- **Random Spot Selection** — Public waffle pages now include a "Pick Random Spots"
+  flow so buyers can enter a spot count and let the app claim available spots for
+  them automatically.
+- **Random Claim API** — New `POST /api/claims/random` endpoint reuses existing
+  claim rate limiting, Instagram handle normalization, transactional row locking,
+  and WebSocket spot updates.
+- **Partial Fulfillment** — Random claims now claim as many available spots as
+  possible when the requested count is higher than remaining availability, then
+  return the claimed spot numbers and requested/claimed counts.
+
+### Changed
+- **Public Claim UI** — Random claims share the same Instagram handle input as
+  manual spot selection while keeping manual and random claim actions independent.
+- **Release Attribution** — Random spot selection is credited as a community UI
+  feature idea from OrangeSoJuicy on Instagram.
+
+### Fixed
+- **No Hard Random Count Limit** — Removed the client-side maximum count so the
+  server-side partial fulfillment behavior remains authoritative.
+
 ## [v0.1.19] - 2026-06-04
 
 ### ⚠️ Upgrade Notes
@@ -249,6 +272,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.21-beta.0]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.21-beta.0
 [v0.1.19]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.19
 [v0.1.16]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.16
 [v0.1.15]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.15

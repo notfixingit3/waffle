@@ -55,6 +55,7 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 - **Instagram media links** — Link to posts showing what's being waffled (supports multiple items)
 - **Archive + delete controls** — Hide completed waffles by default, or type `DELETE` for permanent removal
 - **Real-time spot grid** — WebSocket-powered claim, payment, release, and winner updates
+- **Random spot claiming** — Buyers can enter a count and let the app pick available spots for them while preserving the normal pending/payment workflow
 - **Mobile-first public flow** — Built for fast spot claims inside Instagram's in-app browser
 - **Installable app shell** — Web App Manifest, app icons, and standalone display metadata are wired in
 - **Admin dashboard** — Create waffles, manage spots, track payments, enter winners
@@ -211,6 +212,7 @@ The stable channel is currently in production testing. Pin to specific versions 
 - `GET /api/waffles/:slug/spots` — Get spot grid
 - `GET /api/waffles/:slug/export` — Export spots as CSV
 - `POST /api/claims` — Claim spots
+- `POST /api/claims/random` — Claim a requested count of random available spots
 - `GET /api/buyers/:handle/stats` — Buyer win/loss stats
 - `GET /api/buyers/:handle/history` — Buyer claim history
 
@@ -257,6 +259,10 @@ This is a personal project, but issues and PRs are welcome. The codebase priorit
 1. **Correctness** — Server-side validation for every state change
 2. **Performance** — Sub-10-second claim flow on mobile
 3. **Simplicity** — No over-engineering, clear service boundaries
+
+### Community Contributors
+
+- **OrangeSoJuicy** ([Instagram](https://www.instagram.com/orangesojuicy/)) — UI feature idea for random spot claiming / "Pick Random Spots" ([feature commit](https://github.com/notfixingit3/waffle/commit/cd9edec20f0991ed59158886282b51ac55d83786)).
 
 ---
 
