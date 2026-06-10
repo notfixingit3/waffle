@@ -44,8 +44,19 @@ jobs:
               echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
             fi
           else
-            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            VERSION="${GITHUB_REF_NAME}"
+            if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
+              VERSION=$(sed -nE 's/^var Version = "([^"]+)"/\1/p' backend/cmd/api/main.go)
+              if [[ -z "${VERSION}" ]]; then
+                VERSION="${GITHUB_REF_NAME}"
+              fi
+            fi
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            if [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.*$ ]]; then
+              echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Set up Docker Buildx
