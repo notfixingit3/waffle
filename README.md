@@ -14,7 +14,7 @@
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.21-beta.0">v0.1.21-beta.0</a></p>
+<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.22-beta.0">v0.1.22-beta.0</a></p>
 
 ---
 
@@ -110,7 +110,7 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
 2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
    ```bash
-   WAFFLE_VERSION=v0.1.21-beta.0
+   WAFFLE_VERSION=v0.1.22-beta.0
    DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
    JWT_SECRET=your-secure-random-secret-here
    ADMIN_PASSWORD=your-secure-admin-password
@@ -144,7 +144,7 @@ The following channels are available for the Docker image:
 |---------|-----|-------------|
 | Stable | `latest` | Tracks the latest stable release from the `main` branch. Recommended for production. |
 | Dev | `dev` | Tracks the latest build from the `dev` branch. For testing and staging only. May be unstable. |
-| Pinned | `v0.1.21-beta.0` | A specific stable version. Recommended for reproducible deployments. |
+| Pinned | `v0.1.22-beta.0` | A specific stable version. Recommended for reproducible deployments. |
 
 The stable channel is currently in production testing. Pin to specific versions for critical deployments.
 
