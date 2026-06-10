@@ -102,3 +102,30 @@ body {
     min-width: 44px;
   }
 }
+
+/* Payment method icons */
+.payment-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.payment-icon-venmo {
+  background-image: url('/static/img/venmo-icon.svg');
+}
+
+.payment-icon-paypal {
+  background-image: url('/static/img/paypal-icon.svg');
+}
+
+.payment-icon-cashapp {
+  background-image: url('/static/img/cashapp-icon.svg');
+}
+
+.payment-icon-zelle {
+  background-image: url('/static/img/zelle-icon.svg');
+}

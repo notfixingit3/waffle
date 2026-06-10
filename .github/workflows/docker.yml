@@ -78,9 +78,12 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            type=raw,value=${{ steps.detect.outputs.version }},priority=900,enable=${{ github.ref == 'refs/heads/dev' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}},enable=${{ steps.detect.outputs.is_prerelease == 'false' }}
             type=raw,value=latest,enable=${{ steps.detect.outputs.is_prerelease == 'false' && github.ref_type == 'tag' }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.detect.outputs.version }}
 
       - name: Build and publish image
         uses: docker/build-push-action@v7

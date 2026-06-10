@@ -13,6 +13,15 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
+// PaymentMethodDisplay is a template-friendly wrapper with a pre-computed payment URL.
+type PaymentMethodDisplay struct {
+	ID          string
+	Type        string
+	DisplayName string
+	HandleOrURL string
+	URL         string
+}
+
 var renderers map[string]*renderer.Renderer
 
 // InitRenderers sets the per-page template renderers used by all handlers.
@@ -123,6 +132,21 @@ func WaffleDetailPage(c *gin.Context) {
 		stats = map[string]interface{}{}
 	}
 
+	rawMethods, _ := services.GetPaymentMethodsForWaffle(waffle.ID)
+	var paymentMethods []PaymentMethodDisplay
+	paymentMethodsByType := make(map[string][]PaymentMethodDisplay)
+	for _, pm := range rawMethods {
+		display := PaymentMethodDisplay{
+			ID:          pm.ID.String(),
+			Type:        pm.Type,
+			DisplayName: pm.DisplayName,
+			HandleOrURL: pm.HandleOrURL,
+			URL:         services.GeneratePaymentURL(pm),
+		}
+		paymentMethods = append(paymentMethods, display)
+		paymentMethodsByType[pm.Type] = append(paymentMethodsByType[pm.Type], display)
+	}
+
 	scheme := "https"
 	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
 		scheme = proto
@@ -145,13 +169,15 @@ func WaffleDetailPage(c *gin.Context) {
 	}
 
 	renderers["waffle_detail.html"].Render(c, "waffle_detail.html", mergeMaps(pageData(), gin.H{
-		"title":       waffle.Title + " - Project Syrup",
-		"waffle":      waffle,
-		"spots":       spots,
-		"stats":       stats,
-		"Host":        host,
-		"Description": description,
-		"OGImage":     ogImage,
+		"title":                waffle.Title + " - Project Syrup",
+		"waffle":               waffle,
+		"spots":                spots,
+		"stats":                stats,
+		"Host":                 host,
+		"Description":          description,
+		"OGImage":              ogImage,
+		"PaymentMethods":       paymentMethods,
+		"PaymentMethodsByType": paymentMethodsByType,
 	}))
 }
 

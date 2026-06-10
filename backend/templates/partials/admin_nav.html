@@ -21,13 +21,14 @@
         <a href="/admin/users" class="btn btn-ghost btn-sm{{ if eq .CurrentPath "/admin/users" }} btn-active{{ end }}">Users</a>
         {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
         <div class="dropdown">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-sm{{ if or (eq .CurrentPath "/admin/audit") (eq .CurrentPath "/admin/admins") (eq .CurrentPath "/admin/settings") }} btn-active{{ end }}">Admin Tools
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm{{ if or (eq .CurrentPath "/admin/audit") (eq .CurrentPath "/admin/admins") (eq .CurrentPath "/admin/settings") (eq .CurrentPath "/admin/payment-methods") }} btn-active{{ end }}">Management
             <svg class="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </div>
           <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-[1] w-48 p-2 shadow mt-2">
             <li><a href="/admin/audit" class="{{ if eq .CurrentPath "/admin/audit" }} active{{ end }}">Audit Log</a></li>
+            <li><a href="/admin/payment-methods" class="{{ if eq .CurrentPath "/admin/payment-methods" }} active{{ end }}">Payment Methods</a></li>
             {{ if eq .Role "super_admin" }}
             <li><a href="/admin/admins" class="{{ if eq .CurrentPath "/admin/admins" }} active{{ end }}">Admin Users</a></li>
             <li><a href="/admin/settings#server-settings" class="{{ if eq .CurrentPath "/admin/settings" }} active{{ end }}">Server Settings</a></li>
@@ -72,9 +73,10 @@
     {{ if or (eq .Role "admin") (eq .Role "super_admin") }}
     <div class="collapse collapse-arrow bg-transparent">
       <input type="checkbox" />
-      <div class="collapse-title btn btn-ghost btn-sm w-full text-left p-0 min-h-0 h-auto font-medium{{ if or (eq .CurrentPath "/admin/audit") (eq .CurrentPath "/admin/admins") (eq .CurrentPath "/admin/settings") }} btn-active{{ end }}">Admin Tools</div>
+      <div class="collapse-title btn btn-ghost btn-sm w-full text-left p-0 min-h-0 h-auto font-medium{{ if or (eq .CurrentPath "/admin/audit") (eq .CurrentPath "/admin/admins") (eq .CurrentPath "/admin/settings") (eq .CurrentPath "/admin/payment-methods") }} btn-active{{ end }}">Management</div>
       <div class="collapse-content p-0 pl-4 space-y-1">
         <a href="/admin/audit" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/audit" }} btn-active{{ end }}">Audit Log</a>
+        <a href="/admin/payment-methods" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/payment-methods" }} btn-active{{ end }}">Payment Methods</a>
         {{ if eq .Role "super_admin" }}
         <a href="/admin/admins" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/admins" }} btn-active{{ end }}">Admins</a>
         <a href="/admin/settings#server-settings" class="btn btn-ghost btn-sm w-full text-left{{ if eq .CurrentPath "/admin/settings" }} btn-active{{ end }}">Server Settings</a>

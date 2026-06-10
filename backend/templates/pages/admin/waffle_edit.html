@@ -18,6 +18,12 @@
     </div>
     {{ end }}
 
+    {{ if and .waffle (eq .waffle.Status "active") }}
+    <div class="alert alert-warning alert-sm mb-4">
+      <span>⚠️ Updating payment methods on an active waffle. Buyers will see the new methods.</span>
+    </div>
+    {{ end }}
+
     <div>
       <label class="label"><span class="label-text font-medium">Title <span class="text-error">*</span></span></label>
       <input type="text" name="title" value="{{ .waffle.Title }}" required
@@ -72,13 +78,26 @@
       </div>
     </div>
 
-    <div>
-      <label class="label"><span class="label-text font-medium">Payment Info</span></label>
-      <input type="text" name="payment_info"
-        value="{{ if .waffle.PaymentInfo }}{{ deref .waffle.PaymentInfo }}{{ end }}"
-        placeholder="e.g., Venmo @username or Cash App $tag"
-        class="input input-bordered w-full">
-      <p class="text-sm opacity-60 mt-1">Shown to buyers so they know how to pay</p>
+    <div class="form-control">
+      <label class="label">
+        <span class="label-text font-medium">Payment Methods</span>
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {{ range .AllPaymentMethods }}
+        <label class="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-base-200">
+          <input type="checkbox" name="payment_method_ids[]" value="{{ .ID }}" 
+            {{ if .Selected }}checked{{ end }} class="checkbox">
+          <span class="payment-icon payment-icon-{{ .Type }}"></span>
+          <span>{{ .DisplayName }} ({{ .Type }})</span>
+        </label>
+        {{ end }}
+      </div>
+      {{ if not .AllPaymentMethods }}
+      <p class="text-sm opacity-60 mt-2">No payment methods configured. <a href="/admin/payment-methods" class="text-primary hover:underline">Add payment methods</a> first.</p>
+      {{ end }}
+      {{ if .Errors.PaymentMethodIDs }}
+      <p class="text-error text-sm mt-1">{{ .Errors.PaymentMethodIDs }}</p>
+      {{ end }}
     </div>
 
     <div id="instagram-media-links-section">

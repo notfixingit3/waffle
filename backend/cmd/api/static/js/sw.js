@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE = `waffle-${CACHE_VERSION}-static`;
 const PAGES_CACHE = `waffle-${CACHE_VERSION}-pages`;
 

@@ -19,7 +19,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
-## [v0.1.21] - 2026-06-10
+## [v0.1.22] - 2026-06-10
+
+### Added
+- **Stored Payment Methods** — Structured pool (Venmo, PayPal, CashApp, Zelle)
+- **Payment Method Admin Page** — /admin/payment-methods with CRUD and soft-delete
+- **Payment Method Public Display** — Grouped by type with icons and clickable links
+- **Payment Method Tests** — Full test coverage
+- **Docker Version Auto-Detect** — Build process extracts version from main.go when VERSION=dev
+- **Versioned Dev Docker Tags** — Dev branch Docker builds now publish both the
+  floating `dev` tag and the detected app version tag.
+
+### Changed
+- **Waffle Create/Edit Forms** — Replaced payment_info textarea with multi-select checkboxes
+- **Admin Navigation** — Renamed "Admin Tools" to "Management", moved Payment Methods into dropdown
+- **Docker Image Metadata** — OCI `org.opencontainers.image.version` now uses the
+  detected app version instead of the branch name for clearer package metadata.
+- **Agent Guidance** — Expanded Scooby-Doo commit message guidance and added local
+  Docker pre-flight testing reminders for future release bumps.
+
+## [v0.1.21-beta.0] - 2026-06-10
 
 ### Added
 - **Random Spot Selection** — Public waffle pages now include a "Pick Random Spots"

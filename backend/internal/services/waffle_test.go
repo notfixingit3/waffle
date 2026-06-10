@@ -116,9 +116,10 @@ func setupCompletedWaffle(t *testing.T) (waffle *models.Waffle, spots []models.S
 	t.Helper()
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      "ClearWinner Test Waffle",
-		TotalSpots: 5,
-		SpotPrice:  10,
+		Title:            "ClearWinner Test Waffle",
+		TotalSpots:       5,
+		SpotPrice:        10,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -177,9 +178,10 @@ func setupActiveWaffle(t *testing.T) *models.Waffle {
 	t.Helper()
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      "Active Test Waffle",
-		TotalSpots: 3,
-		SpotPrice:  5,
+		Title:            "Active Test Waffle",
+		TotalSpots:       3,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -370,10 +372,11 @@ func TestSetWinner_MultipleItems_Success(t *testing.T) {
 
 	// Create waffle with 3 items
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      winnerTestSlugPrefix + "multi-item",
-		TotalSpots: 6,
-		SpotPrice:  10,
-		ItemCount:  3,
+		Title:            winnerTestSlugPrefix + "multi-item",
+		TotalSpots:       6,
+		SpotPrice:        10,
+		ItemCount:        3,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -451,10 +454,11 @@ func TestChangeWinner_MultipleItems_Success(t *testing.T) {
 
 	// Create waffle with 2 items
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      winnerTestSlugPrefix + "change-multi",
-		TotalSpots: 4,
-		SpotPrice:  10,
-		ItemCount:  2,
+		Title:            winnerTestSlugPrefix + "change-multi",
+		TotalSpots:       4,
+		SpotPrice:        10,
+		ItemCount:        2,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -533,9 +537,10 @@ func TestClaimRandomSpots_HappyPath(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "happy",
-		TotalSpots: 10,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "happy",
+		TotalSpots:       10,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -588,9 +593,10 @@ func TestClaimRandomSpots_PartialFulfillment(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "partial",
-		TotalSpots: 2,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "partial",
+		TotalSpots:       2,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -623,9 +629,10 @@ func TestClaimRandomSpots_ZeroAvailability(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "zero",
-		TotalSpots: 3,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "zero",
+		TotalSpots:       3,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -650,9 +657,10 @@ func TestClaimRandomSpots_InvalidCountZero(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "zero-count",
-		TotalSpots: 5,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "zero-count",
+		TotalSpots:       5,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -668,9 +676,10 @@ func TestClaimRandomSpots_InvalidCountNegative(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "neg-count",
-		TotalSpots: 5,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "neg-count",
+		TotalSpots:       5,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -699,9 +708,10 @@ func TestClaimRandomSpots_Concurrent(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "concurrent",
-		TotalSpots: 7,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "concurrent",
+		TotalSpots:       7,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)
@@ -766,9 +776,10 @@ func TestClaimRandomSpots_HandleNormalization(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
-		Title:      randomTestSlugPrefix + "normalize",
-		TotalSpots: 5,
-		SpotPrice:  5,
+		Title:            randomTestSlugPrefix + "normalize",
+		TotalSpots:       5,
+		SpotPrice:        5,
+		PaymentMethodIDs: nil,
 	})
 	if err != nil {
 		t.Fatalf("CreateWaffle: %v", err)

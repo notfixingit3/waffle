@@ -57,6 +57,37 @@
       </div>
       {{ end }}
 
+      {{ if .PaymentMethods }}
+      <div class="card bg-base-100 shadow-sm border border-base-200 mb-4">
+        <div class="card-body">
+          <h3 class="card-title text-lg">Payment Methods</h3>
+
+          {{ range $type, $methods := .PaymentMethodsByType }}
+          <div class="mb-3">
+            <h4 class="font-semibold text-sm mb-2 capitalize">{{ $type }}</h4>
+            <div class="space-y-2">
+              {{ range $methods }}
+              <div class="flex items-center gap-3 p-2 bg-base-200 rounded">
+                <span class="payment-icon payment-icon-{{ .Type }}"></span>
+
+                <div class="flex-1">
+                  <span class="font-medium">{{ .DisplayName }}</span>
+                </div>
+
+                {{ if ne .Type "zelle" }}
+                <a href="{{ index $.PaymentURLs .ID.String }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs">Pay</a>
+                {{ else }}
+                <span class="text-sm text-base-content/70">{{ .HandleOrURL }}</span>
+                {{ end }}
+              </div>
+              {{ end }}
+            </div>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+
       <div class="flex items-center gap-4 text-sm text-base-content/60">
         <span><span class="font-medium text-base-content">{{ .waffle.TotalSpots }}</span> spots</span>
         <span><span class="font-medium text-base-content">${{ .waffle.SpotPrice }}</span> each</span>

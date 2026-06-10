@@ -29,7 +29,7 @@ import (
 	"github.com/syrup/backend/migrations"
 )
 
-var Version = "v0.1.21"
+var Version = "v0.1.22"
 
 var roleHierarchy = map[string]int{
 	"super_admin":    3,
@@ -125,6 +125,7 @@ func main() {
 		"templates/pages/admin/login_history.html",
 		"templates/pages/admin/audit_log.html",
 		"templates/pages/admin/users.html",
+		"templates/pages/admin/payment_methods.html",
 	}
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
@@ -209,6 +210,10 @@ func main() {
 	adminPages.GET("/login-history", handlers.LoginHistoryPage)
 	adminPages.GET("/audit", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.AuditLogPage)
 	adminPages.GET("/users", handlers.UsersListPage)
+	adminPages.GET("/payment-methods", handlers.PaymentMethodsPage)
+	adminPages.POST("/payment-methods", handlers.CreatePaymentMethodPost)
+	adminPages.POST("/payment-methods/:id", handlers.UpdatePaymentMethodPost)
+	adminPages.POST("/payment-methods/:id/deactivate", handlers.DeactivatePaymentMethodPost)
 
 	adminSuperPages := adminPages.Group("", middleware.RequireSuperAdmin)
 	adminSuperPages.GET("/admins", handlers.AdminManagementPage)
@@ -284,6 +289,12 @@ func main() {
 	adminSpots := admin.Group("/spots", middleware.RequireAuth)
 	adminSpots.POST("/:id/pay", handlers.MarkSpotPaidAPI)
 	adminSpots.POST("/:id/release", handlers.ReleaseSpotAPI)
+
+	adminPaymentMethods := admin.Group("/payment-methods", middleware.RequireAuth)
+	adminPaymentMethods.GET("/", listPaymentMethods)
+	adminPaymentMethods.POST("/", createPaymentMethod)
+	adminPaymentMethods.PATCH("/:id", updatePaymentMethod)
+	adminPaymentMethods.DELETE("/:id", deactivatePaymentMethod)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -1021,6 +1032,74 @@ func deactivateAdmin(c *gin.Context) {
 	handlers.RecordAudit(c, "deactivate_admin", "admin", id.String(), "deactivated admin '"+admin.Username+"'")
 
 	c.JSON(http.StatusOK, admin)
+}
+
+func listPaymentMethods(c *gin.Context) {
+	methods, err := services.ListAllPaymentMethods()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"payment_methods": methods})
+}
+
+func createPaymentMethod(c *gin.Context) {
+	var req models.CreatePaymentMethodRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	pm, err := services.CreatePaymentMethod(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handlers.RecordAudit(c, "create_payment_method", "payment_method", pm.ID.String(), "created payment method '"+pm.DisplayName+"'")
+
+	c.JSON(http.StatusCreated, pm)
+}
+
+func updatePaymentMethod(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req models.UpdatePaymentMethodRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	pm, err := services.UpdatePaymentMethod(id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handlers.RecordAudit(c, "update_payment_method", "payment_method", id.String(), "updated payment method '"+pm.DisplayName+"'")
+
+	c.JSON(http.StatusOK, pm)
+}
+
+func deactivatePaymentMethod(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	if err := services.DeactivatePaymentMethod(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	handlers.RecordAudit(c, "deactivate_payment_method", "payment_method", id.String(), "payment method deactivated")
+
+	c.JSON(http.StatusOK, gin.H{"message": "payment method deactivated"})
 }
 
 func parseTrustedProxies() []string {

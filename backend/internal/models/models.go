@@ -30,6 +30,14 @@ const (
 	RoleWaffleManager = "waffle_manager"
 )
 
+// Payment method type constants
+const (
+	PaymentMethodTypeVenmo   = "venmo"
+	PaymentMethodTypePayPal  = "paypal"
+	PaymentMethodTypeCashApp = "cashapp"
+	PaymentMethodTypeZelle   = "zelle"
+)
+
 type Waffle struct {
 	ID                     uuid.UUID    `json:"id" db:"id"`
 	Slug                   string       `json:"slug" db:"slug"`
@@ -38,8 +46,10 @@ type Waffle struct {
 	ImageURL               *string      `json:"image_url,omitempty" db:"image_url"`
 	TotalSpots             int          `json:"total_spots" db:"total_spots"`
 	SpotPrice              int          `json:"spot_price" db:"spot_price"`
-	PaymentInfo            *string      `json:"payment_info,omitempty" db:"payment_info"`
-	Status                 WaffleStatus `json:"status" db:"status"`
+	// Deprecated: Use PaymentMethods instead. Kept for backward compatibility with existing waffles.
+	PaymentInfo            *string        `json:"payment_info,omitempty" db:"payment_info"`
+	PaymentMethods         []PaymentMethod `json:"payment_methods,omitempty"`
+	Status                 WaffleStatus    `json:"status" db:"status"`
 	WinningSpotNumber      *int         `json:"winning_spot_number,omitempty" db:"winning_spot_number"`
 	WinningInstagramHandle *string      `json:"winning_instagram_handle,omitempty" db:"winning_instagram_handle"`
 	ItemCount              int          `json:"item_count" db:"item_count"`
@@ -120,25 +130,27 @@ type BuyerWaffleHistory struct {
 }
 
 type CreateWaffleRequest struct {
-	Title               string   `json:"title"`
-	Description         *string  `json:"description,omitempty"`
-	ImageURL            *string  `json:"image_url,omitempty"`
-	TotalSpots          int      `json:"total_spots"`
-	SpotPrice           int      `json:"spot_price"`
-	PaymentInfo         *string  `json:"payment_info,omitempty"`
-	ItemCount           int      `json:"item_count"`
-	InstagramMediaLinks []string `json:"instagram_media_links,omitempty"`
+	Title               string      `json:"title"`
+	Description         *string     `json:"description,omitempty"`
+	ImageURL            *string     `json:"image_url,omitempty"`
+	TotalSpots          int         `json:"total_spots"`
+	SpotPrice           int         `json:"spot_price"`
+	PaymentInfo         *string     `json:"payment_info,omitempty"`
+	ItemCount           int         `json:"item_count"`
+	InstagramMediaLinks []string    `json:"instagram_media_links,omitempty"`
+	PaymentMethodIDs    []uuid.UUID `json:"payment_method_ids,omitempty"`
 }
 
 type UpdateWaffleRequest struct {
-	Title               string   `json:"title"`
-	Description         *string  `json:"description,omitempty"`
-	ImageURL            *string  `json:"image_url,omitempty"`
-	SpotPrice           int      `json:"spot_price"`
-	PaymentInfo         *string  `json:"payment_info,omitempty"`
-	ItemCount           int      `json:"item_count"`
-	InstagramMediaLinks []string `json:"instagram_media_links,omitempty"`
-	Archived            *bool    `json:"archived,omitempty"`
+	Title               string      `json:"title"`
+	Description         *string     `json:"description,omitempty"`
+	ImageURL            *string     `json:"image_url,omitempty"`
+	SpotPrice           int         `json:"spot_price"`
+	PaymentInfo         *string     `json:"payment_info,omitempty"`
+	ItemCount           int         `json:"item_count"`
+	InstagramMediaLinks []string    `json:"instagram_media_links,omitempty"`
+	Archived            *bool       `json:"archived,omitempty"`
+	PaymentMethodIDs    []uuid.UUID `json:"payment_method_ids,omitempty"`
 }
 
 type CreateClaimRequest struct {
@@ -294,4 +306,25 @@ type WHOISResult struct {
 	City         *string `json:"city,omitempty"`
 	ASN          *string `json:"asn,omitempty"`
 	Raw          string  `json:"-"`
+}
+
+type PaymentMethod struct {
+	ID          uuid.UUID `json:"id" db:"id"`
+	Type        string    `json:"type" db:"type"`
+	DisplayName string    `json:"display_name" db:"display_name"`
+	HandleOrURL string    `json:"handle_or_url" db:"handle_or_url"`
+	IsActive    bool      `json:"is_active" db:"is_active"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type CreatePaymentMethodRequest struct {
+	Type        string `json:"type" binding:"required"`
+	DisplayName string `json:"display_name" binding:"required"`
+	HandleOrURL string `json:"handle_or_url" binding:"required"`
+}
+
+type UpdatePaymentMethodRequest struct {
+	DisplayName *string `json:"display_name"`
+	HandleOrURL *string `json:"handle_or_url"`
 }

@@ -16,7 +16,11 @@ COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ .
 COPY --from=tailwind /app/cmd/api/static/css/output.css ./cmd/api/static/css/
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-X main.Version=${VERSION}" -o bin/waffle ./cmd/api
+RUN export VERSION=$(if [ "${VERSION}" = "dev" ]; then grep 'var Version' cmd/api/main.go | sed 's/.*= "\(.*\)".*/\1/'; else echo "${VERSION}"; fi) && \
+    echo "Building version: ${VERSION}" && \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+    -ldflags "-X main.Version=${VERSION}" \
+    -o bin/waffle ./cmd/api
 
 # Stage 3: Runtime
 FROM alpine:latest
