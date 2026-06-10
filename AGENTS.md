@@ -218,3 +218,18 @@ Every commit should include a random Scooby-Doo quote somewhere in the message b
 - "Jinkies!"
 - "Would you do it for a Scooby Snack?"
 - "Puppy Power!"
+
+## Future Todo / Roadmap
+
+1. **Shareable "Buyer Cards" (Gamification):**
+   - Public sharing layout optimized for Instagram Stories screenshotting (`/buyer/:handle`).
+   - "Luck Rating" comparing actual wins vs mathematical probability.
+   - Trophy case showing items won parsed from completed waffle titles.
+
+2. **Multi-Tier Drops ("Minis & Mains"):**
+   - Relational linkage between waffles (marking one as a "Mini" for a "Main").
+   - Automatically claiming a designated reserved spot on the "Main" board for the winner of the "Mini" upon drawing/completion.
+
+3. **Hyped Drop Protection ("Spot Queue & Ghosting Scores"):**
+   - Allow waitlisting on already-claimed spots, auto-claiming them if the current pending timer expires.
+   - Track ghosting rates (expired/unpaid spots vs claimed spots) per Instagram handle and warn admins.
