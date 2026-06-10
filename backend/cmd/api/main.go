@@ -224,6 +224,7 @@ func main() {
 
 	claims := api.Group("/claims")
 	claims.POST("/", middleware.RateLimitClaims, createClaim)
+	claims.POST("/random", middleware.RateLimitClaims, createRandomClaim)
 
 	buyers := api.Group("/buyers")
 	buyers.GET("/:handle/stats", handlers.GetBuyerStats)
@@ -494,6 +495,61 @@ func createClaim(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "spots claimed successfully"})
+}
+
+func createRandomClaim(c *gin.Context) {
+	var req models.RandomClaimRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	waffleID, err := uuid.Parse(req.WaffleID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid waffle id"})
+		return
+	}
+
+	if req.Count <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "count must be greater than 0"})
+		return
+	}
+
+	spotNumbers, err := services.ClaimRandomSpots(waffleID, req.Count, req.InstagramHandle)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not active") ||
+			strings.Contains(err.Error(), "required") ||
+			strings.Contains(err.Error(), "greater than 0") ||
+			strings.Contains(err.Error(), "no available spots") {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	waffle, err := services.GetWaffleByID(waffleID)
+	if err != nil {
+		slog.Error("Failed to get waffle for broadcast", "error", err, "request_id", c.GetString("request_id"))
+	} else {
+		handle := services.NormalizeInstagramHandle(req.InstagramHandle)
+		for _, spotNum := range spotNumbers {
+			ws.BroadcastSpotUpdate(waffle.Slug, spotNum, string(models.SpotStatusPending), handle)
+		}
+	}
+
+	claimedCount := len(spotNumbers)
+	msg := fmt.Sprintf("Claimed %d spots", claimedCount)
+	if claimedCount < req.Count {
+		msg = fmt.Sprintf("Claimed %d of %d requested spots", claimedCount, req.Count)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"claimed_count":   claimedCount,
+		"requested_count": req.Count,
+		"spot_numbers":    spotNumbers,
+		"message":         msg,
+	})
 }
 
 func createWaffle(c *gin.Context) {
