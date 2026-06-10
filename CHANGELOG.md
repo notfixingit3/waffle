@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.22-beta.3] - 2026-06-10
+
+### Added
+- **Versioned Dev Docker Tags** — Dev branch Docker builds now publish both the
+  floating `dev` tag and the detected app version tag, such as `v0.1.22-beta.3`.
+
+### Changed
+- **Docker Image Metadata** — OCI `org.opencontainers.image.version` now uses the
+  detected app version instead of the branch name for clearer package metadata.
+- **Agent Guidance** — Expanded Scooby-Doo commit message guidance and added local
+  Docker pre-flight testing reminders for future release bumps.
+
 ## [v0.1.22-beta.2] - 2026-06-10
 
 ### Added
