@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -514,3 +515,285 @@ func TestChangeWinner_MultipleItems_Success(t *testing.T) {
 		}
 	}
 }
+
+// --- ClaimRandomSpots tests ---
+
+const randomTestSlugPrefix = "test-random-"
+
+func cleanupRandomTestWaffles(t *testing.T) {
+	t.Helper()
+	_, err := db.Pool.Exec(context.Background(),
+		`DELETE FROM waffles WHERE slug LIKE $1`, randomTestSlugPrefix+"%")
+	if err != nil {
+		t.Fatalf("cleanup random test waffles: %v", err)
+	}
+}
+
+func TestClaimRandomSpots_HappyPath(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "happy",
+		TotalSpots: 10,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	claimed, err := ClaimRandomSpots(waffle.ID, 3, "testuser")
+	if err != nil {
+		t.Fatalf("ClaimRandomSpots: %v", err)
+	}
+	if len(claimed) != 3 {
+		t.Fatalf("expected 3 claimed spots, got %d", len(claimed))
+	}
+
+	// Verify uniqueness
+	seen := make(map[int]bool)
+	for _, n := range claimed {
+		if seen[n] {
+			t.Fatalf("duplicate spot number %d", n)
+		}
+		seen[n] = true
+		if n < 1 || n > 10 {
+			t.Fatalf("spot number %d out of range", n)
+		}
+	}
+
+	// Verify DB state
+	spots, err := GetSpotsByWaffleID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetSpotsByWaffleID: %v", err)
+	}
+
+	pendingCount := 0
+	for _, s := range spots {
+		if s.Status == models.SpotStatusPending {
+			pendingCount++
+			if s.ClaimedByHandle == nil || *s.ClaimedByHandle != "testuser" {
+				t.Fatalf("spot %d: expected claimed_by_handle 'testuser', got %v", s.Number, s.ClaimedByHandle)
+			}
+			if !seen[s.Number] {
+				t.Fatalf("spot %d: pending but not in returned list %v", s.Number, claimed)
+			}
+		}
+	}
+	if pendingCount != 3 {
+		t.Fatalf("expected 3 pending spots in DB, got %d", pendingCount)
+	}
+}
+
+func TestClaimRandomSpots_PartialFulfillment(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "partial",
+		TotalSpots: 2,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	claimed, err := ClaimRandomSpots(waffle.ID, 5, "testuser")
+	if err != nil {
+		t.Fatalf("ClaimRandomSpots: %v", err)
+	}
+	if len(claimed) != 2 {
+		t.Fatalf("expected 2 claimed spots, got %d", len(claimed))
+	}
+
+	spots, err := GetSpotsByWaffleID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetSpotsByWaffleID: %v", err)
+	}
+	pendingCount := 0
+	for _, s := range spots {
+		if s.Status == models.SpotStatusPending {
+			pendingCount++
+		}
+	}
+	if pendingCount != 2 {
+		t.Fatalf("expected 2 pending spots in DB, got %d", pendingCount)
+	}
+}
+
+func TestClaimRandomSpots_ZeroAvailability(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "zero",
+		TotalSpots: 3,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	// Claim all spots manually first
+	if err := ClaimSpots(waffle.ID, []int{1, 2, 3}, "firstuser"); err != nil {
+		t.Fatalf("ClaimSpots: %v", err)
+	}
+
+	// Now try to claim random spots — none available
+	claimed, err := ClaimRandomSpots(waffle.ID, 3, "seconduser")
+	if err != nil {
+		t.Fatalf("ClaimRandomSpots should not error when no spots available: %v", err)
+	}
+	if len(claimed) != 0 {
+		t.Fatalf("expected empty slice, got %v", claimed)
+	}
+}
+
+func TestClaimRandomSpots_InvalidCountZero(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "zero-count",
+		TotalSpots: 5,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	_, err = ClaimRandomSpots(waffle.ID, 0, "testuser")
+	if err == nil {
+		t.Fatal("expected error for count=0, got nil")
+	}
+}
+
+func TestClaimRandomSpots_InvalidCountNegative(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "neg-count",
+		TotalSpots: 5,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	_, err = ClaimRandomSpots(waffle.ID, -1, "testuser")
+	if err == nil {
+		t.Fatal("expected error for count=-1, got nil")
+	}
+}
+
+func TestClaimRandomSpots_InactiveWaffle(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+	defer cleanupWinnerTestWaffles(t)
+
+	// Use a completed waffle (inactive)
+	waffle, _ := setupCompletedWaffle(t)
+
+	_, err := ClaimRandomSpots(waffle.ID, 1, "testuser")
+	if err == nil {
+		t.Fatal("expected error for inactive waffle, got nil")
+	}
+}
+
+func TestClaimRandomSpots_Concurrent(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "concurrent",
+		TotalSpots: 7,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	type result struct {
+		spots []int
+		err   error
+	}
+
+	results := make(chan result, 2)
+	var wg sync.WaitGroup
+
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			spots, err := ClaimRandomSpots(waffle.ID, 5, fmt.Sprintf("user%d", id))
+			results <- result{spots: spots, err: err}
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	allClaimed := make(map[int]bool)
+	totalClaimed := 0
+	for res := range results {
+		if res.err != nil {
+			t.Fatalf("unexpected error from goroutine: %v", res.err)
+		}
+		for _, n := range res.spots {
+			if allClaimed[n] {
+				t.Fatalf("duplicate spot %d across goroutines", n)
+			}
+			allClaimed[n] = true
+		}
+		totalClaimed += len(res.spots)
+	}
+
+	if totalClaimed != 7 {
+		t.Fatalf("expected total claimed = 7, got %d", totalClaimed)
+	}
+
+	// Verify DB state
+	spots, err := GetSpotsByWaffleID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetSpotsByWaffleID: %v", err)
+	}
+	pendingCount := 0
+	for _, s := range spots {
+		if s.Status == models.SpotStatusPending {
+			pendingCount++
+		}
+	}
+	if pendingCount != 7 {
+		t.Fatalf("expected 7 pending spots in DB, got %d", pendingCount)
+	}
+}
+
+func TestClaimRandomSpots_HandleNormalization(t *testing.T) {
+	defer cleanupRandomTestWaffles(t)
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:      randomTestSlugPrefix + "normalize",
+		TotalSpots: 5,
+		SpotPrice:  5,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	claimed, err := ClaimRandomSpots(waffle.ID, 1, "@TestUser")
+	if err != nil {
+		t.Fatalf("ClaimRandomSpots: %v", err)
+	}
+	if len(claimed) != 1 {
+		t.Fatalf("expected 1 claimed spot, got %d", len(claimed))
+	}
+
+	spots, err := GetSpotsByWaffleID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetSpotsByWaffleID: %v", err)
+	}
+	for _, s := range spots {
+		if s.Number == claimed[0] {
+			if s.ClaimedByHandle == nil || *s.ClaimedByHandle != "testuser" {
+				t.Fatalf("expected normalized handle 'testuser', got %v", s.ClaimedByHandle)
+			}
+			return
+		}
+	}
+	t.Fatalf("claimed spot %d not found in DB", claimed[0])
+}
+

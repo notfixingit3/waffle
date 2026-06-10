@@ -193,6 +193,29 @@
 
       <p id="claim-error" class="hidden text-error text-sm mt-2" aria-live="polite"></p>
       <p id="claim-success" class="hidden text-success text-sm mt-2" aria-live="polite"></p>
+
+      <div class="border-t border-base-200 pt-4 mt-4">
+        <h3 class="text-base font-semibold text-base-content mb-3">Pick Random Spots</h3>
+
+        <div class="flex items-center gap-2 mb-3">
+          <input type="number" id="random-spot-count" min="1" placeholder="Number of spots"
+            class="input input-bordered w-full"
+            aria-label="Number of random spots to claim">
+        </div>
+
+        <button type="button" id="claim-random-btn"
+          class="btn btn-secondary w-full text-base"
+          disabled>
+          Claim Random Spots
+        </button>
+
+        <p class="text-xs text-base-content/60 mt-2 text-center">
+          <span id="available-spot-count">0 spots available</span>
+        </p>
+
+        <p id="random-claim-error" class="hidden text-error text-sm mt-2" aria-live="polite"></p>
+        <p id="random-claim-success" class="hidden text-success text-sm mt-2" aria-live="polite"></p>
+      </div>
     </div>
   </div>
   {{ end }}
@@ -321,6 +344,43 @@
         waffleId: container.dataset.waffleId,
         slug: slug
       });
+    }
+
+    // Random spot claim UI state management
+    function updateRandomClaimState() {
+      var availableEls = document.querySelectorAll('[data-spot-status="available"]');
+      var availableCount = availableEls.length;
+      var countDisplay = document.getElementById('available-spot-count');
+      var randomBtn = document.getElementById('claim-random-btn');
+      var randomInput = document.getElementById('random-spot-count');
+
+      if (countDisplay) {
+        countDisplay.textContent = availableCount + ' spot' + (availableCount !== 1 ? 's' : '') + ' available';
+      }
+
+      if (randomBtn) {
+        randomBtn.disabled = availableCount === 0;
+      }
+
+      if (randomInput) {
+        randomInput.max = availableCount;
+        if (availableCount === 0) {
+          randomInput.disabled = true;
+        } else {
+          randomInput.disabled = false;
+        }
+      }
+    }
+
+    updateRandomClaimState();
+
+    // Observe spot grid changes to update random claim state
+    var spotGrid = document.getElementById('spot-grid');
+    if (spotGrid && typeof MutationObserver !== 'undefined') {
+      var gridObserver = new MutationObserver(function() {
+        updateRandomClaimState();
+      });
+      gridObserver.observe(spotGrid, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-spot-status', 'disabled'] });
     }
   });
 })();
