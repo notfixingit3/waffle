@@ -202,9 +202,9 @@ func main() {
 
 	adminPages := r.Group("/admin", middleware.RequireAuth)
 	adminPages.GET("/dashboard", handlers.AdminDashboard)
-	adminPages.GET("/waffles/:slug", handlers.ManageWafflePage)
-	adminPages.GET("/waffles/:slug/edit", handlers.EditWafflePage)
-	adminPages.POST("/waffles/:slug/edit", handlers.EditWafflePost)
+	adminPages.GET("/waffles/:id", handlers.ManageWafflePage)
+	adminPages.GET("/waffles/:id/edit", handlers.EditWafflePage)
+	adminPages.POST("/waffles/:id/edit", handlers.EditWafflePost)
 	adminPages.GET("/waffles/new", handlers.NewWafflePage)
 	adminPages.POST("/waffles/new", handlers.CreateWafflePost)
 	adminPages.GET("/reports", handlers.ReportsPage)

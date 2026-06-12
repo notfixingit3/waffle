@@ -110,7 +110,7 @@ func AdminDashboard(c *gin.Context) {
 }
 
 func ManageWafflePage(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("id")
 
 	waffle, err := services.GetWaffleBySlug(slug)
 	if err != nil {
@@ -152,7 +152,7 @@ func buildPaymentMethodOptions(allMethods []models.PaymentMethod, selectedIDs ma
 }
 
 func EditWafflePage(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("id")
 
 	waffle, err := services.GetWaffleBySlug(slug)
 	if err != nil {
@@ -190,7 +190,7 @@ func EditWafflePost(c *gin.Context) {
 		return
 	}
 
-	slug := c.Param("slug")
+	slug := c.Param("id")
 
 	waffle, err := services.GetWaffleBySlug(slug)
 	if err != nil {
