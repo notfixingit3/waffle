@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.23-beta.2] - 2026-06-12
+
+### Added
+- **Public `/api/version` endpoint** — Exposes the current application version for
+  remote version checks. GET `/api/version` returns `{"version":"v0.1.23-beta.2"}`.
+
 ## [v0.1.23-beta.1] - 2026-06-12
 
 ### Fixed
