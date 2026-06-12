@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/middleware"
 	"github.com/syrup/backend/internal/models"
 	ws "github.com/syrup/backend/internal/websocket"
@@ -21,7 +23,15 @@ func TestMain(m *testing.M) {
 	os.Setenv("JWT_SECRET", "test-secret")
 	gin.SetMode(gin.TestMode)
 	ws.InitHub()
+
+	// Initialize DB pool if Postgres is available so service calls don't nil-panic.
+	_, _ = db.Connect()
+
 	code := m.Run()
+
+	if db.Pool != nil {
+		db.Pool.Close()
+	}
 	os.Exit(code)
 }
 
@@ -47,6 +57,21 @@ func doRequest(r *gin.Engine, method, url, role string, body []byte) *httptest.R
 	}
 	if role != "" {
 		req.AddCookie(&http.Cookie{Name: "admin_token", Value: createToken(role)})
+	}
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func doFormRequest(r *gin.Engine, method, url, role, csrfToken string, data url.Values) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	body := strings.NewReader(data.Encode())
+	req := httptest.NewRequest(method, url, body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if role != "" {
+		req.AddCookie(&http.Cookie{Name: "admin_token", Value: createToken(role)})
+	}
+	if csrfToken != "" {
+		req.AddCookie(&http.Cookie{Name: "csrf_token", Value: csrfToken})
 	}
 	r.ServeHTTP(w, req)
 	return w
@@ -148,5 +173,70 @@ func TestChangeWinnerAPI_Admin_Allowed(t *testing.T) {
 	w := doRequest(r, "POST", "/api/admin/waffles/bad-id/change-winner", models.RoleAdmin, body)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for admin on change-winner API (invalid waffle id), got %d", w.Code)
+	}
+}
+
+func TestArchiveWafflePost_MissingCSRF(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/archive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), ArchiveWafflePost)
+	w := doFormRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/archive", models.RoleAdmin, "", nil)
+	if w.Code == http.StatusFound {
+		t.Fatalf("expected non-redirect status when CSRF is missing, got 302")
+	}
+}
+
+func TestArchiveWafflePost_Valid(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/archive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), ArchiveWafflePost)
+	data := url.Values{"csrf_token": {"test-csrf-token"}}
+	w := doFormRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/archive", models.RoleAdmin, "test-csrf-token", data)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for valid archive request, got %d", w.Code)
+	}
+}
+
+func TestArchiveWafflePost_InvalidID(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/archive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), ArchiveWafflePost)
+	data := url.Values{"csrf_token": {"test-csrf-token"}}
+	w := doFormRequest(r, "POST", "/admin/waffles/not-a-uuid/archive", models.RoleAdmin, "test-csrf-token", data)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 redirect for invalid ID, got %d", w.Code)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "/admin/dashboard") {
+		t.Fatalf("expected redirect to /admin/dashboard, got %s", loc)
+	}
+}
+
+func TestUnarchiveWafflePost_Valid(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/unarchive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), UnarchiveWafflePost)
+	data := url.Values{"csrf_token": {"test-csrf-token"}}
+	w := doFormRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/unarchive", models.RoleAdmin, "test-csrf-token", data)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for valid unarchive request, got %d", w.Code)
+	}
+}
+
+func TestDeleteWafflePost_MissingCSRF(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/delete", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), DeleteWafflePost)
+	w := doFormRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/delete", models.RoleAdmin, "", nil)
+	if w.Code == http.StatusFound {
+		t.Fatalf("expected non-redirect status when CSRF is missing, got 302")
+	}
+}
+
+func TestDeleteWafflePost_Valid(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/delete", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), DeleteWafflePost)
+	data := url.Values{
+		"csrf_token": {"test-csrf-token"},
+		"confirm":    {"DELETE"},
+	}
+	w := doFormRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/delete", models.RoleAdmin, "test-csrf-token", data)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for valid delete request, got %d", w.Code)
 	}
 }

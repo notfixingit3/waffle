@@ -988,9 +988,9 @@ func updateAdmin(c *gin.Context) {
 		targetLevel := roleHierarchy[targetAdmin.Role]
 		newLevel := roleHierarchy[*req.Role]
 		if newLevel < targetLevel {
-	if err := handlers.VerifyPasswordConfirmation(c); err != nil {
-		if err.Error() == "password confirmation required" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
+			if err := handlers.VerifyPasswordConfirmation(c); err != nil {
+				if err.Error() == "password confirmation required" {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "password confirmation required"})
 				} else if err.Error() == "invalid password" {
 					c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 				} else {

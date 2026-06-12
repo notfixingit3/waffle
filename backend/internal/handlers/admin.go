@@ -393,7 +393,7 @@ func SetWinnerAPI(c *gin.Context) {
 	waffle, err := services.GetWaffleByID(id)
 	if err == nil {
 		ws.BroadcastWaffleCompleted(waffle.Slug, winningSpotNumbers)
-		
+
 		spotsStr := ""
 		for idx, num := range winningSpotNumbers {
 			if idx > 0 {
@@ -459,7 +459,7 @@ func ChangeWinnerAPI(c *gin.Context) {
 	waffle, err := services.GetWaffleByID(id)
 	if err == nil {
 		ws.BroadcastWinnerChanged(waffle.Slug, winningSpotNumbers)
-		
+
 		spotsStr := ""
 		for idx, num := range winningSpotNumbers {
 			if idx > 0 {
@@ -1060,9 +1060,9 @@ func CreatePaymentMethodPost(c *gin.Context) {
 
 	if len(errors) > 0 {
 		renderPaymentMethodsPageWithError(c, strings.Join(errors, "; "), gin.H{
-			"Type":         pmType,
-			"DisplayName":  displayName,
-			"HandleOrURL":  handleOrURL,
+			"Type":        pmType,
+			"DisplayName": displayName,
+			"HandleOrURL": handleOrURL,
 		})
 		return
 	}
@@ -1076,9 +1076,9 @@ func CreatePaymentMethodPost(c *gin.Context) {
 	pm, err := services.CreatePaymentMethod(req)
 	if err != nil {
 		renderPaymentMethodsPageWithError(c, "Failed to create payment method: "+err.Error(), gin.H{
-			"Type":         pmType,
-			"DisplayName":  displayName,
-			"HandleOrURL":  handleOrURL,
+			"Type":        pmType,
+			"DisplayName": displayName,
+			"HandleOrURL": handleOrURL,
 		})
 		return
 	}

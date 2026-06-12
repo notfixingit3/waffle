@@ -32,17 +32,19 @@ func TestMain(m *testing.M) {
 // testSlugPrefix is used to identify and clean up test waffles.
 const testSlugPrefix = "test-count-waffles-"
 
-func insertTestWaffle(t *testing.T, status models.WaffleStatus, archived bool) {
+func insertTestWaffle(t *testing.T, status models.WaffleStatus, archived bool) uuid.UUID {
 	t.Helper()
 
-	slug := testSlugPrefix + uuid.New().String()[:8]
+	id := uuid.New()
+	slug := testSlugPrefix + id.String()[:8]
 	_, err := db.Pool.Exec(context.Background(), `
 		INSERT INTO waffles (id, slug, title, total_spots, spot_price, status, archived, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`, uuid.New(), slug, "Test Waffle", 10, 5, status, archived, time.Now())
+	`, id, slug, "Test Waffle", 10, 5, status, archived, time.Now())
 	if err != nil {
 		t.Fatalf("insert test waffle: %v", err)
 	}
+	return id
 }
 
 func cleanupTestWaffles(t *testing.T) {
@@ -772,6 +774,88 @@ func TestClaimRandomSpots_Concurrent(t *testing.T) {
 	}
 }
 
+// --- ArchiveWaffle tests ---
+
+func TestArchiveWaffle_Archives(t *testing.T) {
+	defer cleanupTestWaffles(t)
+
+	waffleID := insertTestWaffle(t, models.WaffleStatusActive, false)
+
+	if err := ArchiveWaffle(waffleID, true); err != nil {
+		t.Fatalf("ArchiveWaffle: %v", err)
+	}
+
+	var archived bool
+	err := db.Pool.QueryRow(context.Background(),
+		"SELECT archived FROM waffles WHERE id=$1", waffleID).Scan(&archived)
+	if err != nil {
+		t.Fatalf("query archived: %v", err)
+	}
+	if !archived {
+		t.Errorf("expected archived=true, got false")
+	}
+}
+
+func TestArchiveWaffle_Unarchives(t *testing.T) {
+	defer cleanupTestWaffles(t)
+
+	waffleID := insertTestWaffle(t, models.WaffleStatusActive, true)
+
+	if err := ArchiveWaffle(waffleID, false); err != nil {
+		t.Fatalf("ArchiveWaffle: %v", err)
+	}
+
+	var archived bool
+	err := db.Pool.QueryRow(context.Background(),
+		"SELECT archived FROM waffles WHERE id=$1", waffleID).Scan(&archived)
+	if err != nil {
+		t.Fatalf("query archived: %v", err)
+	}
+	if archived {
+		t.Errorf("expected archived=false, got true")
+	}
+}
+
+func TestArchiveWaffle_AlreadyArchived(t *testing.T) {
+	defer cleanupTestWaffles(t)
+
+	waffleID := insertTestWaffle(t, models.WaffleStatusActive, true)
+
+	if err := ArchiveWaffle(waffleID, true); err != nil {
+		t.Fatalf("ArchiveWaffle: %v", err)
+	}
+
+	var archived bool
+	err := db.Pool.QueryRow(context.Background(),
+		"SELECT archived FROM waffles WHERE id=$1", waffleID).Scan(&archived)
+	if err != nil {
+		t.Fatalf("query archived: %v", err)
+	}
+	if !archived {
+		t.Errorf("expected archived=true after idempotent archive, got false")
+	}
+}
+
+func TestArchiveWaffle_AlreadyUnarchived(t *testing.T) {
+	defer cleanupTestWaffles(t)
+
+	waffleID := insertTestWaffle(t, models.WaffleStatusActive, false)
+
+	if err := ArchiveWaffle(waffleID, false); err != nil {
+		t.Fatalf("ArchiveWaffle: %v", err)
+	}
+
+	var archived bool
+	err := db.Pool.QueryRow(context.Background(),
+		"SELECT archived FROM waffles WHERE id=$1", waffleID).Scan(&archived)
+	if err != nil {
+		t.Fatalf("query archived: %v", err)
+	}
+	if archived {
+		t.Errorf("expected archived=false after idempotent unarchive, got true")
+	}
+}
+
 func TestClaimRandomSpots_HandleNormalization(t *testing.T) {
 	defer cleanupRandomTestWaffles(t)
 
@@ -807,4 +891,3 @@ func TestClaimRandomSpots_HandleNormalization(t *testing.T) {
 	}
 	t.Fatalf("claimed spot %d not found in DB", claimed[0])
 }
-

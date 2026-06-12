@@ -103,6 +103,12 @@ func setupTestRouter() *gin.Engine {
 	adminSpots.POST("/:id/pay", func(c *gin.Context) { c.JSON(200, gin.H{"paid": true}) })
 	adminSpots.POST("/:id/release", func(c *gin.Context) { c.JSON(200, gin.H{"released": true}) })
 
+	// Rendered admin form routes (auth + role) — simulate production admin pages group
+	adminPages := r.Group("/admin", middleware.RequireAuth)
+	adminPages.POST("/waffles/:id/archive", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), func(c *gin.Context) { c.Redirect(http.StatusFound, "/admin/dashboard") })
+	adminPages.POST("/waffles/:id/unarchive", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), func(c *gin.Context) { c.Redirect(http.StatusFound, "/admin/dashboard") })
+	adminPages.POST("/waffles/:id/delete", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), func(c *gin.Context) { c.Redirect(http.StatusFound, "/admin/dashboard") })
+
 	return r
 }
 
@@ -343,5 +349,109 @@ func TestUnauthenticated_ChangeWinner_Unauthorized(t *testing.T) {
 	w := doRequest(r, "POST", "/api/admin/waffles/"+uuid.New().String()+"/change-winner", "")
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401 for unauthenticated change-winner request, got %d", w.Code)
+	}
+}
+
+// Rendered admin form routes: waffle_manager gets 403
+
+func TestWaffleManager_ArchiveForm_Forbidden(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/archive", models.RoleWaffleManager)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for waffle_manager on archive form, got %d", w.Code)
+	}
+}
+
+func TestWaffleManager_UnarchiveForm_Forbidden(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/unarchive", models.RoleWaffleManager)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for waffle_manager on unarchive form, got %d", w.Code)
+	}
+}
+
+func TestWaffleManager_DeleteForm_Forbidden(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/delete", models.RoleWaffleManager)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for waffle_manager on delete form, got %d", w.Code)
+	}
+}
+
+// Rendered admin form routes: admin gets 302
+
+func TestAdmin_ArchiveForm_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/archive", models.RoleAdmin)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for admin on archive form, got %d", w.Code)
+	}
+}
+
+func TestAdmin_UnarchiveForm_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/unarchive", models.RoleAdmin)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for admin on unarchive form, got %d", w.Code)
+	}
+}
+
+func TestAdmin_DeleteForm_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/delete", models.RoleAdmin)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for admin on delete form, got %d", w.Code)
+	}
+}
+
+// Rendered admin form routes: super_admin gets 302
+
+func TestSuperAdmin_ArchiveForm_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/archive", models.RoleSuperAdmin)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for super_admin on archive form, got %d", w.Code)
+	}
+}
+
+func TestSuperAdmin_UnarchiveForm_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/unarchive", models.RoleSuperAdmin)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for super_admin on unarchive form, got %d", w.Code)
+	}
+}
+
+func TestSuperAdmin_DeleteForm_Allowed(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/delete", models.RoleSuperAdmin)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for super_admin on delete form, got %d", w.Code)
+	}
+}
+
+// Rendered admin form routes: unauthenticated gets 302 (redirect to login)
+
+func TestUnauthenticated_ArchiveForm_Unauthorized(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/archive", "")
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for unauthenticated archive form, got %d", w.Code)
+	}
+}
+
+func TestUnauthenticated_UnarchiveForm_Unauthorized(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/unarchive", "")
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for unauthenticated unarchive form, got %d", w.Code)
+	}
+}
+
+func TestUnauthenticated_DeleteForm_Unauthorized(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/delete", "")
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected 302 for unauthenticated delete form, got %d", w.Code)
 	}
 }
