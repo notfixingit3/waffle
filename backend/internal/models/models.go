@@ -125,6 +125,7 @@ type BuyerWaffleHistory struct {
 	WinningInstagramHandle *string    `json:"winning_instagram_handle,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	CompletedAt            *time.Time `json:"completed_at,omitempty"`
+	TotalSpots             int        `json:"total_spots"`
 	SpotNumbers            []int      `json:"spot_numbers"`
 	IsWinner               bool       `json:"is_winner"`
 }

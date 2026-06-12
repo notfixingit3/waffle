@@ -126,6 +126,7 @@ func main() {
 		"templates/pages/admin/audit_log.html",
 		"templates/pages/admin/users.html",
 		"templates/pages/admin/payment_methods.html",
+		"templates/pages/public/buyer_card.html",
 	}
 	for _, page := range pageTemplates {
 		clone, err := baseTmpl.Clone()
@@ -163,6 +164,7 @@ func main() {
 	r.GET("/", handlers.HomePage)
 	r.GET("/waffles", handlers.WaffleListPage)
 	r.GET("/waffle/:slug", handlers.WaffleDetailPage)
+	r.GET("/buyer/:handle/card", handlers.BuyerCardPage)
 	r.GET("/buyer/:handle", handlers.BuyerStatsPage)
 	r.GET("/about", handlers.AboutPage)
 
@@ -234,6 +236,7 @@ func main() {
 	buyers := api.Group("/buyers")
 	buyers.GET("/:handle/stats", handlers.GetBuyerStats)
 	buyers.GET("/:handle/history", handlers.GetBuyerHistory)
+	buyers.GET("/:handle/card", handlers.GetBuyerCard)
 
 	admin := api.Group("/admin")
 	admin.POST("/login", middleware.AuthRateLimit, adminLogin)

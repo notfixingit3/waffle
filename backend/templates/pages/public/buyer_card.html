@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="syrup">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>{{ .title }}</title>
+  <meta name="description" content="{{ .Description }}">
+  <meta property="og:title" content="@{{ .handle }}'s Waffle Card">
+  <meta property="og:description" content="{{ .Description }}">
+  <meta property="og:url" content="{{ .Scheme }}://{{ .Host }}/buyer/{{ .handle }}/card">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="/static/css/output.css">
+  <link rel="icon" href="/static/favicon.svg">
+</head>
+<body class="bg-base-200 text-base-content">
+  <div class="max-w-[390px] mx-auto min-h-dvh flex flex-col justify-between px-5 py-8">
+    <div class="text-center mb-6">
+      <p class="text-sm font-medium text-base-content/60 uppercase tracking-wider mb-2">Waffle Card</p>
+      <h1 class="text-5xl font-bold text-base-content break-words leading-tight">@{{ .handle }}</h1>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body items-center p-4">
+          <p class="text-3xl font-bold text-success">{{ if .card.Stats }}{{ .card.Stats.TotalWins }}{{ else }}0{{ end }}</p>
+          <p class="text-xs text-base-content/60 uppercase tracking-wide">Wins</p>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body items-center p-4">
+          <p class="text-3xl font-bold text-secondary">{{ if .card.Stats }}{{ .card.Stats.TotalLosses }}{{ else }}0{{ end }}</p>
+          <p class="text-xs text-base-content/60 uppercase tracking-wide">Losses</p>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body items-center p-4">
+          <p class="text-3xl font-bold text-base-content">{{ if .card.Stats }}{{ .card.Stats.TotalSpotsClaimed }}{{ else }}0{{ end }}</p>
+          <p class="text-xs text-base-content/60 uppercase tracking-wide">Spots Claimed</p>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body items-center p-4">
+          <p class="text-3xl font-bold text-primary">{{ .winRate }}%</p>
+          <p class="text-xs text-base-content/60 uppercase tracking-wide">Win Rate</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm mb-6">
+      <div class="card-body items-center p-5">
+        <p class="text-sm text-base-content/60 uppercase tracking-wide mb-2">Luck Rating</p>
+        <div class="badge badge-lg {{ if ge .card.LuckRating 0.0 }}badge-success{{ else }}badge-error{{ end }} text-lg px-4 py-3">
+          {{ .luckRatingDisplay }}
+        </div>
+        <p class="text-xs text-base-content/50 mt-2">Actual vs. expected win rate</p>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm mb-6 flex-grow">
+      <div class="card-body p-5">
+        <p class="text-sm text-base-content/60 uppercase tracking-wide mb-4 text-center">Trophy Case</p>
+        {{ if and .card .card.Trophies (gt (len .card.Trophies) 0) }}
+        <div class="flex flex-wrap justify-center gap-2">
+          {{ range .card.Trophies }}
+          <span class="badge badge-secondary badge-lg px-3 py-2">{{ . }}</span>
+          {{ end }}
+        </div>
+        {{ else }}
+        <div class="text-center py-6">
+          <p class="text-4xl mb-2">🏆</p>
+          <p class="text-sm text-base-content/50">No trophies yet</p>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+
+    <div class="text-center mt-auto pt-4">
+      <img src="/static/img/logo.png" alt="Project Syrup" class="w-12 h-12 rounded-xl mx-auto mb-2 opacity-90">
+      <p class="text-sm font-bold text-base-content">Project Syrup</p>
+      <p class="text-xs text-base-content/50">The Waffle Maker</p>
+    </div>
+  </div>
+</body>
+</html>

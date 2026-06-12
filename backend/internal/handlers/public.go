@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -191,14 +193,23 @@ func BuyerStatsPage(c *gin.Context) {
 		return
 	}
 
-	history, err := services.GetBuyerWaffleHistory(handle)
-	if err != nil {
-		history = []models.BuyerWaffleHistory{}
+	card, cardErr := services.ComputeBuyerCardData(handle)
+	if cardErr != nil {
+		slog.Error("failed to compute buyer card data", "handle", handle, "error", cardErr)
+		card = nil
 	}
 
+	history := []models.BuyerWaffleHistory{}
 	winRate := 0
-	if stats.TotalWins+stats.TotalLosses > 0 {
-		winRate = (stats.TotalWins * 100) / (stats.TotalWins + stats.TotalLosses)
+	if card != nil {
+		history = card.WaffleHistory
+		if card.Stats.TotalWins+card.Stats.TotalLosses > 0 {
+			winRate = (card.Stats.TotalWins * 100) / (card.Stats.TotalWins + card.Stats.TotalLosses)
+		}
+	} else {
+		if stats.TotalWins+stats.TotalLosses > 0 {
+			winRate = (stats.TotalWins * 100) / (stats.TotalWins + stats.TotalLosses)
+		}
 	}
 
 	renderers["buyer_stats.html"].Render(c, "buyer_stats.html", mergeMaps(pageData(), gin.H{
@@ -207,6 +218,7 @@ func BuyerStatsPage(c *gin.Context) {
 		"stats":       stats,
 		"history":     history,
 		"winRate":     winRate,
+		"card":        card,
 	}))
 }
 
@@ -234,4 +246,64 @@ func GetBuyerHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"history": history})
+}
+
+// BuyerCardPage renders the buyer card / shareable stats page.
+func BuyerCardPage(c *gin.Context) {
+	handle := services.NormalizeInstagramHandle(c.Param("handle"))
+
+	card, err := services.ComputeBuyerCardData(handle)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to compute buyer card")
+		return
+	}
+
+	winRate := 0
+	if card.Stats != nil && card.Stats.TotalSpotsClaimed > 0 {
+		winRate = int(card.WinRate * 100)
+	}
+
+	luckRatingDisplay := "Even"
+	if card.LuckRating > 0 {
+		luckRatingDisplay = fmt.Sprintf("+%.1f%%", card.LuckRating*100)
+	} else if card.LuckRating < 0 {
+		luckRatingDisplay = fmt.Sprintf("%.1f%%", card.LuckRating*100)
+	}
+
+	scheme := "https"
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	host := c.Request.Host
+
+	description := fmt.Sprintf("@%s's Waffle Stats — ", handle)
+	if card.Stats != nil {
+		description += fmt.Sprintf("%d wins, %d spots", card.Stats.TotalWins, card.Stats.TotalSpotsClaimed)
+	} else {
+		description += "no activity yet"
+	}
+
+	renderers["buyer_card.html"].Render(c, "buyer_card.html", mergeMaps(pageData(), gin.H{
+		"title":             "@" + handle + "'s Waffle Card - Project Syrup",
+		"handle":            handle,
+		"card":              card,
+		"winRate":           winRate,
+		"luckRatingDisplay": luckRatingDisplay,
+		"Description":       description,
+		"Host":              host,
+		"Scheme":            scheme,
+	}))
+}
+
+// GetBuyerCard returns buyer card data as JSON. Returns data even for unknown buyers.
+func GetBuyerCard(c *gin.Context) {
+	handle := services.NormalizeInstagramHandle(c.Param("handle"))
+
+	card, err := services.ComputeBuyerCardData(handle)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, card)
 }

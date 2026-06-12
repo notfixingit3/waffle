@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/models"
@@ -29,6 +30,7 @@ func GetBuyerWaffleHistory(instagramHandle string) ([]models.BuyerWaffleHistory,
 			w.id, w.slug, w.title, w.spot_price, w.status,
 			w.winning_spot_number, w.winning_instagram_handle,
 			w.created_at, w.completed_at,
+			w.total_spots,
 			ARRAY_AGG(s.number ORDER BY s.number) as spot_numbers,
 			BOOL_OR(s.status = 'winner') as is_winner
 		FROM waffles w
@@ -36,7 +38,7 @@ func GetBuyerWaffleHistory(instagramHandle string) ([]models.BuyerWaffleHistory,
 		WHERE s.claimed_by_handle = $1
 		GROUP BY w.id, w.slug, w.title, w.spot_price, w.status,
 			w.winning_spot_number, w.winning_instagram_handle,
-			w.created_at, w.completed_at
+			w.created_at, w.completed_at, w.total_spots
 		ORDER BY w.created_at DESC
 	`, instagramHandle)
 	if err != nil {
@@ -52,6 +54,7 @@ func GetBuyerWaffleHistory(instagramHandle string) ([]models.BuyerWaffleHistory,
 			&h.WaffleID, &h.Slug, &h.Title, &h.SpotPrice, &h.Status,
 			&h.WinningSpotNumber, &h.WinningInstagramHandle,
 			&h.CreatedAt, &h.CompletedAt,
+			&h.TotalSpots,
 			&h.SpotNumbers, &isWinner,
 		)
 		if err != nil {
@@ -161,4 +164,104 @@ func GetActivityEvents(waffleID string, limit int) ([]models.ActivityEvent, erro
 	}
 
 	return events, nil
+}
+
+// BuyerCardData holds computed data for the buyer card / buyer stats page.
+type BuyerCardData struct {
+	InstagramHandle  string              `json:"instagram_handle"`
+	Stats            *models.BuyerStats  `json:"stats,omitempty"`
+	WinRate          float64             `json:"win_rate"`
+	ExpectedWinRate  float64             `json:"expected_win_rate"`
+	LuckRating       float64             `json:"luck_rating"`
+	Trophies         []string            `json:"trophies"`
+	WaffleHistory    []models.BuyerWaffleHistory `json:"waffle_history"`
+}
+
+// ComputeBuyerCardData assembles all buyer card data: stats, luck rating, and trophies.
+func ComputeBuyerCardData(handle string) (*BuyerCardData, error) {
+	handle = NormalizeInstagramHandle(handle)
+
+	card := &BuyerCardData{
+		InstagramHandle: handle,
+		Trophies:        []string{},
+		WaffleHistory:   []models.BuyerWaffleHistory{},
+	}
+
+	stats, err := GetBuyerStats(handle)
+	if err != nil {
+		return card, nil
+	}
+	card.Stats = stats
+
+	history, err := GetBuyerWaffleHistory(handle)
+	if err != nil {
+		return nil, fmt.Errorf("compute buyer card: %w", err)
+	}
+	card.WaffleHistory = history
+
+	// WinRate is the buyer's overall win rate across every spot they have ever
+	// claimed (TotalWins / TotalSpotsClaimed). This intentionally spans all
+	// waffles, not just completed ones, per the plan's buyer-card formula.
+	if stats.TotalSpotsClaimed > 0 {
+		card.WinRate = float64(stats.TotalWins) / float64(stats.TotalSpotsClaimed)
+	}
+
+	// ExpectedWinRate and LuckRating are computed over completed waffles only,
+	// using the buyer's share of spots in completed waffles versus the total
+	// spots available in those completed waffles (guard against zero total).
+	var buyerSpotsInCompleted, totalSpotsInCompleted int
+	for _, h := range history {
+		if h.Status == "completed" {
+			buyerSpotsInCompleted += len(h.SpotNumbers)
+			totalSpotsInCompleted += h.TotalSpots
+		}
+	}
+	if totalSpotsInCompleted > 0 {
+		card.ExpectedWinRate = float64(buyerSpotsInCompleted) / float64(totalSpotsInCompleted)
+	}
+
+	card.LuckRating = card.WinRate - card.ExpectedWinRate
+
+	seen := make(map[string]bool)
+	for _, h := range history {
+		if h.Status == "completed" && h.IsWinner {
+			for _, item := range parseTrophyItems(h.Title) {
+				if !seen[item] {
+					seen[item] = true
+					card.Trophies = append(card.Trophies, item)
+				}
+			}
+		}
+	}
+
+	return card, nil
+}
+
+// parseTrophyItems extracts item names from inside balanced double quotes in a title.
+// Returns items in order of appearance. Returns empty slice if quotes are unmatched.
+func parseTrophyItems(title string) []string {
+	var items []string
+	i := 0
+	for i < len(title) {
+		openIdx := strings.IndexByte(title[i:], '"')
+		if openIdx == -1 {
+			break
+		}
+		openIdx += i
+
+		rest := title[openIdx+1:]
+		closeIdx := strings.IndexByte(rest, '"')
+		if closeIdx == -1 {
+			return nil
+		}
+		closeIdx += openIdx + 1
+
+		item := title[openIdx+1 : closeIdx]
+		if item != "" {
+			items = append(items, item)
+		}
+
+		i = closeIdx + 1
+	}
+	return items
 }
