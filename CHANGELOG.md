@@ -19,6 +19,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.23-beta.0] - 2026-06-11
+
+### Added
+- **Shareable Buyer Cards** — New chromeless `/buyer/:handle/card` page optimized for
+  Instagram Story screenshots, with luck rating, trophy case, and OG meta tags.
+- **Buyer Card API** — New `GET /api/buyers/:handle/card` endpoint returning
+  `BuyerCardData` with computed luck rating and parsed trophy items.
+- **Luck Rating** — Statistical comparison of actual win rate vs expected win rate
+  (total wins / total completed waffles entered) as a percentage delta.
+- **Trophy Parsing** — Automated extraction of double-quoted item names from
+  completed waffle titles displayed in a trophy case grid.
+- **Buyer Card Tests** — Full Go test coverage for luck rating computation, trophy
+  parsing with edge cases, and `ComputeBuyerCardData` against real DB state.
+
+### Changed
+- **Buyer Stats Redesign** — Buyer stats page now uses a card-based layout with
+  big stat tiles, conditionally displayed luck rating (lucky/due badges), trophy
+  case section, and a prominent CTA linking to the shareable card page.
+- **Math Template Helpers** — Added `mulf` function to `renderer.go` for float
+  multiplication, fixing truncated template rendering when computing luck
+  rating percentages.
+
 ## [v0.1.22] - 2026-06-10
 
 ### Added
