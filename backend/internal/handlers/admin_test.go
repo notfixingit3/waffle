@@ -219,6 +219,15 @@ func TestUnarchiveWafflePost_Valid(t *testing.T) {
 	}
 }
 
+func TestUnarchiveWafflePost_MissingCSRF(t *testing.T) {
+	r := gin.New()
+	r.POST("/admin/waffles/:id/unarchive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), UnarchiveWafflePost)
+	w := doFormRequest(r, "POST", "/admin/waffles/"+uuid.New().String()+"/unarchive", models.RoleAdmin, "", nil)
+	if w.Code == http.StatusFound {
+		t.Fatalf("expected non-redirect status when CSRF is missing, got 302")
+	}
+}
+
 func TestDeleteWafflePost_MissingCSRF(t *testing.T) {
 	r := gin.New()
 	r.POST("/admin/waffles/:id/delete", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), DeleteWafflePost)
