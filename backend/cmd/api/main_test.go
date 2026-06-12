@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -68,6 +69,11 @@ func setupTestRouter() *gin.Engine {
 	// Simulate the production route groups with the same middleware chains.
 	// The goal is to test route-level access control, not the actual handlers.
 
+	// Public version endpoint
+	r.Group("/api").GET("/version", func(c *gin.Context) {
+		c.JSON(200, gin.H{"version": Version})
+	})
+
 	// Admin auth (no middleware)
 	admin := r.Group("/api/admin")
 	admin.POST("/login", func(c *gin.Context) { c.JSON(200, gin.H{"token": "fake"}) })
@@ -120,6 +126,18 @@ func doRequest(r *gin.Engine, method, url, role string) *httptest.ResponseRecord
 	}
 	r.ServeHTTP(w, req)
 	return w
+}
+
+func TestGetVersion_ReturnsVersion(t *testing.T) {
+	r := setupTestRouter()
+	w := doRequest(r, "GET", "/api/version", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 for /api/version, got %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "version") {
+		t.Fatalf("expected version in body, got %s", body)
+	}
 }
 
 // Archive/delete/unarchive API: waffle_manager gets 403

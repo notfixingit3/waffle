@@ -227,6 +227,10 @@ func main() {
 
 	api := r.Group("/api")
 
+	api.GET("/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"version": Version})
+	})
+
 	waffles := api.Group("/waffles")
 	waffles.GET("/", listPublicWaffles)
 	waffles.GET("/:slug", getWaffle)
