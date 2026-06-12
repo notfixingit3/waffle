@@ -221,6 +221,10 @@ func main() {
 	adminSuperPages.GET("/admins", handlers.AdminManagementPage)
 	adminSuperPages.POST("/admins", handlers.CreateAdminPost)
 
+	adminPages.POST("/waffles/:id/archive", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.ArchiveWafflePost)
+	adminPages.POST("/waffles/:id/unarchive", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.UnarchiveWafflePost)
+	adminPages.POST("/waffles/:id/delete", middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), handlers.DeleteWafflePost)
+
 	api := r.Group("/api")
 
 	waffles := api.Group("/waffles")

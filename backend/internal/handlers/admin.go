@@ -629,6 +629,10 @@ func renderNewWaffleForm(c *gin.Context, extra gin.H) {
 }
 
 func ArchiveWafflePost(c *gin.Context) {
+	if !validateCSRF(c) {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Redirect(http.StatusFound, "/admin/dashboard")
@@ -649,6 +653,10 @@ func ArchiveWafflePost(c *gin.Context) {
 }
 
 func UnarchiveWafflePost(c *gin.Context) {
+	if !validateCSRF(c) {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Redirect(http.StatusFound, "/admin/dashboard")
@@ -708,6 +716,10 @@ func VerifyPasswordConfirmation(c *gin.Context) error {
 }
 
 func DeleteWafflePost(c *gin.Context) {
+	if !validateCSRF(c) {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Redirect(http.StatusFound, "/admin/dashboard")
