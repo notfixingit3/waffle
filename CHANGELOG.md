@@ -19,6 +19,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.23-beta.1] - 2026-06-12
+
+### Fixed
+- **Archive/Unarchive/Delete Form 404** — Rendered admin dashboard forms posting to
+  `/admin/waffles/{id}/{archive,unarchive,delete}` now route correctly. The handlers
+  existed but were not registered; they are now wired with admin/super_admin role
+  checks and CSRF validation.
+- **Gin Route Parameter Conflict** — Renamed existing `/admin/waffles/:slug*` route
+  parameters to `:id` so Gin no longer panics on startup from conflicting sibling
+  parameter names.
+
+### Added
+- **Archive Tests** — Route-level RBAC tests, service-level `ArchiveWaffle` tests,
+  and handler-level CSRF/redirect tests for archive, unarchive, and delete forms.
+
 ## [v0.1.23-beta.0] - 2026-06-11
 
 ### Added
