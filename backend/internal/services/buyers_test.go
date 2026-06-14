@@ -62,6 +62,24 @@ func floatApprox(a, b float64) bool {
 	return math.Abs(a-b) <= epsilon
 }
 
+// ensureDefaultTemplateExists checks if a default message template exists and
+// creates one if not. This prevents FK violations when CreateWaffle looks up the
+// default template but other tests have deleted all templates from the shared DB.
+func ensureDefaultTemplateExists(t *testing.T) {
+	t.Helper()
+	_, err := GetDefaultMessageTemplate()
+	if err == nil {
+		return
+	}
+	_, err = db.Pool.Exec(context.Background(), `
+		INSERT INTO message_templates (name, body, is_default, created_at, updated_at)
+		VALUES ('Default Hype Drop', E'🧇 NEW WAFFLE DROP 🧇\n\n{item}\n\n${price}/spot • {spots_left} of {total_spots} left\n\nClaim your spot 👇\n{url}', true, NOW(), NOW())
+	`)
+	if err != nil {
+		t.Fatalf("ensure default template: %v", err)
+	}
+}
+
 // createCompletedWaffleForBuyer creates a waffle, claims buyerSpotCount spots for
 // buyerHandle, fills the rest with other test handles, marks every spot paid, and
 // completes the waffle with the supplied winning spot numbers. The waffle title is
@@ -72,6 +90,8 @@ func createCompletedWaffleForBuyer(t *testing.T, title string, totalSpots, itemC
 	if buyerSpotCount > totalSpots {
 		t.Fatalf("buyerSpotCount (%d) cannot exceed totalSpots (%d)", buyerSpotCount, totalSpots)
 	}
+
+	ensureDefaultTemplateExists(t)
 
 	waffle, err := CreateWaffle(models.CreateWaffleRequest{
 		Title:      testBuyerCardWafflePrefix + uuid.New().String()[:8],

@@ -295,9 +295,10 @@ func TestDeleteMessageTemplate_RejectsLastTemplate(t *testing.T) {
 	adminID := createTestTemplateAdmin(t)
 	defer cleanupTestTemplateAdmin(t, adminID)
 
-	// Remove the seeded default so our test templates are the only ones.
-	_, _ = db.Pool.Exec(context.Background(),
-		`DELETE FROM message_templates WHERE name NOT LIKE $1 || '%'`, testTemplatePrefix)
+	// Start from a known clean state: nullify FK references, then delete all
+	// templates so leftover rows from other tests don't inflate the count.
+	_, _ = db.Pool.Exec(context.Background(), `UPDATE waffles SET share_template_id = NULL WHERE share_template_id IS NOT NULL`)
+	_, _ = db.Pool.Exec(context.Background(), `DELETE FROM message_templates`)
 
 	// Create three test templates, delete two, then verify the last one can't be deleted.
 	t1, err := CreateMessageTemplate(testTemplatePrefix+"last-1", "body 1", adminID)

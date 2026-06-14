@@ -502,7 +502,24 @@ func TestShareTemplatesAPI_DeleteLastTemplate_Returns400(t *testing.T) {
 	adminID := setupShareTemplatesDB(t)
 	defer cleanupShareTemplatesTest(t, adminID)
 
-	_, _ = db.Pool.Exec(context.Background(), `DELETE FROM message_templates`)
+	// Clear FK references and delete ALL templates so leftover data from other
+	// tests cannot inflate the count. Check errors explicitly — ignoring them
+	// can mask FK violation failures that leave rows behind.
+	if _, err := db.Pool.Exec(context.Background(), `UPDATE waffles SET share_template_id = NULL WHERE share_template_id IS NOT NULL`); err != nil {
+		t.Fatalf("clear share_template_id refs: %v", err)
+	}
+	if _, err := db.Pool.Exec(context.Background(), `DELETE FROM message_templates`); err != nil {
+		t.Fatalf("delete all message templates: %v", err)
+	}
+
+	// Verify the table is actually empty.
+	var count int
+	if err := db.Pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM message_templates`).Scan(&count); err != nil {
+		t.Fatalf("count templates: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected 0 templates after cleanup, got %d — FK delete was silently blocked", count)
+	}
 
 	// Create exactly one template
 	t1, err := services.CreateMessageTemplate("Only", "Only body", adminID)
@@ -526,6 +543,14 @@ func TestShareTemplatesAPI_DeleteLastTemplate_Returns400(t *testing.T) {
 	}
 	if resp["error"] != "cannot delete the last message template" {
 		t.Fatalf("expected 'cannot delete the last message template', got %q", resp["error"])
+	}
+
+	// Re-seed the default template for downstream tests that depend on it.
+	if _, err := db.Pool.Exec(context.Background(), `
+		INSERT INTO message_templates (name, body, is_default, created_at, updated_at)
+		VALUES ('Default Hype Drop', E'🧇 NEW WAFFLE DROP 🧇\n\n{item}\n\n${price}/spot • {spots_left} of {total_spots} left\n\nClaim your spot 👇\n{url}', true, NOW(), NOW())
+	`); err != nil {
+		t.Fatalf("re-seed default template: %v", err)
 	}
 }
 
