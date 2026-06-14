@@ -251,9 +251,6 @@ func SetDefaultMessageTemplate(id uuid.UUID) error {
 //	{spots_left}   — total - paid - pending
 //	{spots_claimed} — paid + pending
 //	{url}          — https://{host}/waffle/{slug}
-//
-// TODO: Handlers still call this with the old (string, error) signature;
-// update them in the follow-up handler fix task.
 func RenderShareMessage(templateBody string, waffle *models.Waffle, stats map[string]interface{}, host string) string {
 	totalSpots, _ := toInt(stats["total_spots"])
 	paid, _ := toInt(stats["paid"])

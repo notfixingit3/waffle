@@ -34,19 +34,19 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 	}
 
 	waffle := &models.Waffle{
-		ID:                    uuid.New(),
-		Slug:                  slug,
-		Title:                 req.Title,
-		Description:           req.Description,
-		ImageURL:              req.ImageURL,
-		TotalSpots:            req.TotalSpots,
-		SpotPrice:             req.SpotPrice,
-		PaymentInfo:           req.PaymentInfo,
-		InstagramMediaLinks:   req.InstagramMediaLinks,
-		Status:                models.WaffleStatusActive,
-		ItemCount:             itemCount,
-		ShareTemplateID:       shareTemplateID,
-		CreatedAt:             time.Now(),
+		ID:                  uuid.New(),
+		Slug:                slug,
+		Title:               req.Title,
+		Description:         req.Description,
+		ImageURL:            req.ImageURL,
+		TotalSpots:          req.TotalSpots,
+		SpotPrice:           req.SpotPrice,
+		PaymentInfo:         req.PaymentInfo,
+		InstagramMediaLinks: req.InstagramMediaLinks,
+		Status:              models.WaffleStatusActive,
+		ItemCount:           itemCount,
+		ShareTemplateID:     shareTemplateID,
+		CreatedAt:           time.Now(),
 	}
 
 	tx, err := db.Pool.Begin(context.Background())
@@ -824,7 +824,18 @@ func SetWaffleShareTemplate(waffleID, templateID uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("set waffle share template: %w", err)
 	}
-	return RenderWaffleShareMessage(waffleID)
+	if err := RenderWaffleShareMessage(waffleID); err != nil {
+		return err
+	}
+	// Invalidate cached share card PNGs so the next request regenerates with
+	// the updated message.
+	waffle, err := GetWaffleByID(waffleID)
+	if err == nil {
+		if invErr := InvalidateShareCardCache(waffle.Slug); invErr != nil {
+			slog.Error("Failed to invalidate share card cache after template update", "waffle_id", waffleID, "error", invErr)
+		}
+	}
+	return nil
 }
 
 func SetWaffleShareMessage(waffleID uuid.UUID, message string) error {
@@ -833,6 +844,14 @@ func SetWaffleShareMessage(waffleID uuid.UUID, message string) error {
 	`, message, waffleID)
 	if err != nil {
 		return fmt.Errorf("set waffle share message: %w", err)
+	}
+	// Invalidate cached share card PNGs so the next request regenerates with
+	// the updated message.
+	waffle, err := GetWaffleByID(waffleID)
+	if err == nil {
+		if invErr := InvalidateShareCardCache(waffle.Slug); invErr != nil {
+			slog.Error("Failed to invalidate share card cache after message update", "waffle_id", waffleID, "error", invErr)
+		}
 	}
 	return nil
 }

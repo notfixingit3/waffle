@@ -163,6 +163,11 @@ func main() {
 		handlers.ShareCardCacheDir = "static/cache/share-cards"
 	}
 
+	// Keep services.ShareCardCacheDir in sync with handlers.ShareCardCacheDir
+	// so that InvalidateShareCardCache targets the same directory as the cache
+	// write path in WaffleShareCardPNG.
+	services.ShareCardCacheDir = handlers.ShareCardCacheDir
+
 	// Serve embedded static files (CSS, JS, images, manifest)
 	staticSub, err := fs.Sub(staticFS, "static")
 	if err != nil {
