@@ -220,12 +220,12 @@ func BuyerStatsPage(c *gin.Context) {
 	}
 
 	renderers["buyer_stats.html"].Render(c, "buyer_stats.html", mergeMaps(pageData(), gin.H{
-		"title":       "@" + handle + " - Project Syrup",
-		"handle":      handle,
-		"stats":       stats,
-		"history":     history,
-		"winRate":     winRate,
-		"card":        card,
+		"title":   "@" + handle + " - Project Syrup",
+		"handle":  handle,
+		"stats":   stats,
+		"history": history,
+		"winRate": winRate,
+		"card":    card,
 	}))
 }
 

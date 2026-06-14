@@ -39,28 +39,28 @@ const (
 )
 
 type Waffle struct {
-	ID                     uuid.UUID    `json:"id" db:"id"`
-	Slug                   string       `json:"slug" db:"slug"`
-	Title                  string       `json:"title" db:"title"`
-	Description            *string      `json:"description,omitempty" db:"description"`
-	ImageURL               *string      `json:"image_url,omitempty" db:"image_url"`
-	TotalSpots             int          `json:"total_spots" db:"total_spots"`
-	SpotPrice              int          `json:"spot_price" db:"spot_price"`
+	ID          uuid.UUID `json:"id" db:"id"`
+	Slug        string    `json:"slug" db:"slug"`
+	Title       string    `json:"title" db:"title"`
+	Description *string   `json:"description,omitempty" db:"description"`
+	ImageURL    *string   `json:"image_url,omitempty" db:"image_url"`
+	TotalSpots  int       `json:"total_spots" db:"total_spots"`
+	SpotPrice   int       `json:"spot_price" db:"spot_price"`
 	// Deprecated: Use PaymentMethods instead. Kept for backward compatibility with existing waffles.
-	PaymentInfo            *string        `json:"payment_info,omitempty" db:"payment_info"`
-	PaymentMethods         []PaymentMethod `json:"payment_methods,omitempty"`
-	Status                 WaffleStatus    `json:"status" db:"status"`
-	WinningSpotNumber      *int         `json:"winning_spot_number,omitempty" db:"winning_spot_number"`
-	WinningInstagramHandle *string      `json:"winning_instagram_handle,omitempty" db:"winning_instagram_handle"`
-	ItemCount              int          `json:"item_count" db:"item_count"`
-	WinningSpotNumbers     []int        `json:"winning_spot_numbers,omitempty" db:"winning_spot_numbers"`
-	WinningInstagramHandles []string     `json:"winning_instagram_handles,omitempty" db:"winning_instagram_handles"`
-	InstagramMediaLinks    []string     `json:"instagram_media_links,omitempty" db:"instagram_media_links"`
-	Archived               bool         `json:"archived" db:"archived"`
-	ShareTemplateID        *uuid.UUID   `json:"-" db:"share_template_id"`
-	ShareMessage           *string      `json:"-" db:"share_message"`
-	CreatedAt              time.Time    `json:"created_at" db:"created_at"`
-	CompletedAt            *time.Time   `json:"completed_at,omitempty" db:"completed_at"`
+	PaymentInfo             *string         `json:"payment_info,omitempty" db:"payment_info"`
+	PaymentMethods          []PaymentMethod `json:"payment_methods,omitempty"`
+	Status                  WaffleStatus    `json:"status" db:"status"`
+	WinningSpotNumber       *int            `json:"winning_spot_number,omitempty" db:"winning_spot_number"`
+	WinningInstagramHandle  *string         `json:"winning_instagram_handle,omitempty" db:"winning_instagram_handle"`
+	ItemCount               int             `json:"item_count" db:"item_count"`
+	WinningSpotNumbers      []int           `json:"winning_spot_numbers,omitempty" db:"winning_spot_numbers"`
+	WinningInstagramHandles []string        `json:"winning_instagram_handles,omitempty" db:"winning_instagram_handles"`
+	InstagramMediaLinks     []string        `json:"instagram_media_links,omitempty" db:"instagram_media_links"`
+	Archived                bool            `json:"archived" db:"archived"`
+	ShareTemplateID         *uuid.UUID      `json:"-" db:"share_template_id"`
+	ShareMessage            *string         `json:"-" db:"share_message"`
+	CreatedAt               time.Time       `json:"created_at" db:"created_at"`
+	CompletedAt             *time.Time      `json:"completed_at,omitempty" db:"completed_at"`
 }
 
 type MessageTemplate struct {

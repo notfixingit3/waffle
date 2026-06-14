@@ -914,7 +914,7 @@ func TestCreateWaffle_ShareTemplatePopulated(t *testing.T) {
 	_, err := db.Pool.Exec(context.Background(), `
 		INSERT INTO admins (id, username, email, password_hash, role, active, timezone, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, adminID, "test-st-"+adminID.String()[:8], "test-st-" + adminID.String() + "@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
+	`, adminID, "test-st-"+adminID.String()[:8], "test-st-"+adminID.String()+"@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
 	if err != nil {
 		t.Fatalf("create test admin: %v", err)
 	}
@@ -960,7 +960,7 @@ func TestCreateWaffle_ShareMessageContainsTitle(t *testing.T) {
 	_, err := db.Pool.Exec(context.Background(), `
 		INSERT INTO admins (id, username, email, password_hash, role, active, timezone, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, adminID, "test-st-"+adminID.String()[:8], "test-st-" + adminID.String() + "@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
+	`, adminID, "test-st-"+adminID.String()[:8], "test-st-"+adminID.String()+"@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
 	if err != nil {
 		t.Fatalf("create test admin: %v", err)
 	}
@@ -1007,7 +1007,7 @@ func TestSetWaffleShareTemplate_RerendersMessage(t *testing.T) {
 	_, err := db.Pool.Exec(context.Background(), `
 		INSERT INTO admins (id, username, email, password_hash, role, active, timezone, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, adminID, "test-st-"+adminID.String()[:8], "test-st-" + adminID.String() + "@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
+	`, adminID, "test-st-"+adminID.String()[:8], "test-st-"+adminID.String()+"@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
 	if err != nil {
 		t.Fatalf("create test admin: %v", err)
 	}

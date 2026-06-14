@@ -62,8 +62,8 @@ func TestBuyerStatsTemplate(t *testing.T) {
 
 	var buf bytes.Buffer
 	err := tmpl.Write(&buf, "buyer_stats.html", gin.H{
-		"title":   "@testuser - Project Syrup",
-		"handle":  "testuser",
+		"title":  "@testuser - Project Syrup",
+		"handle": "testuser",
 		"stats": models.BuyerStats{
 			InstagramHandle:     "testuser",
 			TotalWafflesEntered: 5,
@@ -109,8 +109,8 @@ func TestBuyerStatsTemplateActive(t *testing.T) {
 
 	var buf bytes.Buffer
 	err := tmpl.Write(&buf, "buyer_stats.html", gin.H{
-		"title":   "@activeuser - Project Syrup",
-		"handle":  "activeuser",
+		"title":  "@activeuser - Project Syrup",
+		"handle": "activeuser",
 		"stats": models.BuyerStats{
 			InstagramHandle:     "activeuser",
 			TotalWafflesEntered: 3,
