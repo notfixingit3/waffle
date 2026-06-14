@@ -483,7 +483,7 @@ func exportAuditCSV(c *gin.Context) {
 func getWaffle(c *gin.Context) {
 	slug := c.Param("slug")
 	waffle, err := services.GetWaffleBySlug(slug)
-	if err != nil {
+	if err != nil || waffle.Archived {
 		c.JSON(http.StatusNotFound, gin.H{"error": "waffle not found"})
 		return
 	}

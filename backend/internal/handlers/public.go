@@ -125,7 +125,7 @@ func WaffleDetailPage(c *gin.Context) {
 	slug := c.Param("slug")
 
 	waffle, err := services.GetWaffleBySlug(slug)
-	if err != nil {
+	if err != nil || waffle.Archived {
 		c.String(http.StatusNotFound, "Waffle not found")
 		return
 	}

@@ -245,6 +245,28 @@ func deleteTestWaffleForShareCard(t *testing.T, waffle *models.Waffle) {
 	}
 }
 
+func TestWaffleDetailPage_ArchivedReturns404(t *testing.T) {
+	setupShareCardDB(t)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/waffle/:slug", WaffleDetailPage)
+
+	waffle := createTestWaffleForShareCard(t, true) // archived
+	defer deleteTestWaffleForShareCard(t, waffle)
+
+	req := httptest.NewRequest(http.MethodGet, "/waffle/"+waffle.Slug, nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for archived waffle, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "Waffle not found") {
+		t.Fatalf("expected 'Waffle not found' in body, got %s", w.Body.String())
+	}
+}
+
 func TestShareCard(t *testing.T) {
 	setupShareCardDB(t)
 
