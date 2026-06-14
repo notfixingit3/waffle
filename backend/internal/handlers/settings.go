@@ -46,7 +46,19 @@ func SettingsPage(c *gin.Context) {
 		}
 	}
 
+	if templates, err := services.ListMessageTemplates(); err == nil {
+		data["Templates"] = templates
+	}
+
+	if role, ok := data["Role"].(string); ok {
+		data["CanManageShareTemplates"] = canManageShareTemplates(role)
+	}
+
 	renderers["settings.html"].Render(c, "settings.html", data)
+}
+
+func canManageShareTemplates(role string) bool {
+	return role == "admin" || role == "super_admin" || role == "waffle_manager"
 }
 
 func UpdateTimezoneAPI(c *gin.Context) {

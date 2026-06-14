@@ -307,6 +307,13 @@ func main() {
 	adminPaymentMethods.PATCH("/:id", updatePaymentMethod)
 	adminPaymentMethods.DELETE("/:id", deactivatePaymentMethod)
 
+	adminShareTemplates := admin.Group("/share-templates", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin, models.RoleWaffleManager))
+	adminShareTemplates.GET("/", handlers.ListShareTemplatesAPI)
+	adminShareTemplates.POST("/", handlers.CreateShareTemplateAPI)
+	adminShareTemplates.PATCH("/:id", handlers.UpdateShareTemplateAPI)
+	adminShareTemplates.DELETE("/:id", handlers.DeleteShareTemplateAPI)
+	adminShareTemplates.POST("/:id/default", handlers.SetDefaultShareTemplateAPI)
+
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           r,
