@@ -273,6 +273,64 @@
     <p id="winner-error" class="hidden text-error text-sm mt-2"></p>
     <p id="winner-success" class="hidden text-success text-sm mt-2"></p>
   </div>
+
+  {{/* Share to Instagram */}}
+  <div id="share-section" class="card bg-base-100 shadow-sm border border-base-200 p-4 mb-4">
+    <h2 class="text-lg font-semibold text-base-content mb-2">Share to Instagram</h2>
+    <p class="text-sm opacity-60 mb-4">Pick a template, tweak the message, then copy or download the share card.</p>
+
+    <div class="space-y-4">
+      <div>
+        <label for="share-template-select" class="label pt-0 pb-1">
+          <span class="label-text font-medium text-xs">Template</span>
+        </label>
+        <select id="share-template-select" class="select select-bordered w-full select-sm">
+          <option value="">— Select a template —</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="share-message" class="label pt-0 pb-1">
+          <span class="label-text font-medium text-xs">Message / Preview</span>
+        </label>
+        <textarea id="share-message" class="textarea textarea-bordered w-full" rows="5" placeholder="Rendered share message will appear here..."></textarea>
+        <label class="label">
+          <span class="label-text-alt text-xs opacity-60">Preview updates when you change templates. Edit directly to override.</span>
+        </label>
+      </div>
+
+      <div>
+        <label for="share-public-url" class="label pt-0 pb-1">
+          <span class="label-text font-medium text-xs">Public Claim URL</span>
+        </label>
+        <div class="join w-full">
+          <input type="text" id="share-public-url" class="input input-bordered join-item w-full input-sm" value="/waffle/{{ .waffle.Slug }}" readonly>
+          <button type="button" id="share-copy-url-btn" class="btn btn-outline btn-sm join-item">Copy URL</button>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+        <div class="flex-1 w-full">
+          <label class="label pt-0 pb-1">
+            <span class="label-text font-medium text-xs">Card Format</span>
+          </label>
+          <div class="join">
+            <button type="button" id="share-format-story" class="btn btn-sm join-item btn-active" data-format="story">Story</button>
+            <button type="button" id="share-format-square" class="btn btn-sm join-item" data-format="square">Square</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+          <button type="button" id="share-copy-btn" class="btn btn-primary btn-sm">Copy Message</button>
+          <a id="share-download-link" href="/waffle/{{ .waffle.Slug }}/card.png?format=story" target="_blank" class="btn btn-secondary btn-sm">Download Card</a>
+          <button type="button" id="share-regenerate-btn" class="btn btn-outline btn-sm">Regenerate Card</button>
+          <button type="button" id="share-save-btn" class="btn btn-success btn-sm">Save Message</button>
+        </div>
+      </div>
+
+      <div id="share-status" class="alert alert-success text-sm py-2 hidden"></div>
+      <div id="share-error" class="alert alert-error text-sm py-2 hidden"></div>
+    </div>
+  </div>
 </div>
 {{ end }}
 
@@ -413,6 +471,237 @@ document.addEventListener('DOMContentLoaded', function() {
       list.appendChild(p);
     }
   }
+});
+</script>
+
+<script>
+var ShareMessage = (function() {
+  'use strict';
+
+  var csrfToken = '{{ .CSRFToken }}';
+  var container = document.querySelector('.waffle-manage');
+  var slug = container ? container.dataset.waffleSlug : '';
+
+  var select = document.getElementById('share-template-select');
+  var message = document.getElementById('share-message');
+  var publicUrl = document.getElementById('share-public-url');
+  var downloadLink = document.getElementById('share-download-link');
+  var statusEl = document.getElementById('share-status');
+  var errorEl = document.getElementById('share-error');
+  var format = 'story';
+
+  function showStatus(msg, isError) {
+    statusEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+    if (!msg) return;
+    if (isError) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+    } else {
+      statusEl.textContent = msg;
+      statusEl.classList.remove('hidden');
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function(resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (document.execCommand('copy')) {
+          resolve();
+        } else {
+          reject(new Error('execCommand copy failed'));
+        }
+      } catch (e) {
+        reject(e);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  function populateTemplates(templates, selectedId) {
+    if (!select) return;
+    select.innerHTML = '<option value="">— Select a template —</option>';
+    templates.forEach(function(t) {
+      var opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.name;
+      if (t.id === selectedId) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function updateDownloadLink() {
+    if (!downloadLink || !slug) return;
+    downloadLink.href = '/waffle/' + encodeURIComponent(slug) + '/card.png?format=' + format;
+  }
+
+  function setFormat(fmt) {
+    format = fmt;
+    var storyBtn = document.getElementById('share-format-story');
+    var squareBtn = document.getElementById('share-format-square');
+    if (storyBtn) storyBtn.classList.toggle('btn-active', fmt === 'story');
+    if (squareBtn) squareBtn.classList.toggle('btn-active', fmt === 'square');
+    updateDownloadLink();
+  }
+
+  function load() {
+    if (!slug) return;
+    fetch('/api/admin/waffles/' + encodeURIComponent(slug) + '/share-message', {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { res: res, data: data };
+      });
+    })
+    .then(function(result) {
+      if (!result.res.ok) {
+        showStatus(result.data.error || 'Failed to load share message', true);
+        return;
+      }
+      populateTemplates(result.data.templates || [], result.data.selected_template_id);
+      if (message && result.data.message != null) {
+        message.value = result.data.message;
+      }
+    })
+    .catch(function() {
+      showStatus('Failed to load share message', true);
+    });
+  }
+
+  function renderPreview() {
+    if (!select || !slug || !select.value) return;
+    fetch('/api/admin/waffles/' + encodeURIComponent(slug) + '/share-message/render', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ template_id: select.value })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { res: res, data: data };
+      });
+    })
+    .then(function(result) {
+      if (!result.res.ok) {
+        showStatus(result.data.error || 'Failed to render preview', true);
+        return;
+      }
+      if (message) message.value = result.data.message || '';
+    })
+    .catch(function() {
+      showStatus('Failed to render preview', true);
+    });
+  }
+
+  function save() {
+    if (!slug) return;
+    var payload = {};
+    if (select && select.value) payload.template_id = select.value;
+    if (message) payload.message = message.value;
+
+    showStatus('', false);
+    var btn = document.getElementById('share-save-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+
+    fetch('/api/admin/waffles/' + encodeURIComponent(slug) + '/share-message', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { res: res, data: data };
+      });
+    })
+    .then(function(result) {
+      if (!result.res.ok) {
+        showStatus(result.data.error || 'Failed to save share message', true);
+        return;
+      }
+      showStatus('Share message saved', false);
+    })
+    .catch(function() {
+      showStatus('Failed to save share message', true);
+    })
+    .finally(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Save Message';
+      }
+    });
+  }
+
+  function bind() {
+    if (select) select.addEventListener('change', renderPreview);
+
+    var saveBtn = document.getElementById('share-save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', save);
+
+    var copyBtn = document.getElementById('share-copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        if (!message) return;
+        copyText(message.value)
+          .then(function() { showStatus('Message copied', false); })
+          .catch(function() { showStatus('Failed to copy message', true); });
+      });
+    }
+
+    var copyUrlBtn = document.getElementById('share-copy-url-btn');
+    if (copyUrlBtn) {
+      copyUrlBtn.addEventListener('click', function() {
+        if (!publicUrl) return;
+        copyText(publicUrl.value)
+          .then(function() { showStatus('URL copied', false); })
+          .catch(function() { showStatus('Failed to copy URL', true); });
+      });
+    }
+
+    var storyBtn = document.getElementById('share-format-story');
+    var squareBtn = document.getElementById('share-format-square');
+    if (storyBtn) storyBtn.addEventListener('click', function() { setFormat('story'); });
+    if (squareBtn) squareBtn.addEventListener('click', function() { setFormat('square'); });
+
+    var regenerateBtn = document.getElementById('share-regenerate-btn');
+    if (regenerateBtn) {
+      regenerateBtn.addEventListener('click', function() {
+        if (!downloadLink || !slug) return;
+        downloadLink.href = '/waffle/' + encodeURIComponent(slug) + '/card.png?format=' + format + '&t=' + Date.now();
+        showStatus('Download link refreshed with cache buster', false);
+      });
+    }
+  }
+
+  bind();
+
+  return {
+    load: load
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+  ShareMessage.load();
 });
 </script>
 {{ end }}
