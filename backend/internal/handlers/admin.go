@@ -1259,6 +1259,10 @@ func UpdateWaffleShareMessageAPI(c *gin.Context) {
 	}
 
 	if req.Message != nil {
+		if req.TemplateID == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "template_id is required when updating message"})
+			return
+		}
 		if err := services.SetWaffleShareMessage(waffle.ID, *req.Message); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -1326,15 +1330,39 @@ func RenderWaffleShareMessageAPI(c *gin.Context) {
 		return
 	}
 
-	message, err := services.RenderShareMessage(tmpl.Body, waffle, stats, "waffle.social")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	message := services.RenderShareMessage(tmpl.Body, waffle, stats, c.Request.Host)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": message,
 	})
+}
+
+// RegenerateShareCardAPI invalidates the cached share card PNGs for a waffle.
+func RegenerateShareCardAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+	if _, err := uuid.Parse(adminIDStr.(string)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	slug := c.Param("id")
+	if _, err := services.GetWaffleBySlug(slug); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "waffle not found"})
+		return
+	}
+
+	if err := services.InvalidateShareCardCache(slug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to invalidate share card cache"})
+		return
+	}
+
+	RecordAudit(c, "regenerate_share_card", "waffle", slug, "regenerated share card cache for '"+slug+"'")
+
+	c.JSON(http.StatusOK, gin.H{"message": "share card cache regenerated"})
 }
 
 func ResetAdminPasswordAPI(c *gin.Context) {

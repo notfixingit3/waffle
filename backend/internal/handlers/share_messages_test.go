@@ -263,7 +263,7 @@ func TestUpdateWaffleShareMessageAPI_UpdateTemplate(t *testing.T) {
 }
 
 func TestUpdateWaffleShareMessageAPI_UpdateCustomMessage(t *testing.T) {
-	adminID, waffleSlug, _ := setupShareMessagesDB(t)
+	adminID, waffleSlug, tmplID := setupShareMessagesDB(t)
 	defer cleanupShareMessagesTest(t, adminID, waffleSlug)
 
 	gin.SetMode(gin.TestMode)
@@ -272,14 +272,15 @@ func TestUpdateWaffleShareMessageAPI_UpdateCustomMessage(t *testing.T) {
 	r.PATCH("/api/admin/waffles/:id/share-message", middleware.RequireAuth, UpdateWaffleShareMessageAPI)
 
 	customMsg := "Custom share message for this waffle!"
-	body, _ := json.Marshal(map[string]string{"message": customMsg})
+	body, _ := json.Marshal(map[string]string{"template_id": tmplID.String(), "message": customMsg})
 	w := doRequestWithID(r, "PATCH", "/api/admin/waffles/"+waffleSlug+"/share-message", adminID.String(), "admin", body)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
 
 	var resp struct {
-		Message *string `json:"message"`
+		Message            *string    `json:"message"`
+		SelectedTemplateID *uuid.UUID `json:"selected_template_id"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
@@ -287,6 +288,33 @@ func TestUpdateWaffleShareMessageAPI_UpdateCustomMessage(t *testing.T) {
 
 	if resp.Message == nil || *resp.Message != customMsg {
 		t.Fatalf("expected message %q, got %q", customMsg, *resp.Message)
+	}
+	if resp.SelectedTemplateID == nil || *resp.SelectedTemplateID != tmplID {
+		t.Fatalf("expected selected_template_id %s, got %v", tmplID, resp.SelectedTemplateID)
+	}
+}
+
+func TestUpdateWaffleShareMessageAPI_MessageOnly_Returns400(t *testing.T) {
+	adminID, waffleSlug, _ := setupShareMessagesDB(t)
+	defer cleanupShareMessagesTest(t, adminID, waffleSlug)
+
+	gin.SetMode(gin.TestMode)
+
+	r := gin.New()
+	r.PATCH("/api/admin/waffles/:id/share-message", middleware.RequireAuth, UpdateWaffleShareMessageAPI)
+
+	body, _ := json.Marshal(map[string]string{"message": "Custom message without template"})
+	w := doRequestWithID(r, "PATCH", "/api/admin/waffles/"+waffleSlug+"/share-message", adminID.String(), "admin", body)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["error"] != "template_id is required when updating message" {
+		t.Fatalf("expected template_id required error, got %q", resp["error"])
 	}
 }
 
@@ -340,7 +368,7 @@ func TestRenderWaffleShareMessageAPI_Success(t *testing.T) {
 		t.Fatal("expected non-empty rendered message")
 	}
 	// Should contain the waffle title
-	if resp.Message != "Test body Test Waffle 5 25 25 0 https://waffle.social/waffle/"+waffleSlug {
+	if resp.Message != "Test body Test Waffle 5 25 25 0 https://example.com/waffle/"+waffleSlug {
 		t.Fatalf("unexpected rendered message: %q", resp.Message)
 	}
 }

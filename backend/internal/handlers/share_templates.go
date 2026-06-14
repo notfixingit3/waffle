@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -91,7 +92,7 @@ func UpdateShareTemplateAPI(c *gin.Context) {
 
 	if err := services.UpdateMessageTemplate(id, req.Name, req.Body); err != nil {
 		status := http.StatusBadRequest
-		if err.Error() == "message template not found: "+id.String() {
+		if errors.Is(err, services.ErrMessageTemplateNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -123,7 +124,7 @@ func DeleteShareTemplateAPI(c *gin.Context) {
 
 	if err := services.DeleteMessageTemplate(id); err != nil {
 		status := http.StatusBadRequest
-		if err.Error() == "message template not found: "+id.String() {
+		if errors.Is(err, services.ErrMessageTemplateNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -155,7 +156,7 @@ func SetDefaultShareTemplateAPI(c *gin.Context) {
 
 	if err := services.SetDefaultMessageTemplate(id); err != nil {
 		status := http.StatusBadRequest
-		if err.Error() == "message template not found: "+id.String() {
+		if errors.Is(err, services.ErrMessageTemplateNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, gin.H{"error": err.Error()})

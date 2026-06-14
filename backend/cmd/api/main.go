@@ -299,6 +299,7 @@ func main() {
 	adminWaffles.GET("/:id/share-message", handlers.GetWaffleShareMessageAPI)
 	adminWaffles.PATCH("/:id/share-message", handlers.UpdateWaffleShareMessageAPI)
 	adminWaffles.POST("/:id/share-message/render", handlers.RenderWaffleShareMessageAPI)
+	adminWaffles.POST("/:id/share-message/regenerate-card", handlers.RegenerateShareCardAPI)
 
 	adminManagerAPI := admin.Group("/waffles", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin))
 	adminManagerAPI.POST("/:id/archive", archiveWaffle)
