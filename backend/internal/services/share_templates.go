@@ -12,12 +12,17 @@ import (
 	"github.com/syrup/backend/internal/models"
 )
 
+// ErrMessageTemplateNotFound is returned when a requested message template
+// does not exist in the database. Callers can use errors.Is to detect it.
+var ErrMessageTemplateNotFound = errors.New("message template not found")
+
 // ListMessageTemplates returns all message templates ordered by name.
 func ListMessageTemplates() ([]models.MessageTemplate, error) {
 	rows, err := db.Pool.Query(context.Background(), `
-		SELECT id, name, body, is_default, created_by, created_at, updated_at
-		FROM message_templates
-		ORDER BY name
+		SELECT m.id, m.name, m.body, m.is_default, m.created_by, m.created_at, m.updated_at, a.username AS created_by_name
+		FROM message_templates m
+		LEFT JOIN admins a ON m.created_by = a.id
+		ORDER BY m.name
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("list message templates: %w", err)
@@ -27,7 +32,7 @@ func ListMessageTemplates() ([]models.MessageTemplate, error) {
 	var templates []models.MessageTemplate
 	for rows.Next() {
 		var t models.MessageTemplate
-		err := rows.Scan(&t.ID, &t.Name, &t.Body, &t.IsDefault, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.Name, &t.Body, &t.IsDefault, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt, &t.CreatedByName)
 		if err != nil {
 			return nil, fmt.Errorf("scan message template: %w", err)
 		}
@@ -41,17 +46,18 @@ func ListMessageTemplates() ([]models.MessageTemplate, error) {
 }
 
 // GetMessageTemplateByID returns a single message template by ID.
-// Returns an error if not found.
+// Returns ErrMessageTemplateNotFound if not found.
 func GetMessageTemplateByID(id uuid.UUID) (*models.MessageTemplate, error) {
 	var t models.MessageTemplate
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, name, body, is_default, created_by, created_at, updated_at
-		FROM message_templates
-		WHERE id = $1
-	`, id).Scan(&t.ID, &t.Name, &t.Body, &t.IsDefault, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt)
+		SELECT m.id, m.name, m.body, m.is_default, m.created_by, m.created_at, m.updated_at, a.username AS created_by_name
+		FROM message_templates m
+		LEFT JOIN admins a ON m.created_by = a.id
+		WHERE m.id = $1
+	`, id).Scan(&t.ID, &t.Name, &t.Body, &t.IsDefault, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt, &t.CreatedByName)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("message template not found: %s", id)
+			return nil, ErrMessageTemplateNotFound
 		}
 		return nil, fmt.Errorf("get message template: %w", err)
 	}
@@ -88,7 +94,8 @@ func CreateMessageTemplate(name, body string, createdBy uuid.UUID) (*models.Mess
 }
 
 // UpdateMessageTemplate updates the name and body of an existing template.
-// Validates that name and body are non-empty.
+// Validates that name and body are non-empty. Returns ErrMessageTemplateNotFound
+// if the template does not exist.
 func UpdateMessageTemplate(id uuid.UUID, name, body string) error {
 	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("template name is required")
@@ -106,7 +113,7 @@ func UpdateMessageTemplate(id uuid.UUID, name, body string) error {
 		return fmt.Errorf("update message template: %w", err)
 	}
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("message template not found: %s", id)
+		return ErrMessageTemplateNotFound
 	}
 
 	return nil
@@ -131,9 +138,6 @@ func DeleteMessageTemplate(id uuid.UUID) error {
 			COALESCE((SELECT is_default FROM message_templates WHERE id = $1), false)
 	`, id).Scan(&count, &wasDefault)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("message template not found: %s", id)
-		}
 		return fmt.Errorf("check template count: %w", err)
 	}
 
@@ -149,7 +153,7 @@ func DeleteMessageTemplate(id uuid.UUID) error {
 		return fmt.Errorf("delete message template: %w", err)
 	}
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("message template not found: %s", id)
+		return ErrMessageTemplateNotFound
 	}
 
 	// If it was the default, promote the oldest remaining template.
@@ -179,11 +183,13 @@ func DeleteMessageTemplate(id uuid.UUID) error {
 func GetDefaultMessageTemplate() (*models.MessageTemplate, error) {
 	var t models.MessageTemplate
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, name, body, is_default, created_by, created_at, updated_at
-		FROM message_templates
-		WHERE is_default = true
+		SELECT m.id, m.name, m.body, m.is_default, m.created_by, m.created_at, m.updated_at, a.username AS created_by_name
+		FROM message_templates m
+		LEFT JOIN admins a ON m.created_by = a.id
+		WHERE m.is_default = true
 		LIMIT 1
-	`).Scan(&t.ID, &t.Name, &t.Body, &t.IsDefault, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt)
+	`).Scan(
+		&t.ID, &t.Name, &t.Body, &t.IsDefault, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt, &t.CreatedByName)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("no default message template found")
@@ -210,7 +216,7 @@ func SetDefaultMessageTemplate(id uuid.UUID) error {
 		return fmt.Errorf("check template exists: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("message template not found: %s", id)
+		return ErrMessageTemplateNotFound
 	}
 
 	// Unset all defaults.
@@ -245,7 +251,10 @@ func SetDefaultMessageTemplate(id uuid.UUID) error {
 //	{spots_left}   — total - paid - pending
 //	{spots_claimed} — paid + pending
 //	{url}          — https://{host}/waffle/{slug}
-func RenderShareMessage(templateBody string, waffle *models.Waffle, stats map[string]interface{}, host string) (string, error) {
+//
+// TODO: Handlers still call this with the old (string, error) signature;
+// update them in the follow-up handler fix task.
+func RenderShareMessage(templateBody string, waffle *models.Waffle, stats map[string]interface{}, host string) string {
 	totalSpots, _ := toInt(stats["total_spots"])
 	paid, _ := toInt(stats["paid"])
 	pending, _ := toInt(stats["pending"])
@@ -261,7 +270,7 @@ func RenderShareMessage(templateBody string, waffle *models.Waffle, stats map[st
 	result = strings.ReplaceAll(result, "{spots_claimed}", fmt.Sprintf("%d", spotsClaimed))
 	result = strings.ReplaceAll(result, "{url}", fmt.Sprintf("https://%s/waffle/%s", host, waffle.Slug))
 
-	return result, nil
+	return result
 }
 
 // toInt extracts an int from interface{} (float64 from JSON or int from Go map).

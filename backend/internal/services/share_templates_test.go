@@ -488,10 +488,7 @@ func TestRenderShareMessage_AllVariables(t *testing.T) {
 
 	templateBody := "🧇 {item}\n${price}/spot • {spots_left} left of {total_spots}\n{spots_claimed} claimed\n{url}"
 
-	result, err := RenderShareMessage(templateBody, waffle, stats, host)
-	if err != nil {
-		t.Fatalf("RenderShareMessage: %v", err)
-	}
+	result := RenderShareMessage(templateBody, waffle, stats, host)
 
 	if !strings.Contains(result, "Test Drop") {
 		t.Errorf("expected result to contain item title, got: %s", result)
@@ -526,10 +523,7 @@ func TestRenderShareMessage_NoPlaceholders(t *testing.T) {
 		"pending":     0,
 	}
 
-	result, err := RenderShareMessage("plain text message", waffle, stats, "example.com")
-	if err != nil {
-		t.Fatalf("RenderShareMessage: %v", err)
-	}
+	result := RenderShareMessage("plain text message", waffle, stats, "example.com")
 	if result != "plain text message" {
 		t.Errorf("expected unchanged message, got %q", result)
 	}
@@ -547,10 +541,7 @@ func TestRenderShareMessage_ZeroSpots(t *testing.T) {
 		"pending":     0,
 	}
 
-	result, err := RenderShareMessage("{spots_left} {spots_claimed}", waffle, stats, "example.com")
-	if err != nil {
-		t.Fatalf("RenderShareMessage: %v", err)
-	}
+	result := RenderShareMessage("{spots_left} {spots_claimed}", waffle, stats, "example.com")
 	if result != "0 0" {
 		t.Errorf("expected '0 0', got %q", result)
 	}
