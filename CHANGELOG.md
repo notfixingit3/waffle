@@ -19,6 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 -
 
+## [v0.1.23-beta.3] - 2026-06-14
+
+### Added
+- **Share Card Rate Limiting** — The `/waffle/:slug/card.png` endpoint is now rate-limited
+  to 10 requests per IP per minute with a separate limiter isolated from the claims
+  endpoint, preventing share card abuse without affecting spot claims.
+- **Test Isolation Fixes** — `TestDeleteMessageTemplate_RejectsLastTemplate` and
+  `TestShareTemplatesAPI_DeleteLastTemplate_Returns400` now properly clear FK
+  references and all template rows before testing, eliminating flakiness from
+  shared DB state. `createCompletedWaffleForBuyer` auto-seeds a default template
+  if none exists, preventing FK violations in buyer card tests.
+
+### Changed
+- **Admin Waffle Manage UI** — Added "Share to Instagram" section with template
+  selector, editable message preview, public claim URL with copy button, story/square
+  card format toggle, download card link, regenerate card button, copy message
+  button, and save message button.
+
 ## [v0.1.23-beta.2] - 2026-06-12
 
 ### Added
