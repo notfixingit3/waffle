@@ -19,6 +19,9 @@
     <a class="tab tab-active" id="tab-profile" onclick="switchTab('profile')">Profile</a>
     <a class="tab" id="tab-login-history" onclick="switchTab('login-history')">My Login History</a>
     <a class="tab" id="tab-password" onclick="switchTab('password')">Change Password</a>
+    {{ if .CanManageShareTemplates }}
+    <a class="tab" id="tab-share-templates" onclick="switchTab('share-templates')">Share Templates</a>
+    {{ end }}
     {{ if eq .Role "super_admin" }}
     <a class="tab" id="tab-server-settings" onclick="switchTab('server-settings')">Server Settings</a>
     {{ end }}
@@ -288,6 +291,51 @@
     </div>
   </div>
   {{ end }}
+
+  {{ if .CanManageShareTemplates }}
+  <div id="panel-share-templates" class="hidden card bg-base-100 shadow-sm border border-base-200 p-6">
+    <h2 class="text-lg font-semibold text-base-content mb-4">Share Templates</h2>
+    <p class="text-sm opacity-60 mb-4">Create and manage Instagram share message templates. Variables are replaced when a waffle is shared.</p>
+
+    <form id="share-template-form" class="space-y-4 mb-8">
+      <div>
+        <label class="label"><span class="label-text">Template Name</span></label>
+        <input type="text" id="share-template-name" class="input input-bordered w-full" placeholder="e.g., Default Hype Drop">
+      </div>
+      <div>
+        <label class="label"><span class="label-text">Body</span></label>
+        <textarea id="share-template-body" class="textarea textarea-bordered w-full" rows="5" placeholder="Drop is live! {item} — ${price}/spot. {spots_left}/{total_spots} spots left. Claim at {url}"></textarea>
+        <label class="label">
+          <span class="label-text-alt text-xs opacity-60">
+            Available variables: <code class="badge badge-ghost badge-sm">{item}</code> <code class="badge badge-ghost badge-sm">{price}</code> <code class="badge badge-ghost badge-sm">{total_spots}</code> <code class="badge badge-ghost badge-sm">{spots_left}</code> <code class="badge badge-ghost badge-sm">{spots_claimed}</code> <code class="badge badge-ghost badge-sm">{url}</code>
+          </span>
+        </label>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="btn btn-primary btn-sm" id="share-template-create-btn">Create Template</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ShareTemplates.clearForm()">Clear</button>
+      </div>
+    </form>
+
+    <div class="overflow-x-auto">
+      <table class="table table-sm w-full">
+        <thead>
+          <tr>
+            <th class="text-left">Name</th>
+            <th class="text-left">Preview</th>
+            <th class="text-left">Created</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="share-templates-body">
+          <tr>
+            <td colspan="4" class="text-center py-8 opacity-60">Loading templates...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{ end }}
 </div>
 {{ end }}
 
@@ -298,19 +346,23 @@ function switchTab(tabName) {
   var historyPanel = document.getElementById('panel-login-history');
   var passwordPanel = document.getElementById('panel-password');
   var serverSettingsPanel = document.getElementById('panel-server-settings');
+  var shareTemplatesPanel = document.getElementById('panel-share-templates');
   var profileTab = document.getElementById('tab-profile');
   var historyTab = document.getElementById('tab-login-history');
   var passwordTab = document.getElementById('tab-password');
   var serverSettingsTab = document.getElementById('tab-server-settings');
+  var shareTemplatesTab = document.getElementById('tab-share-templates');
 
   profilePanel.classList.add('hidden');
   historyPanel.classList.add('hidden');
   passwordPanel.classList.add('hidden');
   if (serverSettingsPanel) serverSettingsPanel.classList.add('hidden');
+  if (shareTemplatesPanel) shareTemplatesPanel.classList.add('hidden');
   profileTab.classList.remove('tab-active');
   historyTab.classList.remove('tab-active');
   passwordTab.classList.remove('tab-active');
   if (serverSettingsTab) serverSettingsTab.classList.remove('tab-active');
+  if (shareTemplatesTab) shareTemplatesTab.classList.remove('tab-active');
 
   if (tabName === 'profile') {
     profilePanel.classList.remove('hidden');
@@ -326,6 +378,10 @@ function switchTab(tabName) {
     if (serverSettingsPanel) serverSettingsPanel.classList.remove('hidden');
     if (serverSettingsTab) serverSettingsTab.classList.add('tab-active');
     ServerSettings.load();
+  } else if (tabName === 'share-templates') {
+    if (shareTemplatesPanel) shareTemplatesPanel.classList.remove('hidden');
+    if (shareTemplatesTab) shareTemplatesTab.classList.add('tab-active');
+    ShareTemplates.load();
   }
 
   if (window.location.hash !== '#' + tabName) {
@@ -559,6 +615,8 @@ document.addEventListener('DOMContentLoaded', function() {
     switchTab('password');
   } else if (hash === '#server-settings') {
     switchTab('server-settings');
+  } else if (hash === '#share-templates') {
+    switchTab('share-templates');
   }
 });
 
@@ -746,6 +804,329 @@ var ChangePassword = (function() {
 document.getElementById('password-form').addEventListener('submit', function(e) {
   e.preventDefault();
   ChangePassword.submit();
+});
+
+var ShareTemplates = (function() {
+  'use strict';
+
+  var csrfToken = '{{ .CSRFToken }}';
+  var editingId = null;
+
+  function showSuccess(message) {
+    var banner = document.getElementById('success-banner');
+    var span = banner.querySelector('span');
+    span.textContent = message;
+    banner.classList.remove('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+  }
+
+  function showError(message) {
+    var banner = document.getElementById('error-banner');
+    var text = document.getElementById('error-text');
+    text.textContent = message;
+    banner.classList.remove('hidden');
+    document.getElementById('success-banner').classList.add('hidden');
+  }
+
+  function formatDateTime(isoString) {
+    if (!isoString) return '-';
+    var d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var month = months[d.getMonth()];
+    var day = d.getDate();
+    var year = d.getFullYear();
+    return month + ' ' + day + ', ' + year;
+  }
+
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function previewBody(body) {
+    if (!body) return '-';
+    var clean = body.replace(/\s+/g, ' ').trim();
+    if (clean.length <= 120) return clean;
+    return clean.substring(0, 120) + '...';
+  }
+
+  function renderRow(template) {
+    var isEditing = editingId === template.id;
+    if (isEditing) {
+      return '<tr data-template-id="' + escapeHtml(template.id) + '" class="bg-base-200/50">' +
+        '<td colspan="4" class="p-4">' +
+          '<form class="share-template-edit-form space-y-3">' +
+            '<div>' +
+              '<label class="label"><span class="label-text">Template Name</span></label>' +
+              '<input type="text" class="share-edit-name input input-bordered input-sm w-full" value="' + escapeHtml(template.name) + '" required>' +
+            '</div>' +
+            '<div>' +
+              '<label class="label"><span class="label-text">Body</span></label>' +
+              '<textarea class="share-edit-body textarea textarea-bordered w-full" rows="4" required>' + escapeHtml(template.body) + '</textarea>' +
+            '</div>' +
+            '<div class="flex items-center gap-2 justify-end">' +
+              '<button type="button" class="btn btn-sm btn-ghost" onclick="ShareTemplates.cancelEdit()">Cancel</button>' +
+              '<button type="submit" class="btn btn-sm btn-primary">Save Changes</button>' +
+            '</div>' +
+          '</form>' +
+        '</td>' +
+      '</tr>';
+    }
+
+    var defaultBadge = template.is_default ? '<span class="badge badge-primary badge-sm ml-2">Default</span>' : '';
+    var setDefaultBtn = !template.is_default ?
+      '<button type="button" class="btn btn-xs btn-outline btn-primary" onclick="ShareTemplates.setDefault(\'' + escapeHtml(template.id) + '\')">Set as default</button>' : '';
+
+    return '<tr data-template-id="' + escapeHtml(template.id) + '" class="hover:bg-base-200/50 transition-colors">' +
+      '<td class="px-4 py-3 align-top">' +
+        '<div class="font-medium">' + escapeHtml(template.name) + defaultBadge + '</div>' +
+      '</td>' +
+      '<td class="px-4 py-3 align-top max-w-xs">' +
+        '<div class="text-sm opacity-80 break-words">' + escapeHtml(previewBody(template.body)) + '</div>' +
+      '</td>' +
+      '<td class="px-4 py-3 align-top whitespace-nowrap text-sm opacity-70">' + formatDateTime(template.created_at) + '</td>' +
+      '<td class="px-4 py-3 align-top text-right">' +
+        '<div class="flex flex-wrap items-center justify-end gap-2">' +
+          setDefaultBtn +
+          '<button type="button" class="btn btn-xs btn-outline" onclick="ShareTemplates.startEdit(\'' + escapeHtml(template.id) + '\')">Edit</button>' +
+          '<button type="button" class="btn btn-xs btn-error btn-outline" onclick="ShareTemplates.deleteTemplate(\'' + escapeHtml(template.id) + '\', \'' + escapeHtml(template.name).replace(/\\'/g, "\\'") + '\')">Delete</button>' +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }
+
+  function render(templates) {
+    var tbody = document.getElementById('share-templates-body');
+    if (!templates || templates.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">No templates yet. Create one above.</td></tr>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < templates.length; i++) {
+      html += renderRow(templates[i]);
+    }
+    tbody.innerHTML = html;
+
+    var editForms = tbody.querySelectorAll('.share-template-edit-form');
+    for (var j = 0; j < editForms.length; j++) {
+      editForms[j].addEventListener('submit', handleEditSubmit);
+    }
+  }
+
+  function load() {
+    var tbody = document.getElementById('share-templates-body');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">Loading templates...</td></tr>';
+
+    fetch('/api/admin/share-templates', {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (!res.ok) {
+          showError(data.error || 'Failed to load templates');
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">Failed to load templates</td></tr>';
+          return;
+        }
+        render(data.templates || []);
+      });
+    })
+    .catch(function() {
+      showError('Failed to load templates');
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">Failed to load templates</td></tr>';
+    });
+  }
+
+  function validate(name, body) {
+    if (!name || name.trim() === '') {
+      showError('Template name is required');
+      return false;
+    }
+    if (!body || body.trim() === '') {
+      showError('Template body is required');
+      return false;
+    }
+    return true;
+  }
+
+  function create(e) {
+    e.preventDefault();
+    var nameInput = document.getElementById('share-template-name');
+    var bodyInput = document.getElementById('share-template-body');
+    var btn = document.getElementById('share-template-create-btn');
+    var name = nameInput.value;
+    var body = bodyInput.value;
+
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+
+    if (!validate(name, body)) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    fetch('/api/admin/share-templates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ name: name.trim(), body: body.trim() })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          showSuccess('Template created successfully');
+          nameInput.value = '';
+          bodyInput.value = '';
+          load();
+        } else {
+          showError(data.error || 'Failed to create template');
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to create template');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Create Template';
+    });
+  }
+
+  function startEdit(id) {
+    editingId = id;
+    load();
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    load();
+  }
+
+  function handleEditSubmit(e) {
+    e.preventDefault();
+    var form = e.target;
+    var row = form.closest('tr');
+    var id = row.getAttribute('data-template-id');
+    var name = row.querySelector('.share-edit-name').value;
+    var body = row.querySelector('.share-edit-body').value;
+    var btn = form.querySelector('button[type="submit"]');
+
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+
+    if (!validate(name, body)) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    fetch('/api/admin/share-templates/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ name: name.trim(), body: body.trim() })
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          showSuccess('Template updated successfully');
+          editingId = null;
+          load();
+        } else {
+          showError(data.error || 'Failed to update template');
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to update template');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    });
+  }
+
+  function deleteTemplate(id, name) {
+    if (!confirm('Delete template "' + name + '"? This cannot be undone.')) return;
+
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+
+    fetch('/api/admin/share-templates/' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          showSuccess('Template deleted successfully');
+          load();
+        } else {
+          showError(data.error || 'Failed to delete template');
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to delete template');
+    });
+  }
+
+  function setDefault(id) {
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+
+    fetch('/api/admin/share-templates/' + encodeURIComponent(id) + '/default', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfToken
+      }
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        if (res.ok) {
+          showSuccess('Default template updated');
+          load();
+        } else {
+          showError(data.error || 'Failed to set default template');
+        }
+      });
+    })
+    .catch(function() {
+      showError('Failed to set default template');
+    });
+  }
+
+  function clearForm() {
+    document.getElementById('share-template-name').value = '';
+    document.getElementById('share-template-body').value = '';
+    document.getElementById('success-banner').classList.add('hidden');
+    document.getElementById('error-banner').classList.add('hidden');
+  }
+
+  return {
+    load: load,
+    create: create,
+    startEdit: startEdit,
+    cancelEdit: cancelEdit,
+    deleteTemplate: deleteTemplate,
+    setDefault: setDefault,
+    clearForm: clearForm
+  };
+})();
+
+document.getElementById('share-template-form').addEventListener('submit', function(e) {
+  ShareTemplates.create(e);
 });
 </script>
 {{ end }}
