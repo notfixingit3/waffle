@@ -409,3 +409,65 @@ func TestRenderWaffleShareMessageAPI_TemplateNotFound(t *testing.T) {
 		t.Fatalf("expected 404 for non-existent template, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Regenerate card endpoint
+// ---------------------------------------------------------------------------
+
+func TestRegenerateShareCardAPI_MissingAuth(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	r := gin.New()
+	r.POST("/api/admin/waffles/:id/share-message/regenerate-card", middleware.RequireAuth, RegenerateShareCardAPI)
+
+	req := httptest.NewRequest("POST", "/api/admin/waffles/"+uuid.New().String()+"/share-message/regenerate-card", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRegenerateShareCardAPI_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	r := gin.New()
+	r.POST("/api/admin/waffles/:id/share-message/regenerate-card", func(c *gin.Context) {
+		c.Set("admin_id", uuid.New().String())
+		RegenerateShareCardAPI(c)
+	})
+
+	req := httptest.NewRequest("POST", "/api/admin/waffles/nonexistent-slug/share-message/regenerate-card", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRegenerateShareCardAPI_Success(t *testing.T) {
+	adminID, waffleSlug, _ := setupShareMessagesDB(t)
+	defer cleanupShareMessagesTest(t, adminID, waffleSlug)
+
+	gin.SetMode(gin.TestMode)
+
+	r := gin.New()
+	r.POST("/api/admin/waffles/:id/share-message/regenerate-card", middleware.RequireAuth, RegenerateShareCardAPI)
+
+	w := doRequestWithID(r, "POST", "/api/admin/waffles/"+waffleSlug+"/share-message/regenerate-card", adminID.String(), "admin", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp struct {
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Message != "share card cache regenerated" {
+		t.Fatalf("expected success message, got %q", resp.Message)
+	}
+}
