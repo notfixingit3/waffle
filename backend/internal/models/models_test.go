@@ -3,6 +3,8 @@ package models
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestDomainConstantsMatchPersistedValues(t *testing.T) {
@@ -88,5 +90,36 @@ func TestAuditLogJSONShape(t *testing.T) {
 		if _, ok := payload[key]; !ok {
 			t.Fatalf("missing audit json key %q in %s", key, string(data))
 		}
+	}
+}
+
+func TestWaffleJSONHidesShareFields(t *testing.T) {
+	id := uuid.New()
+	msg := "secret share message"
+	waffle := Waffle{
+		ID:              id,
+		Slug:            "test-waffle",
+		Title:           "Test Waffle",
+		ShareTemplateID: &id,
+		ShareMessage:    &msg,
+	}
+
+	data, err := json.Marshal(waffle)
+	if err != nil {
+		t.Fatalf("marshal waffle: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal waffle json: %v", err)
+	}
+	if _, ok := payload["share_template_id"]; ok {
+		t.Fatal("waffle JSON must not expose share_template_id")
+	}
+	if _, ok := payload["share_message"]; ok {
+		t.Fatal("waffle JSON must not expose share_message")
+	}
+	if _, ok := payload["title"]; !ok {
+		t.Fatal("waffle JSON should still expose title")
 	}
 }
