@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,6 +16,11 @@ import (
 	"github.com/syrup/backend/internal/services"
 	ws "github.com/syrup/backend/internal/websocket"
 )
+
+// ShareCardCacheDir is the directory where generated share card PNGs are cached.
+// It is relative to the process working directory and may be overridden at startup
+// (for example, when running inside the Docker image at /app).
+var ShareCardCacheDir = "cmd/api/static/cache/share-cards"
 
 // PaymentMethodDisplay is a template-friendly wrapper with a pre-computed payment URL.
 type PaymentMethodDisplay struct {
@@ -306,4 +313,49 @@ func GetBuyerCard(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, card)
+}
+
+// WaffleShareCardPNG serves a downloadable PNG share card for a waffle.
+// The card is generated on first request and cached to disk; subsequent
+// requests serve the cached file. The format query parameter accepts
+// "story" (default, 1080x1920) or "square" (1080x1080).
+func WaffleShareCardPNG(c *gin.Context) {
+	slug := c.Param("slug")
+	format := strings.ToLower(strings.TrimSpace(c.DefaultQuery("format", services.ShareCardFormatStory)))
+	if format != services.ShareCardFormatSquare {
+		format = services.ShareCardFormatStory
+	}
+
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil || waffle.Archived {
+		c.String(http.StatusNotFound, "Waffle not found")
+		return
+	}
+
+	cacheFileName := fmt.Sprintf("%s-%s.png", slug, format)
+	cachePath := filepath.Join(ShareCardCacheDir, cacheFileName)
+
+	if cached, err := os.ReadFile(cachePath); err == nil {
+		c.Header("Content-Type", "image/png")
+		c.Header("Cache-Control", "public, max-age=3600")
+		c.Data(http.StatusOK, "image/png", cached)
+		return
+	}
+
+	pngBytes, err := services.GenerateShareCard(waffle, format)
+	if err != nil {
+		slog.Error("failed to generate share card", "slug", slug, "format", format, "error", err)
+		c.String(http.StatusInternalServerError, "Failed to generate share card")
+		return
+	}
+
+	if err := os.MkdirAll(ShareCardCacheDir, 0o755); err != nil {
+		slog.Error("failed to create share card cache directory", "path", ShareCardCacheDir, "error", err)
+	} else if err := os.WriteFile(cachePath, pngBytes, 0o644); err != nil {
+		slog.Error("failed to write share card cache", "path", cachePath, "error", err)
+	}
+
+	c.Header("Content-Type", "image/png")
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.Data(http.StatusOK, "image/png", pngBytes)
 }

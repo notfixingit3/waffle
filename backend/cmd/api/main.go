@@ -151,6 +151,18 @@ func main() {
 	handlers.InitRenderers(pageRenderers)
 	handlers.AppVersion = Version
 
+	// Share card cache lives on disk alongside the embedded static directory.
+	// Adjust the path based on the current working directory so it works for
+	// local dev (backend/), repo-root runs, and the Docker image (/app).
+	switch {
+	case dirExists("cmd/api/static"):
+		handlers.ShareCardCacheDir = "cmd/api/static/cache/share-cards"
+	case dirExists("backend/cmd/api/static"):
+		handlers.ShareCardCacheDir = "backend/cmd/api/static/cache/share-cards"
+	case dirExists("static"):
+		handlers.ShareCardCacheDir = "static/cache/share-cards"
+	}
+
 	// Serve embedded static files (CSS, JS, images, manifest)
 	staticSub, err := fs.Sub(staticFS, "static")
 	if err != nil {
@@ -164,6 +176,7 @@ func main() {
 	r.GET("/", handlers.HomePage)
 	r.GET("/waffles", handlers.WaffleListPage)
 	r.GET("/waffle/:slug", handlers.WaffleDetailPage)
+	r.GET("/waffle/:slug/card.png", handlers.WaffleShareCardPNG)
 	r.GET("/buyer/:handle/card", handlers.BuyerCardPage)
 	r.GET("/buyer/:handle", handlers.BuyerStatsPage)
 	r.GET("/about", handlers.AboutPage)
@@ -283,6 +296,9 @@ func main() {
 	adminWaffles.GET("/", listWaffles)
 	adminWaffles.PATCH("/:id", updateWaffle)
 	adminWaffles.POST("/:id/winner", handlers.SetWinnerAPI)
+	adminWaffles.GET("/:id/share-message", handlers.GetWaffleShareMessageAPI)
+	adminWaffles.PATCH("/:id/share-message", handlers.UpdateWaffleShareMessageAPI)
+	adminWaffles.POST("/:id/share-message/render", handlers.RenderWaffleShareMessageAPI)
 
 	adminManagerAPI := admin.Group("/waffles", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin))
 	adminManagerAPI.POST("/:id/archive", archiveWaffle)
@@ -1181,4 +1197,10 @@ func listUsers(c *gin.Context) {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+// dirExists reports whether path is an existing directory.
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }

@@ -1180,6 +1180,163 @@ func renderPaymentMethodsPageWithError(c *gin.Context, msg string, formData gin.
 	renderers["payment_methods.html"].Render(c, "payment_methods.html", data)
 }
 
+// GetWaffleShareMessageAPI returns the current share message, all templates, and selected template ID.
+func GetWaffleShareMessageAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+	if _, err := uuid.Parse(adminIDStr.(string)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	slug := c.Param("id")
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "waffle not found"})
+		return
+	}
+
+	templates, err := services.ListMessageTemplates()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":              waffle.ShareMessage,
+		"templates":            templates,
+		"selected_template_id": waffle.ShareTemplateID,
+		"waffle": gin.H{
+			"id":    waffle.ID,
+			"slug":  waffle.Slug,
+			"title": waffle.Title,
+		},
+	})
+}
+
+// UpdateWaffleShareMessageAPI updates the share template and/or custom message for a waffle.
+// Accepts JSON body {template_id, message}. If only template_id is provided, re-renders.
+func UpdateWaffleShareMessageAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+	if _, err := uuid.Parse(adminIDStr.(string)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	slug := c.Param("id")
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "waffle not found"})
+		return
+	}
+
+	var req struct {
+		TemplateID *string `json:"template_id"`
+		Message    *string `json:"message"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if req.TemplateID != nil {
+		tmplID, err := uuid.Parse(*req.TemplateID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid template_id"})
+			return
+		}
+		if err := services.SetWaffleShareTemplate(waffle.ID, tmplID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	if req.Message != nil {
+		if err := services.SetWaffleShareMessage(waffle.ID, *req.Message); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// Reload waffle to get updated share_message
+	updated, err := services.GetWaffleByID(waffle.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reload waffle"})
+		return
+	}
+
+	RecordAudit(c, "update_waffle_share_message", "waffle", waffle.ID.String(), "updated share message for '"+waffle.Title+"'")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":              updated.ShareMessage,
+		"selected_template_id": updated.ShareTemplateID,
+	})
+}
+
+// RenderWaffleShareMessageAPI renders a share message preview without persisting.
+// Accepts JSON body {template_id}.
+func RenderWaffleShareMessageAPI(c *gin.Context) {
+	adminIDStr, exists := c.Get("admin_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+	if _, err := uuid.Parse(adminIDStr.(string)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin"})
+		return
+	}
+
+	slug := c.Param("id")
+	waffle, err := services.GetWaffleBySlug(slug)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "waffle not found"})
+		return
+	}
+
+	var req struct {
+		TemplateID string `json:"template_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	tmplID, err := uuid.Parse(req.TemplateID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid template_id"})
+		return
+	}
+
+	tmpl, err := services.GetMessageTemplateByID(tmplID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "template not found"})
+		return
+	}
+
+	stats, err := services.GetWaffleStats(waffle.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get stats"})
+		return
+	}
+
+	message, err := services.RenderShareMessage(tmpl.Body, waffle, stats, "waffle.social")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": message,
+	})
+}
+
 func ResetAdminPasswordAPI(c *gin.Context) {
 	targetID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
