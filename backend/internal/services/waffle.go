@@ -21,7 +21,17 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 	if itemCount > 10 {
 		itemCount = 10
 	}
-	
+
+	var shareTemplateID *uuid.UUID
+	if req.ShareTemplateID != nil {
+		shareTemplateID = req.ShareTemplateID
+	} else {
+		defaultTmpl, err := GetDefaultMessageTemplate()
+		if err == nil && defaultTmpl != nil {
+			shareTemplateID = &defaultTmpl.ID
+		}
+	}
+
 	waffle := &models.Waffle{
 		ID:                    uuid.New(),
 		Slug:                  slug,
@@ -34,6 +44,7 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 		InstagramMediaLinks:   req.InstagramMediaLinks,
 		Status:                models.WaffleStatusActive,
 		ItemCount:             itemCount,
+		ShareTemplateID:       shareTemplateID,
 		CreatedAt:             time.Now(),
 	}
 
@@ -44,10 +55,10 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 	defer tx.Rollback(context.Background())
 
 	_, err = tx.Exec(context.Background(), `
-		INSERT INTO waffles (id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, instagram_media_links, created_at, item_count)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO waffles (id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, instagram_media_links, created_at, item_count, share_template_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`, waffle.ID, waffle.Slug, waffle.Title, waffle.Description, waffle.ImageURL,
-		waffle.TotalSpots, waffle.SpotPrice, waffle.PaymentInfo, waffle.Status, waffle.InstagramMediaLinks, waffle.CreatedAt, waffle.ItemCount)
+		waffle.TotalSpots, waffle.SpotPrice, waffle.PaymentInfo, waffle.Status, waffle.InstagramMediaLinks, waffle.CreatedAt, waffle.ItemCount, waffle.ShareTemplateID)
 	if err != nil {
 		return nil, fmt.Errorf("insert waffle: %w", err)
 	}
@@ -79,6 +90,18 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 
 	if err := tx.Commit(context.Background()); err != nil {
 		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	// Render initial share message if a template is assigned.
+	if waffle.ShareTemplateID != nil {
+		if err := RenderWaffleShareMessage(waffle.ID); err != nil {
+			slog.Error("Failed to render initial share message", "waffle_id", waffle.ID, "error", err)
+		}
+		// Reload to pick up the rendered share_message.
+		updated, err := GetWaffleByID(waffle.ID)
+		if err == nil {
+			waffle = updated
+		}
 	}
 
 	return waffle, nil
@@ -791,4 +814,51 @@ func ChangeWinner(waffleID uuid.UUID, newWinningSpotNumbers []int) error {
 	}
 
 	return nil
+}
+
+func SetWaffleShareTemplate(waffleID, templateID uuid.UUID) error {
+	_, err := db.Pool.Exec(context.Background(), `
+		UPDATE waffles SET share_template_id = $1 WHERE id = $2
+	`, templateID, waffleID)
+	if err != nil {
+		return fmt.Errorf("set waffle share template: %w", err)
+	}
+	return RenderWaffleShareMessage(waffleID)
+}
+
+func SetWaffleShareMessage(waffleID uuid.UUID, message string) error {
+	_, err := db.Pool.Exec(context.Background(), `
+		UPDATE waffles SET share_message = $1 WHERE id = $2
+	`, message, waffleID)
+	if err != nil {
+		return fmt.Errorf("set waffle share message: %w", err)
+	}
+	return nil
+}
+
+func RenderWaffleShareMessage(waffleID uuid.UUID) error {
+	waffle, err := GetWaffleByID(waffleID)
+	if err != nil {
+		return fmt.Errorf("get waffle for render: %w", err)
+	}
+	if waffle.ShareTemplateID == nil {
+		return nil
+	}
+
+	tmpl, err := GetMessageTemplateByID(*waffle.ShareTemplateID)
+	if err != nil {
+		return fmt.Errorf("get template for render: %w", err)
+	}
+
+	stats, err := GetWaffleStats(waffleID)
+	if err != nil {
+		return fmt.Errorf("get stats for render: %w", err)
+	}
+
+	message, err := RenderShareMessage(tmpl.Body, waffle, stats, "waffle.social")
+	if err != nil {
+		return fmt.Errorf("render share message: %w", err)
+	}
+
+	return SetWaffleShareMessage(waffleID, message)
 }

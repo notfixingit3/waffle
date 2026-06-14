@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -890,4 +891,179 @@ func TestClaimRandomSpots_HandleNormalization(t *testing.T) {
 		}
 	}
 	t.Fatalf("claimed spot %d not found in DB", claimed[0])
+}
+
+// --- Share template tests ---
+
+const shareTmplTestSlugPrefix = "test-share-tmpl-"
+
+func cleanupShareTmplTestWaffles(t *testing.T) {
+	t.Helper()
+	_, err := db.Pool.Exec(context.Background(),
+		`DELETE FROM waffles WHERE slug LIKE $1`, shareTmplTestSlugPrefix+"%")
+	if err != nil {
+		t.Fatalf("cleanup share template test waffles: %v", err)
+	}
+}
+
+func TestCreateWaffle_ShareTemplatePopulated(t *testing.T) {
+	defer cleanupShareTmplTestWaffles(t)
+
+	// Ensure a default template exists for this test.
+	adminID := uuid.New()
+	_, err := db.Pool.Exec(context.Background(), `
+		INSERT INTO admins (id, username, email, password_hash, role, active, timezone, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, adminID, "test-st-"+adminID.String()[:8], "test-st-" + adminID.String() + "@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
+	if err != nil {
+		t.Fatalf("create test admin: %v", err)
+	}
+	defer func() {
+		_, _ = db.Pool.Exec(context.Background(), `DELETE FROM admins WHERE id = $1`, adminID)
+	}()
+
+	_, err = GetDefaultMessageTemplate()
+	if err != nil {
+		tmpl, err := CreateMessageTemplate("Test Default", "Test body for {item}", adminID)
+		if err != nil {
+			t.Fatalf("CreateMessageTemplate: %v", err)
+		}
+		if err := SetDefaultMessageTemplate(tmpl.ID); err != nil {
+			t.Fatalf("SetDefaultMessageTemplate: %v", err)
+		}
+	}
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:            shareTmplTestSlugPrefix + "populated",
+		TotalSpots:       5,
+		SpotPrice:        10,
+		PaymentMethodIDs: nil,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	if waffle.ShareTemplateID == nil {
+		t.Fatal("expected share_template_id to be populated from default template, got nil")
+	}
+
+	if waffle.ShareMessage == nil || *waffle.ShareMessage == "" {
+		t.Fatal("expected share_message to be non-empty after creation")
+	}
+}
+
+func TestCreateWaffle_ShareMessageContainsTitle(t *testing.T) {
+	defer cleanupShareTmplTestWaffles(t)
+
+	// Ensure a default template exists for this test.
+	adminID := uuid.New()
+	_, err := db.Pool.Exec(context.Background(), `
+		INSERT INTO admins (id, username, email, password_hash, role, active, timezone, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, adminID, "test-st-"+adminID.String()[:8], "test-st-" + adminID.String() + "@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
+	if err != nil {
+		t.Fatalf("create test admin: %v", err)
+	}
+	defer func() {
+		_, _ = db.Pool.Exec(context.Background(), `DELETE FROM admins WHERE id = $1`, adminID)
+	}()
+
+	_, err = GetDefaultMessageTemplate()
+	if err != nil {
+		tmpl, err := CreateMessageTemplate("Test Default", "Test body for {item}", adminID)
+		if err != nil {
+			t.Fatalf("CreateMessageTemplate: %v", err)
+		}
+		if err := SetDefaultMessageTemplate(tmpl.ID); err != nil {
+			t.Fatalf("SetDefaultMessageTemplate: %v", err)
+		}
+	}
+
+	title := shareTmplTestSlugPrefix + "message-content"
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:            title,
+		TotalSpots:       5,
+		SpotPrice:        10,
+		PaymentMethodIDs: nil,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	if waffle.ShareMessage == nil {
+		t.Fatal("expected share_message to be set")
+	}
+
+	if !strings.Contains(*waffle.ShareMessage, title) {
+		t.Errorf("expected share_message to contain waffle title %q, got %q", title, *waffle.ShareMessage)
+	}
+}
+
+func TestSetWaffleShareTemplate_RerendersMessage(t *testing.T) {
+	defer cleanupShareTmplTestWaffles(t)
+
+	// Ensure a default template exists for this test.
+	adminID := uuid.New()
+	_, err := db.Pool.Exec(context.Background(), `
+		INSERT INTO admins (id, username, email, password_hash, role, active, timezone, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, adminID, "test-st-"+adminID.String()[:8], "test-st-" + adminID.String() + "@example.com", "test-hash", "admin", true, "UTC", time.Now(), time.Now())
+	if err != nil {
+		t.Fatalf("create test admin: %v", err)
+	}
+	defer func() {
+		_, _ = db.Pool.Exec(context.Background(), `DELETE FROM admins WHERE id = $1`, adminID)
+	}()
+
+	_, err = GetDefaultMessageTemplate()
+	if err != nil {
+		tmpl, err := CreateMessageTemplate("Test Default", "Test body for {item}", adminID)
+		if err != nil {
+			t.Fatalf("CreateMessageTemplate: %v", err)
+		}
+		if err := SetDefaultMessageTemplate(tmpl.ID); err != nil {
+			t.Fatalf("SetDefaultMessageTemplate: %v", err)
+		}
+	}
+
+	waffle, err := CreateWaffle(models.CreateWaffleRequest{
+		Title:            shareTmplTestSlugPrefix + "rerender",
+		TotalSpots:       5,
+		SpotPrice:        10,
+		PaymentMethodIDs: nil,
+	})
+	if err != nil {
+		t.Fatalf("CreateWaffle: %v", err)
+	}
+
+	originalMessage := *waffle.ShareMessage
+
+	tmpl, err := CreateMessageTemplate("Rerender Test", "Custom body for {item}", adminID)
+	if err != nil {
+		t.Fatalf("CreateMessageTemplate: %v", err)
+	}
+	defer func() {
+		_, _ = db.Pool.Exec(context.Background(), `DELETE FROM message_templates WHERE id = $1`, tmpl.ID)
+	}()
+
+	if err := SetWaffleShareTemplate(waffle.ID, tmpl.ID); err != nil {
+		t.Fatalf("SetWaffleShareTemplate: %v", err)
+	}
+
+	updated, err := GetWaffleByID(waffle.ID)
+	if err != nil {
+		t.Fatalf("GetWaffleByID: %v", err)
+	}
+
+	if updated.ShareMessage == nil || *updated.ShareMessage == "" {
+		t.Fatal("expected share_message to be non-empty after template change")
+	}
+
+	if *updated.ShareMessage == originalMessage {
+		t.Error("expected share_message to change after template update, but it stayed the same")
+	}
+
+	if !strings.Contains(*updated.ShareMessage, waffle.Title) {
+		t.Errorf("expected updated share_message to contain waffle title, got %q", *updated.ShareMessage)
+	}
 }

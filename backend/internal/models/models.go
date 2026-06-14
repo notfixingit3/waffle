@@ -152,6 +152,7 @@ type CreateWaffleRequest struct {
 	ItemCount           int         `json:"item_count"`
 	InstagramMediaLinks []string    `json:"instagram_media_links,omitempty"`
 	PaymentMethodIDs    []uuid.UUID `json:"payment_method_ids,omitempty"`
+	ShareTemplateID     *uuid.UUID  `json:"share_template_id,omitempty"`
 }
 
 type UpdateWaffleRequest struct {
