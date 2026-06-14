@@ -119,6 +119,99 @@ func TestOptionsBypass(t *testing.T) {
 	}
 }
 
+func TestRateLimitShareCardAllowsBurst(t *testing.T) {
+	shareCardRateLimitClients = sync.Map{}
+
+	for i := 0; i < 10; i++ {
+		c, w := createTestContextWithIP("GET", "/waffle/test/card.png", "192.168.1.1")
+		RateLimitShareCard(c)
+
+		if w.Code == http.StatusTooManyRequests {
+			t.Fatalf("request %d should have succeeded, got 429", i+1)
+		}
+		if c.IsAborted() {
+			t.Fatalf("request %d should not have been aborted", i+1)
+		}
+	}
+}
+
+func TestRateLimitShareCardBlocksAfterBurst(t *testing.T) {
+	shareCardRateLimitClients = sync.Map{}
+
+	for i := 0; i < 10; i++ {
+		c, _ := createTestContextWithIP("GET", "/waffle/test/card.png", "192.168.1.1")
+		RateLimitShareCard(c)
+	}
+
+	c, w := createTestContextWithIP("GET", "/waffle/test/card.png", "192.168.1.1")
+	RateLimitShareCard(c)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", w.Code)
+	}
+	if !c.IsAborted() {
+		t.Fatal("expected context to be aborted")
+	}
+
+	retryAfter := w.Header().Get("Retry-After")
+	if retryAfter != "6" {
+		t.Fatalf("expected Retry-After: 6, got %q", retryAfter)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if resp["error"] != "rate limit exceeded" {
+		t.Fatalf("expected error 'rate limit exceeded', got %q", resp["error"])
+	}
+}
+
+func TestRateLimitShareCardPerIP(t *testing.T) {
+	shareCardRateLimitClients = sync.Map{}
+
+	for i := 0; i < 10; i++ {
+		c, _ := createTestContextWithIP("GET", "/waffle/test/card.png", "10.0.0.1")
+		RateLimitShareCard(c)
+	}
+
+	c1, w1 := createTestContextWithIP("GET", "/waffle/test/card.png", "10.0.0.1")
+	RateLimitShareCard(c1)
+	if w1.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected IP1 11th request to be 429, got %d", w1.Code)
+	}
+
+	c2, w2 := createTestContextWithIP("GET", "/waffle/test/card.png", "10.0.0.2")
+	RateLimitShareCard(c2)
+	if w2.Code == http.StatusTooManyRequests {
+		t.Fatal("expected IP2 request to succeed, got 429")
+	}
+	if c2.IsAborted() {
+		t.Fatal("expected IP2 context not to be aborted")
+	}
+}
+
+func TestRateLimitShareCardIsolatedFromClaims(t *testing.T) {
+	rateLimitClients = sync.Map{}
+	shareCardRateLimitClients = sync.Map{}
+
+	// Exhaust the claims rate limiter for IP 10.0.0.1
+	for i := 0; i < 10; i++ {
+		c, _ := createTestContextWithIP("POST", "/api/claims", "10.0.0.1")
+		RateLimitClaims(c)
+	}
+
+	// Share card should still work for the same IP
+	c, w := createTestContextWithIP("GET", "/waffle/test/card.png", "10.0.0.1")
+	RateLimitShareCard(c)
+	if w.Code == http.StatusTooManyRequests {
+		t.Fatal("expected share card request to succeed even when claims limiter is exhausted")
+	}
+	if c.IsAborted() {
+		t.Fatal("expected share card context not to be aborted")
+	}
+}
+
 func TestCleanupRemovesStaleEntries(t *testing.T) {
 	rateLimitClients = sync.Map{}
 
