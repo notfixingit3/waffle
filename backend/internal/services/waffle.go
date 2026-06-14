@@ -87,12 +87,13 @@ func CreateWaffle(req models.CreateWaffleRequest) (*models.Waffle, error) {
 func GetWaffleBySlug(slug string) (*models.Waffle, error) {
 	waffle := &models.Waffle{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
+		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, share_template_id, share_message, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 		FROM waffles WHERE slug = $1
 	`, slug).Scan(
 		&waffle.ID, &waffle.Slug, &waffle.Title, &waffle.Description, &waffle.ImageURL,
 		&waffle.TotalSpots, &waffle.SpotPrice, &waffle.PaymentInfo, &waffle.Status,
 		&waffle.WinningSpotNumber, &waffle.WinningInstagramHandle, &waffle.InstagramMediaLinks, &waffle.Archived,
+		&waffle.ShareTemplateID, &waffle.ShareMessage,
 		&waffle.CreatedAt, &waffle.CompletedAt, &waffle.ItemCount, &waffle.WinningSpotNumbers, &waffle.WinningInstagramHandles,
 	)
 	if err != nil {
@@ -104,12 +105,13 @@ func GetWaffleBySlug(slug string) (*models.Waffle, error) {
 func GetWaffleByID(id uuid.UUID) (*models.Waffle, error) {
 	waffle := &models.Waffle{}
 	err := db.Pool.QueryRow(context.Background(), `
-		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
+		SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, share_template_id, share_message, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 		FROM waffles WHERE id = $1
 	`, id).Scan(
 		&waffle.ID, &waffle.Slug, &waffle.Title, &waffle.Description, &waffle.ImageURL,
 		&waffle.TotalSpots, &waffle.SpotPrice, &waffle.PaymentInfo, &waffle.Status,
 		&waffle.WinningSpotNumber, &waffle.WinningInstagramHandle, &waffle.InstagramMediaLinks, &waffle.Archived,
+		&waffle.ShareTemplateID, &waffle.ShareMessage,
 		&waffle.CreatedAt, &waffle.CompletedAt, &waffle.ItemCount, &waffle.WinningSpotNumbers, &waffle.WinningInstagramHandles,
 	)
 	if err != nil {
@@ -561,12 +563,12 @@ func ListWaffles(includeArchived bool) ([]models.Waffle, error) {
 	var query string
 	if includeArchived {
 		query = `
-			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
+			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, share_template_id, share_message, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 			FROM waffles WHERE archived = true ORDER BY created_at DESC
 		`
 	} else {
 		query = `
-			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
+			SELECT id, slug, title, description, image_url, total_spots, spot_price, payment_info, status, winning_spot_number, winning_instagram_handle, instagram_media_links, archived, share_template_id, share_message, created_at, completed_at, item_count, winning_spot_numbers, winning_instagram_handles
 			FROM waffles WHERE archived = false ORDER BY created_at DESC
 		`
 	}
@@ -584,6 +586,7 @@ func ListWaffles(includeArchived bool) ([]models.Waffle, error) {
 			&waffle.ID, &waffle.Slug, &waffle.Title, &waffle.Description, &waffle.ImageURL,
 			&waffle.TotalSpots, &waffle.SpotPrice, &waffle.PaymentInfo, &waffle.Status,
 			&waffle.WinningSpotNumber, &waffle.WinningInstagramHandle, &waffle.InstagramMediaLinks, &waffle.Archived,
+			&waffle.ShareTemplateID, &waffle.ShareMessage,
 			&waffle.CreatedAt, &waffle.CompletedAt, &waffle.ItemCount, &waffle.WinningSpotNumbers, &waffle.WinningInstagramHandles,
 		)
 		if err != nil {

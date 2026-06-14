@@ -57,8 +57,20 @@ type Waffle struct {
 	WinningInstagramHandles []string     `json:"winning_instagram_handles,omitempty" db:"winning_instagram_handles"`
 	InstagramMediaLinks    []string     `json:"instagram_media_links,omitempty" db:"instagram_media_links"`
 	Archived               bool         `json:"archived" db:"archived"`
+	ShareTemplateID        *uuid.UUID   `json:"share_template_id,omitempty" db:"share_template_id"`
+	ShareMessage           *string      `json:"share_message,omitempty" db:"share_message"`
 	CreatedAt              time.Time    `json:"created_at" db:"created_at"`
 	CompletedAt            *time.Time   `json:"completed_at,omitempty" db:"completed_at"`
+}
+
+type MessageTemplate struct {
+	ID        uuid.UUID  `json:"id" db:"id"`
+	Name      string     `json:"name" db:"name"`
+	Body      string     `json:"body" db:"body"`
+	IsDefault bool       `json:"is_default" db:"is_default"`
+	CreatedBy *uuid.UUID `json:"created_by,omitempty" db:"created_by"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 type WinnerInfo struct {
