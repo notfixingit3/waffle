@@ -324,12 +324,13 @@
             <th class="text-left">Name</th>
             <th class="text-left">Preview</th>
             <th class="text-left">Created</th>
+            <th class="text-left">Created by</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody id="share-templates-body">
           <tr>
-            <td colspan="4" class="text-center py-8 opacity-60">Loading templates...</td>
+            <td colspan="5" class="text-center py-8 opacity-60">Loading templates...</td>
           </tr>
         </tbody>
       </table>
@@ -856,7 +857,7 @@ var ShareTemplates = (function() {
     var isEditing = editingId === template.id;
     if (isEditing) {
       return '<tr data-template-id="' + escapeHtml(template.id) + '" class="bg-base-200/50">' +
-        '<td colspan="4" class="p-4">' +
+        '<td colspan="5" class="p-4">' +
           '<form class="share-template-edit-form space-y-3">' +
             '<div>' +
               '<label class="label"><span class="label-text">Template Name</span></label>' +
@@ -887,6 +888,7 @@ var ShareTemplates = (function() {
         '<div class="text-sm opacity-80 break-words">' + escapeHtml(previewBody(template.body)) + '</div>' +
       '</td>' +
       '<td class="px-4 py-3 align-top whitespace-nowrap text-sm opacity-70">' + formatDateTime(template.created_at) + '</td>' +
+      '<td class="px-4 py-3 align-top whitespace-nowrap text-sm opacity-70">' + escapeHtml(template.created_by_name || '—') + '</td>' +
       '<td class="px-4 py-3 align-top text-right">' +
         '<div class="flex flex-wrap items-center justify-end gap-2">' +
           setDefaultBtn +
@@ -900,7 +902,7 @@ var ShareTemplates = (function() {
   function render(templates) {
     var tbody = document.getElementById('share-templates-body');
     if (!templates || templates.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">No templates yet. Create one above.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 opacity-60">No templates yet. Create one above.</td></tr>';
       return;
     }
 
@@ -918,7 +920,7 @@ var ShareTemplates = (function() {
 
   function load() {
     var tbody = document.getElementById('share-templates-body');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">Loading templates...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 opacity-60">Loading templates...</td></tr>';
 
     fetch('/api/admin/share-templates', {
       headers: { 'Accept': 'application/json' }
@@ -927,7 +929,7 @@ var ShareTemplates = (function() {
       return res.json().then(function(data) {
         if (!res.ok) {
           showError(data.error || 'Failed to load templates');
-          tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">Failed to load templates</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 opacity-60">Failed to load templates</td></tr>';
           return;
         }
         render(data.templates || []);
@@ -935,7 +937,7 @@ var ShareTemplates = (function() {
     })
     .catch(function() {
       showError('Failed to load templates');
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 opacity-60">Failed to load templates</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 opacity-60">Failed to load templates</td></tr>';
     });
   }
 
