@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -855,10 +856,15 @@ func RenderWaffleShareMessage(waffleID uuid.UUID) error {
 		return fmt.Errorf("get stats for render: %w", err)
 	}
 
-	message, err := RenderShareMessage(tmpl.Body, waffle, stats, "waffle.social")
-	if err != nil {
-		return fmt.Errorf("render share message: %w", err)
-	}
-
+	message := RenderShareMessage(tmpl.Body, waffle, stats, getShareHost())
 	return SetWaffleShareMessage(waffleID, message)
+}
+
+// getShareHost returns the host to use in share message URLs. It reads the
+// APP_HOST environment variable and falls back to "waffle.social".
+func getShareHost() string {
+	if host := os.Getenv("APP_HOST"); host != "" {
+		return host
+	}
+	return "waffle.social"
 }

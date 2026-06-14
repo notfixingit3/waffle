@@ -6,7 +6,9 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/fogleman/gg"
 	"github.com/syrup/backend/internal/models"
@@ -19,29 +21,45 @@ const (
 	ShareCardFormatSquare = "square"
 )
 
+// ShareCardCacheDir is the directory where generated share card PNGs are cached.
+// This mirrors the value in handlers.ShareCardCacheDir; the two should be kept
+// in sync until handlers can reference this package-level variable.
+var ShareCardCacheDir = "cmd/api/static/cache/share-cards"
+
+var (
+	shareCardBoldFontPath    string
+	shareCardRegularFontPath string
+	shareCardFontInitErr     error
+	shareCardFontOnce        sync.Once
+)
+
+// initShareCardFonts writes the embedded fonts to temporary files once and
+// caches their paths for reuse across card generations.
+func initShareCardFonts() {
+	shareCardBoldFontPath, _, shareCardFontInitErr = writeTempFont(ShareCardInterBoldTTF)
+	if shareCardFontInitErr != nil {
+		return
+	}
+	shareCardRegularFontPath, _, shareCardFontInitErr = writeTempFont(ShareCardInterRegularTTF)
+}
+
 // GenerateShareCard renders a downloadable PNG share card for a waffle.
 // Supported formats are "story" (1080x1920) and "square" (1080x1080);
 // any other value defaults to "story".
 func GenerateShareCard(waffle *models.Waffle, format string) ([]byte, error) {
+	shareCardFontOnce.Do(initShareCardFonts)
+	if shareCardFontInitErr != nil {
+		return nil, fmt.Errorf("prepare fonts: %w", shareCardFontInitErr)
+	}
+	boldPath := shareCardBoldFontPath
+	regularPath := shareCardRegularFontPath
+
 	format = strings.ToLower(strings.TrimSpace(format))
 	width, height := shareCardDimensions(format)
 
 	dc := gg.NewContext(width, height)
 	dc.SetHexColor("#1a1512")
 	dc.Clear()
-
-	// Load embedded fonts into temporary files so gg can use them by path.
-	boldPath, cleanupBold, err := writeTempFont(ShareCardInterBoldTTF)
-	if err != nil {
-		return nil, fmt.Errorf("prepare bold font: %w", err)
-	}
-	defer cleanupBold()
-
-	regularPath, cleanupRegular, err := writeTempFont(ShareCardInterRegularTTF)
-	if err != nil {
-		return nil, fmt.Errorf("prepare regular font: %w", err)
-	}
-	defer cleanupRegular()
 
 	// Fetch spot stats for spots remaining text.
 	stats, err := GetWaffleStats(waffle.ID)
@@ -184,6 +202,22 @@ func writeTempFont(getFont func() ([]byte, error)) (string, func(), error) {
 	return path, cleanup, nil
 }
 
+// InvalidateShareCardCache removes the cached story and square PNG files for
+// the given waffle slug. Missing files are treated as a no-op.
+func InvalidateShareCardCache(slug string) error {
+	var lastErr error
+	for _, format := range []string{ShareCardFormatStory, ShareCardFormatSquare} {
+		path := filepath.Join(ShareCardCacheDir, fmt.Sprintf("%s-%s.png", slug, format))
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			lastErr = err
+		}
+	}
+	if lastErr != nil {
+		return fmt.Errorf("invalidate share card cache: %w", lastErr)
+	}
+	return nil
+}
+
 // scaleImage returns a scaled copy of src using nearest-neighbor sampling.
 func scaleImage(src image.Image, width, height int) image.Image {
 	dst := image.NewRGBA(image.Rect(0, 0, width, height))
@@ -200,3 +234,4 @@ func scaleImage(src image.Image, width, height int) image.Image {
 	}
 	return dst
 }
+
