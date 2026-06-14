@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -104,11 +103,11 @@ func WaffleListPage(c *gin.Context) {
 		return
 	}
 
-	waffleStats := make(map[string]map[string]interface{})
+	waffleStats := make(map[string]map[string]any)
 	for _, w := range waffles {
 		stats, err := services.GetWaffleStats(w.ID)
 		if err != nil {
-			stats = map[string]interface{}{}
+			stats = map[string]any{}
 		}
 		waffleStats[w.ID.String()] = stats
 	}
@@ -138,7 +137,7 @@ func WaffleDetailPage(c *gin.Context) {
 
 	stats, err := services.GetWaffleStats(waffle.ID)
 	if err != nil {
-		stats = map[string]interface{}{}
+		stats = map[string]any{}
 	}
 
 	rawMethods, _ := services.GetPaymentMethodsForWaffle(waffle.ID)
@@ -332,14 +331,25 @@ func WaffleShareCardPNG(c *gin.Context) {
 		return
 	}
 
-	cacheFileName := fmt.Sprintf("%s-%s.png", slug, format)
-	cachePath := filepath.Join(ShareCardCacheDir, cacheFileName)
+	cacheFileName := fmt.Sprintf("%s-%s.png", waffle.Slug, format)
+	cacheRoot, err := openShareCardCacheRoot()
+	if err != nil {
+		slog.Error("failed to open share card cache directory", "path", ShareCardCacheDir, "error", err)
+	} else {
+		defer func() {
+			if err := cacheRoot.Close(); err != nil {
+				slog.Warn("failed to close share card cache directory", "path", ShareCardCacheDir, "error", err)
+			}
+		}()
+	}
 
-	if cached, err := os.ReadFile(cachePath); err == nil {
-		c.Header("Content-Type", "image/png")
-		c.Header("Cache-Control", "public, max-age=3600")
-		c.Data(http.StatusOK, "image/png", cached)
-		return
+	if cacheRoot != nil {
+		if cached, err := cacheRoot.ReadFile(cacheFileName); err == nil {
+			c.Header("Content-Type", "image/png")
+			c.Header("Cache-Control", "public, max-age=3600")
+			c.Data(http.StatusOK, "image/png", cached)
+			return
+		}
 	}
 
 	pngBytes, err := services.GenerateShareCard(waffle, format)
@@ -349,13 +359,20 @@ func WaffleShareCardPNG(c *gin.Context) {
 		return
 	}
 
-	if err := os.MkdirAll(ShareCardCacheDir, 0o755); err != nil {
-		slog.Error("failed to create share card cache directory", "path", ShareCardCacheDir, "error", err)
-	} else if err := os.WriteFile(cachePath, pngBytes, 0o644); err != nil {
-		slog.Error("failed to write share card cache", "path", cachePath, "error", err)
+	if cacheRoot != nil {
+		if err := cacheRoot.WriteFile(cacheFileName, pngBytes, 0o600); err != nil {
+			slog.Error("failed to write share card cache", "file", cacheFileName, "error", err)
+		}
 	}
 
 	c.Header("Content-Type", "image/png")
 	c.Header("Cache-Control", "public, max-age=3600")
 	c.Data(http.StatusOK, "image/png", pngBytes)
+}
+
+func openShareCardCacheRoot() (*os.Root, error) {
+	if err := os.MkdirAll(ShareCardCacheDir, 0o750); err != nil {
+		return nil, err
+	}
+	return os.OpenRoot(ShareCardCacheDir)
 }

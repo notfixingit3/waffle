@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -36,11 +37,11 @@ var (
 // initShareCardFonts writes the embedded fonts to temporary files once and
 // caches their paths for reuse across card generations.
 func initShareCardFonts() {
-	shareCardBoldFontPath, _, shareCardFontInitErr = writeTempFont(ShareCardInterBoldTTF)
+	shareCardBoldFontPath, shareCardFontInitErr = writeTempFont(ShareCardInterBoldTTF)
 	if shareCardFontInitErr != nil {
 		return
 	}
-	shareCardRegularFontPath, _, shareCardFontInitErr = writeTempFont(ShareCardInterRegularTTF)
+	shareCardRegularFontPath, shareCardFontInitErr = writeTempFont(ShareCardInterRegularTTF)
 }
 
 // GenerateShareCard renders a downloadable PNG share card for a waffle.
@@ -172,34 +173,27 @@ func shareCardDimensions(format string) (width, height int) {
 	}
 }
 
-// writeTempFont writes the embedded font bytes to a temporary file and returns
-// the path plus a cleanup function. gg requires a file path to load a font face.
-func writeTempFont(getFont func() ([]byte, error)) (string, func(), error) {
+func writeTempFont(getFont func() ([]byte, error)) (string, error) {
 	data, err := getFont()
 	if err != nil {
-		return "", nil, fmt.Errorf("read font bytes: %w", err)
+		return "", fmt.Errorf("read font bytes: %w", err)
 	}
 
 	f, err := os.CreateTemp("", "share-card-*.ttf")
 	if err != nil {
-		return "", nil, fmt.Errorf("create temp font file: %w", err)
+		return "", fmt.Errorf("create temp font file: %w", err)
 	}
 	path := f.Name()
 
 	if _, err := f.Write(data); err != nil {
-		f.Close()
-		os.Remove(path)
-		return "", nil, fmt.Errorf("write temp font file: %w", err)
+		cleanupErr := errors.Join(f.Close(), os.Remove(path))
+		return "", fmt.Errorf("write temp font file: %w", errors.Join(err, cleanupErr))
 	}
 	if err := f.Close(); err != nil {
-		os.Remove(path)
-		return "", nil, fmt.Errorf("close temp font file: %w", err)
+		return "", fmt.Errorf("close temp font file: %w", errors.Join(err, os.Remove(path)))
 	}
 
-	cleanup := func() {
-		os.Remove(path)
-	}
-	return path, cleanup, nil
+	return path, nil
 }
 
 // InvalidateShareCardCache removes the cached story and square PNG files for
