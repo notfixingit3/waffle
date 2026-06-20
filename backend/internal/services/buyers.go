@@ -26,9 +26,8 @@ func GetBuyerStats(instagramHandle string) (*models.BuyerStats, error) {
 
 func GetBuyerWaffleHistory(instagramHandle string) ([]models.BuyerWaffleHistory, error) {
 	rows, err := db.Pool.Query(context.Background(), `
-		SELECT 
+		SELECT
 			w.id, w.slug, w.title, w.spot_price, w.status,
-			w.winning_spot_number, w.winning_instagram_handle,
 			w.created_at, w.completed_at,
 			w.total_spots,
 			ARRAY_AGG(s.number ORDER BY s.number) as spot_numbers,
@@ -37,7 +36,6 @@ func GetBuyerWaffleHistory(instagramHandle string) ([]models.BuyerWaffleHistory,
 		JOIN spots s ON s.waffle_id = w.id
 		WHERE s.claimed_by_handle = $1
 		GROUP BY w.id, w.slug, w.title, w.spot_price, w.status,
-			w.winning_spot_number, w.winning_instagram_handle,
 			w.created_at, w.completed_at, w.total_spots
 		ORDER BY w.created_at DESC
 	`, instagramHandle)
@@ -52,7 +50,6 @@ func GetBuyerWaffleHistory(instagramHandle string) ([]models.BuyerWaffleHistory,
 		var isWinner bool
 		err := rows.Scan(
 			&h.WaffleID, &h.Slug, &h.Title, &h.SpotPrice, &h.Status,
-			&h.WinningSpotNumber, &h.WinningInstagramHandle,
 			&h.CreatedAt, &h.CompletedAt,
 			&h.TotalSpots,
 			&h.SpotNumbers, &isWinner,

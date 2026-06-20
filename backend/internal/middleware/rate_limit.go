@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -14,113 +15,79 @@ type rateLimitClientEntry struct {
 	lastSeen time.Time
 }
 
-var rateLimitClients sync.Map
+type ipRateLimiter struct {
+	clients sync.Map
+	every   time.Duration
+	burst   int
+}
 
-func cleanupStaleRateLimiters() {
+func newIPRateLimiter(every time.Duration, burst int) *ipRateLimiter {
+	rl := &ipRateLimiter{every: every, burst: burst}
+	go func() {
+		for {
+			time.Sleep(3 * time.Minute)
+			rl.cleanup()
+		}
+	}()
+	return rl
+}
+
+func (rl *ipRateLimiter) cleanup() {
 	now := time.Now()
-	rateLimitClients.Range(func(key, value any) bool {
-		entry := value.(*rateLimitClientEntry)
-		if now.Sub(entry.lastSeen) > 5*time.Minute {
-			rateLimitClients.Delete(key)
+	rl.clients.Range(func(key, value any) bool {
+		if now.Sub(value.(*rateLimitClientEntry).lastSeen) > 5*time.Minute {
+			rl.clients.Delete(key)
 		}
 		return true
 	})
 }
 
-func init() {
-	go func() {
-		for {
-			time.Sleep(3 * time.Minute)
-			cleanupStaleRateLimiters()
-		}
-	}()
-}
-
-func getRateLimitLimiter(ip string) *rate.Limiter {
-	if val, ok := rateLimitClients.Load(ip); ok {
+func (rl *ipRateLimiter) allow(ip string) bool {
+	if val, ok := rl.clients.Load(ip); ok {
 		entry := val.(*rateLimitClientEntry)
 		entry.lastSeen = time.Now()
-		return entry.limiter
+		return entry.limiter.Allow()
 	}
-
-	limiter := rate.NewLimiter(rate.Every(6*time.Second), 10)
-	rateLimitClients.Store(ip, &rateLimitClientEntry{
-		limiter:  limiter,
-		lastSeen: time.Now(),
-	})
-	return limiter
+	limiter := rate.NewLimiter(rate.Every(rl.every), rl.burst)
+	rl.clients.Store(ip, &rateLimitClientEntry{limiter: limiter, lastSeen: time.Now()})
+	return limiter.Allow()
 }
 
+func (rl *ipRateLimiter) middleware() gin.HandlerFunc {
+	retryAfter := fmt.Sprintf("%d", int(rl.every.Seconds()))
+	return func(c *gin.Context) {
+		if !rl.allow(c.ClientIP()) {
+			c.Header("Retry-After", retryAfter)
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+var (
+	claimsLimiter    = newIPRateLimiter(6*time.Second, 10)
+	shareCardLimiter = newIPRateLimiter(6*time.Second, 10)
+	buyerLimiter     = newIPRateLimiter(2*time.Second, 20)
+)
+
+// RateLimitClaims limits spot claim submissions to 10 per IP per minute.
 func RateLimitClaims(c *gin.Context) {
 	if c.Request.Method == "OPTIONS" {
 		c.Next()
 		return
 	}
-
-	ip := c.ClientIP()
-	limiter := getRateLimitLimiter(ip)
-
-	if !limiter.Allow() {
-		c.Header("Retry-After", "6")
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
-		c.Abort()
-		return
-	}
-
-	c.Next()
-}
-
-// shareCardRateLimitClients is a separate rate limiter for the share card PNG endpoint.
-var shareCardRateLimitClients sync.Map
-
-func cleanupStaleShareCardRateLimiters() {
-	now := time.Now()
-	shareCardRateLimitClients.Range(func(key, value any) bool {
-		entry := value.(*rateLimitClientEntry)
-		if now.Sub(entry.lastSeen) > 5*time.Minute {
-			shareCardRateLimitClients.Delete(key)
-		}
-		return true
-	})
-}
-
-func getShareCardRateLimitLimiter(ip string) *rate.Limiter {
-	if val, ok := shareCardRateLimitClients.Load(ip); ok {
-		entry := val.(*rateLimitClientEntry)
-		entry.lastSeen = time.Now()
-		return entry.limiter
-	}
-
-	// 10 requests per minute (burst of 10, refill 1 every 6s)
-	limiter := rate.NewLimiter(rate.Every(6*time.Second), 10)
-	shareCardRateLimitClients.Store(ip, &rateLimitClientEntry{
-		limiter:  limiter,
-		lastSeen: time.Now(),
-	})
-	return limiter
-}
-
-func init() {
-	// Start cleanup for share card rate limiters
-	go func() {
-		for {
-			time.Sleep(3 * time.Minute)
-			cleanupStaleShareCardRateLimiters()
-		}
-	}()
+	claimsLimiter.middleware()(c)
 }
 
 // RateLimitShareCard limits the share card PNG endpoint to 10 requests per IP per minute.
 func RateLimitShareCard(c *gin.Context) {
-	ip := c.ClientIP()
-	limiter := getShareCardRateLimitLimiter(ip)
+	shareCardLimiter.middleware()(c)
+}
 
-	if !limiter.Allow() {
-		c.Header("Retry-After", "6")
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
-		c.Abort()
-		return
-	}
-
-	c.Next()
+// RateLimitBuyer limits public buyer lookup endpoints to 20 per IP per 2 seconds (burst)
+// to prevent handle enumeration while staying invisible to normal browsing.
+func RateLimitBuyer(c *gin.Context) {
+	buyerLimiter.middleware()(c)
 }

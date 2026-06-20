@@ -44,6 +44,17 @@ func initShareCardFonts() {
 	shareCardRegularFontPath, shareCardFontInitErr = writeTempFont(ShareCardInterRegularTTF)
 }
 
+// CleanupShareCardFonts removes the temporary font files written at startup.
+// Call this once during graceful shutdown.
+func CleanupShareCardFonts() {
+	if shareCardBoldFontPath != "" {
+		os.Remove(shareCardBoldFontPath)
+	}
+	if shareCardRegularFontPath != "" {
+		os.Remove(shareCardRegularFontPath)
+	}
+}
+
 // GenerateShareCard renders a downloadable PNG share card for a waffle.
 // Supported formats are "story" (1080x1920) and "square" (1080x1080);
 // any other value defaults to "story".

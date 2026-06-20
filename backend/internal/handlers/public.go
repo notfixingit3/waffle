@@ -16,11 +16,6 @@ import (
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
-// ShareCardCacheDir is the directory where generated share card PNGs are cached.
-// It is relative to the process working directory and may be overridden at startup
-// (for example, when running inside the Docker image at /app).
-var ShareCardCacheDir = "cmd/api/static/cache/share-cards"
-
 // PaymentMethodDisplay is a template-friendly wrapper with a pre-computed payment URL.
 type PaymentMethodDisplay struct {
 	ID          string
@@ -334,11 +329,11 @@ func WaffleShareCardPNG(c *gin.Context) {
 	cacheFileName := fmt.Sprintf("%s-%s.png", waffle.Slug, format)
 	cacheRoot, err := openShareCardCacheRoot()
 	if err != nil {
-		slog.Error("failed to open share card cache directory", "path", ShareCardCacheDir, "error", err)
+		slog.Error("failed to open share card cache directory", "path", services.ShareCardCacheDir, "error", err)
 	} else {
 		defer func() {
 			if err := cacheRoot.Close(); err != nil {
-				slog.Warn("failed to close share card cache directory", "path", ShareCardCacheDir, "error", err)
+				slog.Warn("failed to close share card cache directory", "path", services.ShareCardCacheDir, "error", err)
 			}
 		}()
 	}
@@ -371,8 +366,8 @@ func WaffleShareCardPNG(c *gin.Context) {
 }
 
 func openShareCardCacheRoot() (*os.Root, error) {
-	if err := os.MkdirAll(ShareCardCacheDir, 0o750); err != nil {
+	if err := os.MkdirAll(services.ShareCardCacheDir, 0o750); err != nil {
 		return nil, err
 	}
-	return os.OpenRoot(ShareCardCacheDir)
+	return os.OpenRoot(services.ShareCardCacheDir)
 }

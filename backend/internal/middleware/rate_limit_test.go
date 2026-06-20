@@ -24,7 +24,7 @@ func createTestContextWithIP(method, url, ip string) (*gin.Context, *httptest.Re
 }
 
 func TestRateLimitAllowsBurst(t *testing.T) {
-	rateLimitClients = sync.Map{}
+	claimsLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, w := createTestContextWithIP("POST", "/api/claims", "192.168.1.1")
@@ -40,7 +40,7 @@ func TestRateLimitAllowsBurst(t *testing.T) {
 }
 
 func TestRateLimitBlocksAfterBurst(t *testing.T) {
-	rateLimitClients = sync.Map{}
+	claimsLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, _ := createTestContextWithIP("POST", "/api/claims", "192.168.1.1")
@@ -72,7 +72,7 @@ func TestRateLimitBlocksAfterBurst(t *testing.T) {
 }
 
 func TestRateLimitPerIP(t *testing.T) {
-	rateLimitClients = sync.Map{}
+	claimsLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, _ := createTestContextWithIP("POST", "/api/claims", "10.0.0.1")
@@ -96,7 +96,7 @@ func TestRateLimitPerIP(t *testing.T) {
 }
 
 func TestOptionsBypass(t *testing.T) {
-	rateLimitClients = sync.Map{}
+	claimsLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, _ := createTestContextWithIP("POST", "/api/claims", "192.168.1.1")
@@ -120,7 +120,7 @@ func TestOptionsBypass(t *testing.T) {
 }
 
 func TestRateLimitShareCardAllowsBurst(t *testing.T) {
-	shareCardRateLimitClients = sync.Map{}
+	shareCardLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, w := createTestContextWithIP("GET", "/waffle/test/card.png", "192.168.1.1")
@@ -136,7 +136,7 @@ func TestRateLimitShareCardAllowsBurst(t *testing.T) {
 }
 
 func TestRateLimitShareCardBlocksAfterBurst(t *testing.T) {
-	shareCardRateLimitClients = sync.Map{}
+	shareCardLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, _ := createTestContextWithIP("GET", "/waffle/test/card.png", "192.168.1.1")
@@ -168,7 +168,7 @@ func TestRateLimitShareCardBlocksAfterBurst(t *testing.T) {
 }
 
 func TestRateLimitShareCardPerIP(t *testing.T) {
-	shareCardRateLimitClients = sync.Map{}
+	shareCardLimiter.clients = sync.Map{}
 
 	for i := 0; i < 10; i++ {
 		c, _ := createTestContextWithIP("GET", "/waffle/test/card.png", "10.0.0.1")
@@ -192,8 +192,8 @@ func TestRateLimitShareCardPerIP(t *testing.T) {
 }
 
 func TestRateLimitShareCardIsolatedFromClaims(t *testing.T) {
-	rateLimitClients = sync.Map{}
-	shareCardRateLimitClients = sync.Map{}
+	claimsLimiter.clients = sync.Map{}
+	shareCardLimiter.clients = sync.Map{}
 
 	// Exhaust the claims rate limiter for IP 10.0.0.1
 	for i := 0; i < 10; i++ {
@@ -213,7 +213,7 @@ func TestRateLimitShareCardIsolatedFromClaims(t *testing.T) {
 }
 
 func TestCleanupRemovesStaleEntries(t *testing.T) {
-	rateLimitClients = sync.Map{}
+	claimsLimiter.clients = sync.Map{}
 
 	ip := "192.168.1.1"
 
@@ -221,15 +221,15 @@ func TestCleanupRemovesStaleEntries(t *testing.T) {
 		limiter:  rate.NewLimiter(rate.Every(6*time.Second), 10),
 		lastSeen: time.Now().Add(-10 * time.Minute),
 	}
-	rateLimitClients.Store(ip, oldEntry)
+	claimsLimiter.clients.Store(ip, oldEntry)
 
-	if _, ok := rateLimitClients.Load(ip); !ok {
+	if _, ok := claimsLimiter.clients.Load(ip); !ok {
 		t.Fatal("expected entry to exist before cleanup")
 	}
 
-	cleanupStaleRateLimiters()
+	claimsLimiter.cleanup()
 
-	if _, ok := rateLimitClients.Load(ip); ok {
+	if _, ok := claimsLimiter.clients.Load(ip); ok {
 		t.Fatal("expected stale entry to be removed after cleanup")
 	}
 }

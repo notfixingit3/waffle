@@ -156,17 +156,12 @@ func main() {
 	// local dev (backend/), repo-root runs, and the Docker image (/app).
 	switch {
 	case dirExists("cmd/api/static"):
-		handlers.ShareCardCacheDir = "cmd/api/static/cache/share-cards"
+		services.ShareCardCacheDir = "cmd/api/static/cache/share-cards"
 	case dirExists("backend/cmd/api/static"):
-		handlers.ShareCardCacheDir = "backend/cmd/api/static/cache/share-cards"
+		services.ShareCardCacheDir = "backend/cmd/api/static/cache/share-cards"
 	case dirExists("static"):
-		handlers.ShareCardCacheDir = "static/cache/share-cards"
+		services.ShareCardCacheDir = "static/cache/share-cards"
 	}
-
-	// Keep services.ShareCardCacheDir in sync with handlers.ShareCardCacheDir
-	// so that InvalidateShareCardCache targets the same directory as the cache
-	// write path in WaffleShareCardPNG.
-	services.ShareCardCacheDir = handlers.ShareCardCacheDir
 
 	// Serve embedded static files (CSS, JS, images, manifest)
 	staticSub, err := fs.Sub(staticFS, "static")
@@ -182,8 +177,8 @@ func main() {
 	r.GET("/waffles", handlers.WaffleListPage)
 	r.GET("/waffle/:slug", handlers.WaffleDetailPage)
 	r.GET("/waffle/:slug/card.png", middleware.RateLimitShareCard, handlers.WaffleShareCardPNG)
-	r.GET("/buyer/:handle/card", handlers.BuyerCardPage)
-	r.GET("/buyer/:handle", handlers.BuyerStatsPage)
+	r.GET("/buyer/:handle/card", middleware.RateLimitBuyer, handlers.BuyerCardPage)
+	r.GET("/buyer/:handle", middleware.RateLimitBuyer, handlers.BuyerStatsPage)
 	r.GET("/about", handlers.AboutPage)
 
 	r.GET("/health", middleware.RequestID(), func(c *gin.Context) {
@@ -259,7 +254,7 @@ func main() {
 	claims.POST("/", middleware.RateLimitClaims, createClaim)
 	claims.POST("/random", middleware.RateLimitClaims, createRandomClaim)
 
-	buyers := api.Group("/buyers")
+	buyers := api.Group("/buyers", middleware.RateLimitBuyer)
 	buyers.GET("/:handle/stats", handlers.GetBuyerStats)
 	buyers.GET("/:handle/history", handlers.GetBuyerHistory)
 	buyers.GET("/:handle/card", handlers.GetBuyerCard)
@@ -364,6 +359,7 @@ func main() {
 	}
 
 	ws.GetHub().Stop()
+	services.CleanupShareCardFonts()
 
 	slog.Info("server stopped")
 }

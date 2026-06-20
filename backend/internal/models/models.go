@@ -129,18 +129,16 @@ type BuyerStatsWithRank struct {
 }
 
 type BuyerWaffleHistory struct {
-	WaffleID               uuid.UUID  `json:"waffle_id"`
-	Slug                   string     `json:"slug"`
-	Title                  string     `json:"title"`
-	SpotPrice              int        `json:"spot_price"`
-	Status                 string     `json:"status"`
-	WinningSpotNumber      *int       `json:"winning_spot_number,omitempty"`
-	WinningInstagramHandle *string    `json:"winning_instagram_handle,omitempty"`
-	CreatedAt              time.Time  `json:"created_at"`
-	CompletedAt            *time.Time `json:"completed_at,omitempty"`
-	TotalSpots             int        `json:"total_spots"`
-	SpotNumbers            []int      `json:"spot_numbers"`
-	IsWinner               bool       `json:"is_winner"`
+	WaffleID    uuid.UUID  `json:"waffle_id"`
+	Slug        string     `json:"slug"`
+	Title       string     `json:"title"`
+	SpotPrice   int        `json:"spot_price"`
+	Status      string     `json:"status"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	TotalSpots  int        `json:"total_spots"`
+	SpotNumbers []int      `json:"spot_numbers"`
+	IsWinner    bool       `json:"is_winner"`
 }
 
 type CreateWaffleRequest struct {
