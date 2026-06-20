@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+-
+
+### Changed
+-
+
+### Fixed
+-
+
+## [v0.1.23-beta.4] - 2026-06-20
+
 ### Fixed
 - **Inactive payment methods on public pages** — `GetPaymentMethodsForWaffle` now
   filters `WHERE pm.is_active = true`; deactivated payment methods no longer appear
@@ -392,6 +403,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.4]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.4
 [v0.1.23-beta.3]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.3
 [v0.1.23-beta.2]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.2
 [v0.1.23-beta.1]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.1
