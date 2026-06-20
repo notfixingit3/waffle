@@ -195,6 +195,7 @@ func TestGetWaffleShareMessageAPI_Success(t *testing.T) {
 }
 
 func TestGetWaffleShareMessageAPI_NotFound(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
@@ -319,6 +320,7 @@ func TestUpdateWaffleShareMessageAPI_MessageOnly_Returns400(t *testing.T) {
 }
 
 func TestUpdateWaffleShareMessageAPI_NotFound(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
@@ -374,6 +376,7 @@ func TestRenderWaffleShareMessageAPI_Success(t *testing.T) {
 }
 
 func TestRenderWaffleShareMessageAPI_NotFound(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
@@ -430,6 +433,7 @@ func TestRegenerateShareCardAPI_MissingAuth(t *testing.T) {
 }
 
 func TestRegenerateShareCardAPI_NotFound(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()

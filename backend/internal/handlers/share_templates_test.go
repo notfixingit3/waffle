@@ -167,6 +167,7 @@ func TestSetDefaultShareTemplateAPI_MissingAuth(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestShareTemplatesAPI_WaffleManager_Allowed(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
@@ -617,6 +618,7 @@ func TestShareTemplatesAPI_Delete_NotFound(t *testing.T) {
 }
 
 func TestShareTemplatesAPI_Update_NotFound(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
@@ -638,6 +640,7 @@ func TestShareTemplatesAPI_Update_NotFound(t *testing.T) {
 }
 
 func TestShareTemplatesAPI_SetDefault_NotFound(t *testing.T) {
+	skipWithoutDB(t)
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
