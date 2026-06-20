@@ -129,7 +129,7 @@ func GetPaymentMethodsForWaffle(waffleID uuid.UUID) ([]models.PaymentMethod, err
 		SELECT pm.id, pm.type, pm.display_name, pm.handle_or_url, pm.is_active, pm.created_at, pm.updated_at
 		FROM payment_methods pm
 		JOIN waffle_payment_methods wpm ON wpm.payment_method_id = pm.id
-		WHERE wpm.waffle_id = $1
+		WHERE wpm.waffle_id = $1 AND pm.is_active = true
 		ORDER BY pm.display_name
 	`, waffleID)
 	if err != nil {

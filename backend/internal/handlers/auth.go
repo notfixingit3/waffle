@@ -56,11 +56,14 @@ func validateCSRF(c *gin.Context) bool {
 	if err != nil || cookieToken == "" {
 		return false
 	}
-	formToken := c.PostForm("csrf_token")
-	if formToken == "" {
+	submitted := c.PostForm("csrf_token")
+	if submitted == "" {
+		submitted = c.GetHeader("X-CSRF-Token")
+	}
+	if submitted == "" {
 		return false
 	}
-	return subtle.ConstantTimeCompare([]byte(cookieToken), []byte(formToken)) == 1
+	return subtle.ConstantTimeCompare([]byte(cookieToken), []byte(submitted)) == 1
 }
 
 func useSecureCookie(c *gin.Context) bool {

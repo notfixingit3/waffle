@@ -30,3 +30,7 @@ backend/package-lock.json
 /f3-*.md
 /EOF
 *.sarif
+
+# Database backups (never commit production data)
+/backups/*.sql
+/backups/*.sql.gz
