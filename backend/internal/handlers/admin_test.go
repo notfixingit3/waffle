@@ -185,7 +185,17 @@ func TestArchiveWafflePost_MissingCSRF(t *testing.T) {
 	}
 }
 
+func skipWithoutDB(t *testing.T) {
+	t.Helper()
+	if db.Pool == nil {
+		if _, err := db.Connect(); err != nil {
+			t.Skipf("Postgres not available: %v", err)
+		}
+	}
+}
+
 func TestArchiveWafflePost_Valid(t *testing.T) {
+	skipWithoutDB(t)
 	r := gin.New()
 	r.POST("/admin/waffles/:id/archive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), ArchiveWafflePost)
 	data := url.Values{"csrf_token": {"test-csrf-token"}}
@@ -210,6 +220,7 @@ func TestArchiveWafflePost_InvalidID(t *testing.T) {
 }
 
 func TestUnarchiveWafflePost_Valid(t *testing.T) {
+	skipWithoutDB(t)
 	r := gin.New()
 	r.POST("/admin/waffles/:id/unarchive", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), UnarchiveWafflePost)
 	data := url.Values{"csrf_token": {"test-csrf-token"}}
@@ -238,6 +249,7 @@ func TestDeleteWafflePost_MissingCSRF(t *testing.T) {
 }
 
 func TestDeleteWafflePost_Valid(t *testing.T) {
+	skipWithoutDB(t)
 	r := gin.New()
 	r.POST("/admin/waffles/:id/delete", middleware.RequireAuth, middleware.RequireRole(models.RoleAdmin, models.RoleSuperAdmin), DeleteWafflePost)
 	data := url.Values{
