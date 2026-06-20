@@ -21,9 +21,14 @@ Create a `.env` file in the project root:
 # Required
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 ADMIN_PASSWORD=your-secure-admin-password
+APP_HOST=yourdomain.com          # used in share message URLs
 
 # Optional (defaults shown)
 DATABASE_URL=postgres://user:pass@host:5432/syrup?sslmode=require
+PORT=8383
+GIN_MODE=release
+COOKIE_SECURE=true
+TRUSTED_PROXIES=                 # comma-separated CIDRs; defaults to RFC1918
 ```
 
 ### Option 1: Docker Compose (Single Server)
@@ -129,13 +134,27 @@ docker compose exec backend ./main migrate
 
 ## Backup
 
+Use the included scripts (requires `.env` in the project root):
+
+```bash
+# Backup — writes a gzipped dump to ./backups/
+./scripts/backup.sh
+
+# Restore — restores from a specific backup file
+./scripts/restore.sh backups/syrup-backup-YYYYMMDD-HHMMSS.sql.gz
+```
+
+Or manually:
+
 ```bash
 # Backup
-docker compose exec postgres pg_dump -U syrup syrup > backup.sql
+docker compose exec postgres pg_dump -U syrup syrup | gzip > backup.sql.gz
 
 # Restore
-docker compose exec -T postgres psql -U syrup syrup < backup.sql
+gunzip -c backup.sql.gz | docker compose exec -T postgres psql -U syrup syrup
 ```
+
+> **Note:** Never commit backup files to git. The `backups/` directory is in `.gitignore`.
 
 ---
 

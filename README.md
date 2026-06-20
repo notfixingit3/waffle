@@ -14,7 +14,7 @@
   <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"><img src="https://img.shields.io/badge/WebSockets-Live-green?logo=socket.io" alt="WebSockets" /></a>
 </p>
 
-<p align="center"><strong>Live Demo:</strong> [Coming Soon] | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.22">v0.1.22</a></p>
+<p align="center"><strong>Live Demo:</strong> <a href="https://dev.waffle.projectsyrup.app">dev.waffle.projectsyrup.app</a> | <strong>Latest Release:</strong> <a href="https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.3">v0.1.23-beta.3</a></p>
 
 ---
 
@@ -47,32 +47,42 @@ Built to work inside Instagram's in-app browser because that's where your buyers
 
 ## Features
 
-- **Multi-admin auth** — Role-based access control with `super_admin`, `admin`, and `waffle_manager` roles
-- **Admin management** — Create admins, change roles, deactivate accounts, and reset another admin's password (super_admin only)
-- **waffle_manager role** — Create and manage waffles + view reports, without archive/delete/user-management access
-- **Timezone settings** — Per-admin timezone preference with IANA timezone dropdown in settings page
-- **Password reset** — Self-service reset tokens plus authenticated password changes
-- **Instagram media links** — Link to posts showing what's being waffled (supports multiple items)
+**Waffle management**
+- **Multi-item waffles** — A single drop can have multiple items and award multiple winners
+- **Instagram media links** — Link to posts showing what's being waffled
 - **Archive + delete controls** — Hide completed waffles by default, or type `DELETE` for permanent removal
 - **Real-time spot grid** — WebSocket-powered claim, payment, release, and winner updates
-- **Random spot claiming** — Buyers can enter a count and let the app pick available spots for them while preserving the normal pending/payment workflow
-- **Mobile-first public flow** — Built for fast spot claims inside Instagram's in-app browser
-- **Installable app shell** — Web App Manifest, app icons, and standalone display metadata are wired in
-- **Admin dashboard** — Create waffles, manage spots, track payments, enter winners
-- **Admin reports** — Drought list, power buyers, monthly activity, and spot velocity reports
-- **Buyer stats** — Track win/loss history per Instagram handle
-- **Activity history** — Record claim, payment, release, and winner events per waffle
+- **Random spot claiming** — Buyers enter a count and the app picks available spots, with partial fulfillment if needed
+- **Winner management** — Set, clear, and change winners; buyer stats auto-recalculate
+
+**Payment**
+- **Stored payment methods** — Admin-managed Venmo, PayPal, CashApp, and Zelle handles linked per waffle
+- **Payment deep links** — Clickable pay buttons with correct app deep-link URLs per payment type
+
+**Sharing**
+- **Share card PNG** — Auto-generated 1080×1920 story or 1080×1080 square card at `/waffle/:slug/card.png`
+- **Share message templates** — Admin-created hype-drop message templates with `{item}`, `{spots_left}`, `{total_spots}`, `{url}` tokens
+- **Copy-ready share panel** — Template selector, editable preview, copy button, and card download on the manage page
+- **Shareable buyer cards** — Public `/buyer/:handle/card` page with luck rating, trophy case, and OG meta tags
+
+**Buyer stats**
+- **Buyer stats page** — Win/loss history, luck rating, and trophy case per Instagram handle
+- **Luck rating** — Statistical delta between actual win rate and expected win rate over completed waffles
+
+**Admin**
+- **Multi-admin auth** — Role-based access: `super_admin`, `admin`, `waffle_manager`
+- **Admin management** — Create, deactivate, role-change, password-reset (super_admin only)
+- **Admin audit log** — Audited state changes with filters and pagination
+- **Login history** — Per-admin trail with async WHOIS IP enrichment (org, country, city, ASN)
+- **Reports** — Drought list, power buyers, monthly activity, spot velocity
 - **CSV exports** — Download a waffle's spot list for external reconciliation
-- **Transactional safety** — No double-claims, ever
-- **Light/dark mode** — Manual theme toggle with persisted preference
+
+**Platform**
+- **Mobile-first public flow** — Built for Instagram's in-app browser; sub-10-second claim
+- **Installable app shell** — PWA with Web App Manifest, service worker, offline caching
+- **Warm dark theme** — Aligned with projectsyrup.app (amber accent, glass header)
 - **Dual clock footer** — Server UTC time + local browser time with waffle counter
-- **Winner management** — Admin-only clear/change winner with buyer stats recalculation
-- **Login history** — Audit trail with async WHOIS IP enrichment (org, country, city, ASN)
-- **Settings dropdown** — Consolidated admin menu under username (Settings, History, About, Theme, Logout)
-- **About page** — Public about page with admin-only system extras
-- **Configurable WHOIS** — Super_admin can configure WHOIS server for IP lookups
-- **Admin audit log** — Admin and super_admin users can review audited state changes with filters and pagination
-- **Security hardening** — Structured logging, health/readiness probes, secure cookies, login lockout, password policy, and destructive action password confirmation
+- **Security hardening** — Secure cookies, login lockout, password policy, CSRF, rate limiting, destructive-action confirmation
 
 ---
 
@@ -110,10 +120,11 @@ Default local admin credentials are `admin` / `syrup`. Change them before any re
 1. Copy [`docker-compose.prod.yml`](docker-compose.prod.yml) to your server
 2. Create a `.env` file (see [`.env.example`](.env.example) for reference):
    ```bash
-   WAFFLE_VERSION=v0.1.22
+   WAFFLE_VERSION=v0.1.23-beta.3
    DATABASE_URL=postgres://user:password@postgres:5432/syrup?sslmode=disable
    JWT_SECRET=your-secure-random-secret-here
    ADMIN_PASSWORD=your-secure-admin-password
+   APP_HOST=yourdomain.com
    ```
 4. Start the services:
    ```bash
@@ -207,19 +218,23 @@ The stable channel is currently in production testing. Pin to specific versions 
 
 **Public Endpoints**
 - `GET /api/waffles` — List public waffles
-- `GET /api/waffles/:slug` — Get waffle details
-- `GET /api/waffles/:slug/spots` — Get spot grid
+- `GET /api/waffles/:slug` — Waffle details
+- `GET /api/waffles/:slug/spots` — Spot grid
 - `GET /api/waffles/:slug/export` — Export spots as CSV
-- `POST /api/claims` — Claim spots
-- `POST /api/claims/random` — Claim a requested count of random available spots
+- `POST /api/claims` — Claim specific spots
+- `POST /api/claims/random` — Claim a random count of available spots
 - `GET /api/buyers/:handle/stats` — Buyer win/loss stats
-- `GET /api/buyers/:handle/history` — Buyer claim history
+- `GET /api/buyers/:handle/history` — Buyer waffle history
+- `GET /api/buyers/:handle/card` — Buyer card computed data (luck rating, trophies)
+- `GET /api/version` — Current app version
 
 **Public Pages**
 - `GET /` — Home page
 - `GET /waffles` — Waffle list
 - `GET /waffle/:slug` — Waffle detail + live spot grid
+- `GET /waffle/:slug/card.png?format=story|square` — Share card PNG
 - `GET /buyer/:handle` — Buyer stats page
+- `GET /buyer/:handle/card` — Shareable buyer card (Instagram Story layout)
 
 **Admin Auth Endpoints**
 - `POST /api/admin/login` — Username/password login
@@ -227,7 +242,7 @@ The stable channel is currently in production testing. Pin to specific versions 
 - `POST /api/admin/reset-password` — Reset password with token
 
 **Admin Endpoints** (auth required)
-- `GET /api/admin/me` — Get current admin info
+- `GET /api/admin/me` — Current admin info
 - `PATCH /api/admin/me/timezone` — Update timezone preference
 - `POST /api/admin/change-password` — Change password
 - `GET /api/admin/waffles?archived=true|false` — List waffles
@@ -236,18 +251,33 @@ The stable channel is currently in production testing. Pin to specific versions 
 - `POST /api/admin/waffles/:id/archive` — Archive waffle
 - `POST /api/admin/waffles/:id/unarchive` — Unarchive waffle
 - `DELETE /api/admin/waffles/:id` — Permanently delete waffle
+- `POST /api/admin/waffles/:id/winner` — Set winner
+- `POST /api/admin/waffles/:id/clear-winner` — Clear winner
+- `POST /api/admin/waffles/:id/change-winner` — Change winner
+- `GET /api/admin/waffles/:id/share-message` — Get share message + template list
+- `PATCH /api/admin/waffles/:id/share-message` — Update share template/message
+- `POST /api/admin/waffles/:id/share-message/render` — Preview rendered message
+- `POST /api/admin/waffles/:id/share-message/regenerate-card` — Bust share card cache
 - `POST /api/admin/spots/:id/pay` — Mark spot paid
 - `POST /api/admin/spots/:id/release` — Release pending spot
-- `POST /api/admin/waffles/:id/winner` — Enter winner
+- `GET /api/admin/payment-methods` — List active payment methods
+- `POST /api/admin/payment-methods` — Create payment method
+- `PATCH /api/admin/payment-methods/:id` — Update payment method
+- `DELETE /api/admin/payment-methods/:id` — Deactivate payment method
+- `GET /api/admin/share-templates` — List message templates
+- `POST /api/admin/share-templates` — Create message template
+- `PATCH /api/admin/share-templates/:id` — Update message template
+- `DELETE /api/admin/share-templates/:id` — Delete message template
+- `POST /api/admin/share-templates/:id/default` — Set default template
 - `GET /api/admin/admins` — List all admins (super_admin only)
-- `POST /api/admin/admins` — Create new admin (super_admin only)
+- `POST /api/admin/admins` — Create admin (super_admin only)
 - `PATCH /api/admin/admins/:id` — Update admin role (super_admin only)
-- `PATCH /api/admin/admins/:id/password` — Reset another admin's password (super_admin only)
+- `PATCH /api/admin/admins/:id/password` — Reset admin password (super_admin only)
 - `DELETE /api/admin/admins/:id` — Deactivate admin (super_admin only)
-- `GET /api/admin/reports/drought` — Drought list report
-- `GET /api/admin/reports/power-buyers` — Power buyers report
-- `GET /api/admin/reports/monthly-activity` — Monthly activity report
-- `GET /api/admin/reports/spot-velocity` — Spot velocity report
+- `GET /api/admin/reports/drought` — Drought list
+- `GET /api/admin/reports/power-buyers` — Power buyers
+- `GET /api/admin/reports/monthly-activity` — Monthly activity
+- `GET /api/admin/reports/spot-velocity` — Spot velocity
 
 ---
 

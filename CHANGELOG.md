@@ -7,17 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
--
+### Fixed
+- **Inactive payment methods on public pages** — `GetPaymentMethodsForWaffle` now
+  filters `WHERE pm.is_active = true`; deactivated payment methods no longer appear
+  on public waffle pages.
+- **CSRF header support** — `validateCSRF` now accepts the `X-CSRF-Token` request
+  header in addition to the form field, so JSON API endpoints (share message, share
+  templates) are properly CSRF-protected.
+- **Share message host fallback** — `APP_HOST` added to `docker-compose.prod.yml`;
+  persisted share message URLs now use the real deployment hostname instead of the
+  `waffle.social` fallback.
+- **Buyer history stale fields** — `GetBuyerWaffleHistory` no longer selects the
+  deprecated single-winner columns; `IsWinner` is derived from spot status only.
+  Removed `WinningSpotNumber`/`WinningInstagramHandle` from `BuyerWaffleHistory` model.
 
 ### Changed
--
+- **Rate limiter refactor** — `rate_limit.go` replaces two duplicated `sync.Map` +
+  `init()` goroutine patterns with a shared `ipRateLimiter` struct. No behavior change.
+- **Buyer endpoint rate limiting** — All `/buyer/:handle` page and API routes now use
+  the `RateLimitBuyer` middleware (20-request burst / 2-second window) to prevent
+  handle enumeration.
+- **Share card cache dir** — `handlers.ShareCardCacheDir` removed; all code now reads
+  `services.ShareCardCacheDir` as the single source of truth.
+- **Font temp file cleanup** — Share card embedded fonts are now removed from the OS
+  temp directory on graceful shutdown via `services.CleanupShareCardFonts()`.
 
-### Fixed
--
-
-### Removed
--
+### Security
+- **Production DB backups removed from git** — Two committed `.sql.gz` dump files
+  deleted from version history. `backups/` added to `.gitignore`.
 
 ## [v0.1.23-beta.3] - 2026-06-14
 
@@ -99,6 +116,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Agent Guidance** — Expanded Scooby-Doo commit message guidance and added local
   Docker pre-flight testing reminders for future release bumps.
 
+## [v0.1.21] - 2026-06-10
+
+### Added
+- **Random Spot Selection** — Public waffle pages include a "Pick Random Spots" flow;
+  buyers enter a count and the app claims available spots automatically.
+- **Random Claim API** — `POST /api/claims/random` with rate limiting, handle
+  normalization, transactional row locking, and WebSocket broadcast.
+- **Partial Fulfillment** — Random claims claim as many spots as available when the
+  requested count exceeds remaining availability.
+- **Live Stats Updates** — Available/Pending/Paid counts and progress bar update in
+  real-time on all spot state changes.
+
 ## [v0.1.21-beta.0] - 2026-06-10
 
 ### Added
@@ -125,6 +154,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **No Hard Random Count Limit** — Removed the client-side maximum count so the
   server-side partial fulfillment behavior remains authoritative.
+
+## [v0.1.20] - 2026-06-04
+
+### Added
+- **Multiple Items and Winners** — Waffles now support `item_count` and parallel
+  winner arrays (`winning_spot_numbers`, `winning_instagram_handles`) so a single
+  drop can award multiple prizes.
 
 ## [v0.1.19] - 2026-06-04
 
@@ -356,7 +392,14 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.3]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.3
+[v0.1.23-beta.2]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.2
+[v0.1.23-beta.1]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.1
+[v0.1.23-beta.0]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.0
+[v0.1.22]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.22
+[v0.1.21]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.21
 [v0.1.21-beta.0]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.21-beta.0
+[v0.1.20]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.20
 [v0.1.19]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.19
 [v0.1.16]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.16
 [v0.1.15]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.15
