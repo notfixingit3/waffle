@@ -271,9 +271,9 @@ func TestShareCard(t *testing.T) {
 	setupShareCardDB(t)
 
 	cacheDir := t.TempDir()
-	originalCacheDir := ShareCardCacheDir
-	ShareCardCacheDir = cacheDir
-	defer func() { ShareCardCacheDir = originalCacheDir }()
+	originalCacheDir := services.ShareCardCacheDir
+	services.ShareCardCacheDir = cacheDir
+	defer func() { services.ShareCardCacheDir = originalCacheDir }()
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
