@@ -35,9 +35,10 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
-	if db.Pool != nil {
-		db.Pool.Close()
-	}
+	// Do not call db.Pool.Close() here. The stdlib adapter used by golang-migrate
+	// keeps idle connections open asynchronously after its sql.DB is closed, so
+	// pool.Close() can hang until the go test timeout kills the binary. The OS
+	// reclaims the TCP connections when the process exits anyway.
 	os.Exit(code)
 }
 
