@@ -21,6 +21,21 @@ jobs:
     name: Quality gates
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: syrup
+          POSTGRES_PASSWORD: syrup
+          POSTGRES_DB: syrup
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -34,6 +49,9 @@ jobs:
 
       - name: Run tests
         working-directory: backend
+        env:
+          DATABASE_URL: postgres://syrup:syrup@localhost:5432/syrup?sslmode=disable
+          JWT_SECRET: ci-test-secret
         run: go test ./... -count=1
 
       - name: Run vet

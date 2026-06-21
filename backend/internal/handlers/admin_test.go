@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/middleware"
 	"github.com/syrup/backend/internal/models"
+	"github.com/syrup/backend/migrations"
 	ws "github.com/syrup/backend/internal/websocket"
 )
 
@@ -24,8 +26,12 @@ func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	ws.InitHub()
 
-	// Initialize DB pool if Postgres is available so service calls don't nil-panic.
-	_, _ = db.Connect()
+	// Initialize DB pool and run migrations if Postgres is available.
+	if pool, err := db.Connect(); err == nil {
+		if err := db.RunMigrations(pool, migrations.FS); err != nil {
+			log.Fatalf("failed to run migrations: %v", err)
+		}
+	}
 
 	code := m.Run()
 

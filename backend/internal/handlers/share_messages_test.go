@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -31,7 +32,8 @@ func setupShareMessagesDB(t *testing.T) (uuid.UUID, string, uuid.UUID) {
 
 	ensureShareMessagesTestOnce.Do(func() {
 		ctx := context.Background()
-		// Ensure the message_templates table exists
+		// Ensure the message_templates table exists (mirrors migration 015).
+		// If the migration schema changes, update this DDL to match.
 		_, err := db.Pool.Exec(ctx, `
 			CREATE TABLE IF NOT EXISTS message_templates (
 				id UUID PRIMARY KEY,
@@ -369,9 +371,13 @@ func TestRenderWaffleShareMessageAPI_Success(t *testing.T) {
 	if resp.Message == "" {
 		t.Fatal("expected non-empty rendered message")
 	}
-	// Should contain the waffle title
-	if resp.Message != "Test body Test Waffle 5 25 25 0 https://example.com/waffle/"+waffleSlug {
+	// Template body is "Test body {item} {price} {total_spots} {spots_left} {spots_claimed} {url}"
+	// Verify fixed tokens resolved correctly; host comes from APP_HOST (falls back to "waffle.social").
+	if !strings.Contains(resp.Message, "Test body Test Waffle 5 25 25 0") {
 		t.Fatalf("unexpected rendered message: %q", resp.Message)
+	}
+	if !strings.Contains(resp.Message, "/waffle/"+waffleSlug) {
+		t.Fatalf("expected waffle URL in rendered message, got: %q", resp.Message)
 	}
 }
 

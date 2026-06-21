@@ -33,7 +33,8 @@ func setupShareTemplatesDB(t *testing.T) uuid.UUID {
 
 	ensureTemplatesTableOnce.Do(func() {
 		ctx := context.Background()
-		// Ensure the message_templates table exists (from migration 015)
+		// Ensure the message_templates table exists (mirrors migration 015).
+		// If the migration schema changes, update this DDL to match.
 		_, err := db.Pool.Exec(ctx, `
 			CREATE TABLE IF NOT EXISTS message_templates (
 				id UUID PRIMARY KEY,
