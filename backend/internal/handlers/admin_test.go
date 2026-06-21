@@ -26,20 +26,25 @@ func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	ws.InitHub()
 
-	// Initialize DB pool and run migrations if Postgres is available.
+	// Tests connect only via TEST_DATABASE_URL to prevent touching a dev/prod
+	// database. If TEST_DATABASE_URL is not set, clear DATABASE_URL so tests
+	// fall back to the localhost default only — never the application's real DB.
+	if testURL := os.Getenv("TEST_DATABASE_URL"); testURL != "" {
+		os.Setenv("DATABASE_URL", testURL)
+	} else {
+		os.Unsetenv("DATABASE_URL")
+	}
+
 	if pool, err := db.Connect(); err == nil {
 		if err := db.RunMigrations(pool, migrations.FS); err != nil {
 			log.Fatalf("failed to run migrations: %v", err)
 		}
 	}
 
-	code := m.Run()
-
-	// Do not call db.Pool.Close() here. The stdlib adapter used by golang-migrate
-	// keeps idle connections open asynchronously after its sql.DB is closed, so
-	// pool.Close() can hang until the go test timeout kills the binary. The OS
-	// reclaims the TCP connections when the process exits anyway.
-	os.Exit(code)
+	// Do not call db.Pool.Close() here — the stdlib adapter used by golang-migrate
+	// keeps idle connections open asynchronously, so Close() hangs until the
+	// go test timeout kills the binary. The OS reclaims connections on exit.
+	os.Exit(m.Run())
 }
 
 func createToken(role string) string {

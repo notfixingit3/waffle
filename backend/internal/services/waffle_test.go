@@ -16,12 +16,22 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Tests connect only via TEST_DATABASE_URL to prevent touching a dev/prod
+	// database. If TEST_DATABASE_URL is not set, clear DATABASE_URL so tests
+	// fall back to the localhost default only — never the application's real DB.
+	if testURL := os.Getenv("TEST_DATABASE_URL"); testURL != "" {
+		os.Setenv("DATABASE_URL", testURL)
+	} else {
+		os.Unsetenv("DATABASE_URL")
+	}
+
 	pool, err := db.Connect()
 	if err != nil {
 		// Postgres not available — skip all service tests
 		os.Exit(0)
 	}
-	defer pool.Close()
+	// Note: pool.Close() is intentionally omitted; os.Exit bypasses defers and
+	// the OS reclaims TCP connections when the process exits.
 
 	if err := db.RunMigrations(pool, migrations.FS); err != nil {
 		panic("Failed to run database migrations for tests: " + err.Error())

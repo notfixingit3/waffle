@@ -50,7 +50,7 @@ jobs:
       - name: Run tests
         working-directory: backend
         env:
-          DATABASE_URL: postgres://syrup:syrup@localhost:5432/syrup?sslmode=disable
+          TEST_DATABASE_URL: postgres://syrup:syrup@localhost:5432/syrup?sslmode=disable
           JWT_SECRET: ci-test-secret
         run: go test ./... -count=1
 
