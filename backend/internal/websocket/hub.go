@@ -176,18 +176,22 @@ func HandleWebSocketUpgrade(c *gin.Context) {
 	sub := Subscription{Conn: cc, Room: room}
 
 	// Set initial read deadline. If no message/pong within readDeadline, ReadMessage returns an error.
-	conn.SetReadDeadline(time.Now().Add(readDeadline))
+	if err := conn.SetReadDeadline(time.Now().Add(readDeadline)); err != nil {
+		slog.Error("WebSocket: failed to set initial read deadline", "error", err)
+		return
+	}
 
 	// On receiving a ping from the peer, reset the read deadline and auto-respond with a pong.
 	conn.SetPingHandler(func(appData string) error {
-		conn.SetReadDeadline(time.Now().Add(readDeadline))
+		if err := conn.SetReadDeadline(time.Now().Add(readDeadline)); err != nil {
+			return err
+		}
 		return conn.WriteMessage(gorillaWs.PongMessage, []byte(appData))
 	})
 
 	// On receiving a pong (response to our ping), reset the read deadline.
 	conn.SetPongHandler(func(appData string) error {
-		conn.SetReadDeadline(time.Now().Add(readDeadline))
-		return nil
+		return conn.SetReadDeadline(time.Now().Add(readDeadline))
 	})
 
 	// Start heartbeat goroutine: send ping frames every heartbeatInterval.
@@ -227,7 +231,10 @@ func HandleWebSocketUpgrade(c *gin.Context) {
 			return
 		}
 		// Reset the read deadline on every successfully read message.
-		conn.SetReadDeadline(time.Now().Add(readDeadline))
+		if err := conn.SetReadDeadline(time.Now().Add(readDeadline)); err != nil {
+			slog.Error("WebSocket: failed to reset read deadline", "error", err)
+			return
+		}
 	}
 }
 
