@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,10 +49,14 @@ func initShareCardFonts() {
 // Call this once during graceful shutdown.
 func CleanupShareCardFonts() {
 	if shareCardBoldFontPath != "" {
-		os.Remove(shareCardBoldFontPath)
+		if err := os.Remove(shareCardBoldFontPath); err != nil {
+			log.Printf("share_card: failed to remove bold font temp file: %v", err)
+		}
 	}
 	if shareCardRegularFontPath != "" {
-		os.Remove(shareCardRegularFontPath)
+		if err := os.Remove(shareCardRegularFontPath); err != nil {
+			log.Printf("share_card: failed to remove regular font temp file: %v", err)
+		}
 	}
 }
 
