@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `waffle-${CACHE_VERSION}-static`;
 const PAGES_CACHE = `waffle-${CACHE_VERSION}-pages`;
 
@@ -14,6 +14,9 @@ const STATIC_ASSETS = [
   '/static/js/websocket-client.js',
   '/static/js/reports.js',
   '/static/js/admin-spot-actions.js',
+  '/static/js/share-message.js',
+  '/static/js/spot-status-classes.js',
+  '/static/js/toast.js',
   '/static/js/theme-toggle.js',
   '/static/js/footer-clock.js',
 ];

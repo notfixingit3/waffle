@@ -16,6 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -
 
+## [v0.1.23-beta.5] - 2026-06-27
+
+### Added
+- **In-app toast notifications** — New `toast.js` utility (`AdminToast.error/success/warning/info`) provides DaisyUI-styled ephemeral toasts. Replaces all native browser `alert()` calls in admin pages.
+- **In-app confirm dialog** — `AdminConfirm.show()` added to `admin_base.html` using a DaisyUI modal `<dialog>`. Replaces native browser `confirm()` for mark-paid and release-spot flows.
+- **Bulk pay feedback** — Bulk pay now shows a success toast with the count of spots marked, an error toast for any individual failures, and a network-error toast on catch. Previously silent.
+
+### Changed
+- **Spot class consolidation** — `SPOT_BASE_CLASSES` and `SPOT_GRID_CLASSES` constants added to `spot-status-classes.js`. The WebSocket spot-update handler and `admin-spot-actions.js` now reference these instead of duplicating the full Tailwind class string.
+- **Spot color consistency fix** — Bulk pay and mark-paid were incorrectly setting `bg-error` on updated grid spots; now correctly uses `bg-error/10` to match the server-rendered template.
+- **CSRF header on admin API calls** — All `fetch()` calls in `admin-spot-actions.js` (pay, release, set-winner, change-winner, clear-winner) now send `X-CSRF-Token` read from the page `<meta>` tag, consistent with the existing CSRF middleware.
+- **Service worker asset list** — `share-message.js`, `spot-status-classes.js`, and `toast.js` added to `STATIC_ASSETS`; cache version bumped to `v6`.
+
+### Fixed
+- **Test DB isolation** — `TEST_DATABASE_URL` env var used in CI and local test runs to prevent tests from touching dev/prod databases. `DATABASE_URL` is cleared in `TestMain` when `TEST_DATABASE_URL` is unset.
+- **`pool.Close()` hang** — Removed `db.Pool.Close()` call from both `TestMain` functions; the `golang-migrate` stdlib adapter holds connections asynchronously and caused the test binary to hang until the `go test` timeout fired.
+- **Share message URL in test** — `TestRenderWaffleShareMessageAPI_Success` now uses `strings.Contains` instead of an exact URL match, so it passes regardless of `APP_HOST` configuration in CI.
+- **Nil pool panics in handler tests** — Added `skipWithoutDB(t)` guard to all handler tests that call DB-backed service functions, preventing panics when Postgres is unavailable.
+
 ## [v0.1.23-beta.4] - 2026-06-20
 
 ### Fixed
@@ -403,6 +422,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.5
 [v0.1.23-beta.4]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.4
 [v0.1.23-beta.3]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.3
 [v0.1.23-beta.2]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.2

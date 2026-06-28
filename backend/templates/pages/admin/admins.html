@@ -522,11 +522,11 @@ document.querySelectorAll('.role-select').forEach(select => {
           window.location.reload();
         } else {
           return res.json().then(data => {
-            alert(data.error || 'Failed to update role');
+            AdminToast.error(data.error || 'Failed to update role');
           });
         }
       })
-      .catch(() => alert('Failed to update role'));
+      .catch(() => AdminToast.error('Failed to update role'));
     }
   });
 });

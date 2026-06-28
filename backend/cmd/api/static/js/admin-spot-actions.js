@@ -146,10 +146,12 @@ var AdminSpotActions = (function() {
     btn.disabled = true;
     btn.textContent = 'Processing...';
 
+    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
     var promises = spots.map(function(spotId) {
       return fetch('/api/admin/spots/' + spotId + '/pay', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
       }).then(function(res) {
         return res.json().then(function(data) {
           return { ok: res.ok, data: data, spotId: spotId };
@@ -158,123 +160,137 @@ var AdminSpotActions = (function() {
     });
 
     Promise.all(promises).then(function(results) {
+      var succeeded = 0;
+      var failed = 0;
       results.forEach(function(r) {
         if (r.ok) {
+          succeeded++;
           var el = document.querySelector('[data-spot-id="' + r.spotId + '"]');
           if (el) {
             el.dataset.spotStatus = 'paid';
-            el.className = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + SPOT_STATUS_CLASSES.paid.bg + ' ' + SPOT_STATUS_CLASSES.paid.border + ' ' + SPOT_STATUS_CLASSES.paid.text + ' cursor-default';
+            el.className = config.spotBaseClasses + ' ' + config.spotPaidClasses;
           }
           var listItem = document.querySelector('#pending-list [data-spot-id="' + r.spotId + '"]');
           if (listItem) {
             listItem.remove();
           }
+        } else {
+          failed++;
         }
       });
       checkEmptyPendingList();
       selectedForBulk.clear();
       updateBulkUI();
+      if (succeeded > 0) {
+        AdminToast.success(succeeded + ' spot' + (succeeded === 1 ? '' : 's') + ' marked as paid.');
+      }
+      if (failed > 0) {
+        AdminToast.error(failed + ' spot' + (failed === 1 ? '' : 's') + ' failed to update. Please try again.');
+      }
     }).catch(function() {
       btn.disabled = false;
       updateBulkUI();
+      AdminToast.error('Network error during bulk pay. Please try again.');
     });
   }
 
   function markSpotPaid(spotId, spotNumber, el, isListItem) {
-    if (!confirm('Mark spot #' + spotNumber + ' as paid?')) return;
+    AdminConfirm.show('Mark spot #' + spotNumber + ' as paid?', function() {
+      var button;
+      if (el && el.querySelector) {
+        button = el.querySelector('.pay-single-btn');
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = '...';
+      }
 
-    var button;
-    if (el && el.querySelector) {
-      button = el.querySelector('.pay-single-btn');
-    }
-    if (button) {
-      button.disabled = true;
-      button.textContent = '...';
-    }
+      var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+      fetch('/api/admin/spots/' + spotId + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+      })
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          AdminToast.error('Error: ' + (result.data.error || 'Failed to mark paid'));
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Mark Paid';
+          }
+          return;
+        }
 
-    fetch('/api/admin/spots/' + spotId + '/pay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    .then(function(res) {
-      return res.json().then(function(data) {
-        return { ok: res.ok, data: data };
-      });
-    })
-    .then(function(result) {
-      if (!result.ok) {
-        alert('Error: ' + (result.data.error || 'Failed to mark paid'));
+        var gridSpot = document.querySelector('#spot-grid [data-spot-id="' + spotId + '"]');
+        if (gridSpot) {
+          gridSpot.dataset.spotStatus = 'paid';
+          gridSpot.className = config.spotBaseClasses + ' ' + config.spotPaidClasses;
+        }
+
+        if (isListItem && el) {
+          el.remove();
+          checkEmptyPendingList();
+        } else {
+          var listItem = document.querySelector('#pending-list [data-spot-id="' + spotId + '"]');
+          if (listItem) {
+            listItem.remove();
+            checkEmptyPendingList();
+          }
+        }
+      })
+      .catch(function() {
+        AdminToast.error('Network error. Please try again.');
         if (button) {
           button.disabled = false;
           button.textContent = 'Mark Paid';
         }
-        return;
-      }
-
-      var gridSpot = document.querySelector('#spot-grid [data-spot-id="' + spotId + '"]');
-      if (gridSpot) {
-        gridSpot.dataset.spotStatus = 'paid';
-        gridSpot.className = 'admin-spot-item relative rounded-lg border-2 text-center p-2 min-h-[44px] flex flex-col items-center justify-center transition-all duration-200 touch-manipulation select-none ' + SPOT_STATUS_CLASSES.paid.bg + ' ' + SPOT_STATUS_CLASSES.paid.border + ' ' + SPOT_STATUS_CLASSES.paid.text + ' cursor-default';
-      }
-
-      if (isListItem && el) {
-        el.remove();
-        checkEmptyPendingList();
-      } else {
-        var listItem = document.querySelector('#pending-list [data-spot-id="' + spotId + '"]');
-        if (listItem) {
-          listItem.remove();
-          checkEmptyPendingList();
-        }
-      }
-    })
-    .catch(function() {
-      alert('Network error. Please try again.');
-      if (button) {
-        button.disabled = false;
-        button.textContent = 'Mark Paid';
-      }
-    });
+      });
+    }, { title: 'Mark Paid', confirmLabel: 'Mark Paid', confirmClass: 'btn-success' });
   }
 
   function releaseSpot(spotId, spotNumber, el) {
-    if (!confirm('Release spot #' + spotNumber + ' back to available? This cannot be undone.')) return;
+    AdminConfirm.show('Release spot #' + spotNumber + ' back to available? This cannot be undone.', function() {
+      var btn = el.querySelector('.release-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '...';
+      }
 
-    var btn = el.querySelector('.release-btn');
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '...';
-    }
+      var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+      fetch('/api/admin/spots/' + spotId + '/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+      })
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          AdminToast.error('Error: ' + (result.data.error || 'Failed to release spot'));
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Release';
+          }
+          return;
+        }
 
-    fetch('/api/admin/spots/' + spotId + '/release', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    .then(function(res) {
-      return res.json().then(function(data) {
-        return { ok: res.ok, data: data };
-      });
-    })
-    .then(function(result) {
-      if (!result.ok) {
-        alert('Error: ' + (result.data.error || 'Failed to release spot'));
+        el.remove();
+        checkEmptyPendingList();
+      })
+      .catch(function() {
+        AdminToast.error('Network error. Please try again.');
         if (btn) {
           btn.disabled = false;
           btn.textContent = 'Release';
         }
-        return;
-      }
-
-      el.remove();
-      checkEmptyPendingList();
-    })
-    .catch(function() {
-      alert('Network error. Please try again.');
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = 'Release';
-      }
-    });
+      });
+    }, { title: 'Release Spot', confirmLabel: 'Release', confirmClass: 'btn-warning' });
   }
 
   function executeSetWinner() {
@@ -309,9 +325,10 @@ var AdminSpotActions = (function() {
     btn.disabled = true;
     btn.textContent = 'Setting Winner...';
 
+    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
     fetch('/api/admin/waffles/' + config.waffleId + '/winner', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ winning_spot_numbers: spotNumbers })
     })
     .then(function(res) {
@@ -376,9 +393,10 @@ var AdminSpotActions = (function() {
     btn.disabled = true;
     btn.textContent = 'Changing Winner...';
 
+    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
     fetch('/api/admin/waffles/' + config.waffleId + '/change-winner', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ winning_spot_numbers: spotNumbers })
     })
     .then(function(res) {
@@ -424,9 +442,10 @@ var AdminSpotActions = (function() {
     btn.disabled = true;
     btn.textContent = 'Clearing Winner...';
 
+    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
     fetch('/api/admin/waffles/' + config.waffleId + '/clear-winner', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
     })
     .then(function(res) {
       return res.json().then(function(data) {

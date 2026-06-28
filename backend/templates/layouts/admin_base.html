@@ -27,6 +27,45 @@
   {{ template "footer.html" . }}
   <script src="/static/js/footer-clock.js"></script>
   <script>FooterClock.init();</script>
+  <script src="/static/js/toast.js"></script>
+  <dialog id="admin-confirm-dialog" class="modal">
+    <div class="modal-box max-w-sm">
+      <h3 id="admin-confirm-title" class="font-bold text-lg">Confirm</h3>
+      <p id="admin-confirm-message" class="py-4 text-sm opacity-70"></p>
+      <div class="modal-action">
+        <button id="admin-confirm-cancel" class="btn btn-ghost btn-sm">Cancel</button>
+        <button id="admin-confirm-ok" class="btn btn-error btn-sm">Confirm</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+  <script>
+  var AdminConfirm = (function() {
+    'use strict';
+    var dialog, okBtn, pending;
+    document.addEventListener('DOMContentLoaded', function() {
+      dialog = document.getElementById('admin-confirm-dialog');
+      okBtn  = document.getElementById('admin-confirm-ok');
+      document.getElementById('admin-confirm-cancel').addEventListener('click', function() {
+        dialog.close(); pending = null;
+      });
+      okBtn.addEventListener('click', function() {
+        dialog.close();
+        if (pending) { var fn = pending; pending = null; fn(); }
+      });
+    });
+    function show(message, onConfirm, opts) {
+      opts = opts || {};
+      document.getElementById('admin-confirm-title').textContent   = opts.title || 'Confirm';
+      document.getElementById('admin-confirm-message').textContent = message;
+      okBtn.textContent  = opts.confirmLabel || 'Confirm';
+      okBtn.className    = 'btn btn-sm ' + (opts.confirmClass || 'btn-error');
+      pending = onConfirm;
+      dialog.showModal();
+    }
+    return { show: show };
+  })();
+  </script>
   {{ block "scripts" . }}{{ end }}
 </body>
 </html>
