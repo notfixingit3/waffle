@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -
 
+## [v0.1.23-beta.7] - 2026-06-28
+
+### Fixed
+- **Unhandled error in font cleanup (G104)** — `CleanupShareCardFonts` now logs failures from `os.Remove` instead of silently discarding the error return.
+- **Unhandled errors in WebSocket handler (G104)** — All four `conn.SetReadDeadline` calls in the WebSocket connection handler now check the error return; failures in the initial setup and read loop return early, and failures inside ping/pong handlers are propagated to gorilla/websocket.
+
 ## [v0.1.23-beta.6] - 2026-06-28
 
 ### Security
@@ -430,6 +436,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.7
 [v0.1.23-beta.6]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.6
 [v0.1.23-beta.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.5
 [v0.1.23-beta.4]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.4

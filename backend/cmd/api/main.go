@@ -29,7 +29,7 @@ import (
 	"github.com/syrup/backend/migrations"
 )
 
-var Version = "v0.1.23-beta.6"
+var Version = "v0.1.23-beta.7"
 
 var roleHierarchy = map[string]int{
 	"super_admin":    3,
