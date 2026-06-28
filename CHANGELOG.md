@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -
 
+## [v0.1.23-beta.6] - 2026-06-28
+
+### Security
+- **pgx SQL injection (GO-2026-5004)** — Upgraded `jackc/pgx/v5` from `v5.7.1` to `v5.9.2`. Switched `golang-migrate` from the pgx v4 database driver (`database/pgx`) to the pgx v5 driver (`database/pgx/v5`), eliminating `pgx/v4` as a dependency entirely and resolving both reported traces.
+
+### Changed
+- **GitHub Sponsors** — Added `notfixingit3` to `.github/FUNDING.yml` so the Sponsor button appears on the repo.
+
 ## [v0.1.23-beta.5] - 2026-06-27
 
 ### Added
@@ -422,6 +430,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.6]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.6
 [v0.1.23-beta.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.5
 [v0.1.23-beta.4]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.4
 [v0.1.23-beta.3]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.3
