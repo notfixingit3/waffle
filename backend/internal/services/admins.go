@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/syrup/backend/internal/db"
 	"github.com/syrup/backend/internal/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateAdmin(req models.CreateAdminRequest) (*models.Admin, error) {
@@ -282,13 +282,12 @@ func GetAdminPasswordHash(id uuid.UUID) (string, error) {
 }
 
 func hashToken(token string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(token), bcrypt.MinCost)
-	return string(hash)
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }
 
 func CompareTokenHash(token, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(token))
-	return err == nil
+	return ConstantTimeCompare(hashToken(token), hash)
 }
 
 func ConstantTimeCompare(a, b string) bool {

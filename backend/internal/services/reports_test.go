@@ -33,6 +33,14 @@ func cleanupReportTestData(t *testing.T) {
 	`, testReportHandlePrefix)
 }
 
+func clearAllWafflesAndSpots(t *testing.T) {
+	t.Helper()
+	_, err := db.Pool.Exec(context.Background(), `TRUNCATE TABLE waffles CASCADE`)
+	if err != nil {
+		t.Fatalf("failed to truncate tables: %v", err)
+	}
+}
+
 func insertReportWaffle(t *testing.T, slugSuffix string, status models.WaffleStatus, price int, totalSpots int, createdAt, completedAt *time.Time) uuid.UUID {
 	t.Helper()
 	id := uuid.New()
@@ -66,6 +74,7 @@ func TestGetDroughtList(t *testing.T) {
 	if db.Pool == nil {
 		t.Skip("Postgres not available")
 	}
+	clearAllWafflesAndSpots(t)
 	defer cleanupReportTestData(t)
 
 	now := time.Now()
@@ -112,6 +121,7 @@ func TestGetPowerBuyers(t *testing.T) {
 	if db.Pool == nil {
 		t.Skip("Postgres not available")
 	}
+	clearAllWafflesAndSpots(t)
 	defer cleanupReportTestData(t)
 
 	now := time.Now()
@@ -155,6 +165,7 @@ func TestGetMonthlyActivity(t *testing.T) {
 	if db.Pool == nil {
 		t.Skip("Postgres not available")
 	}
+	clearAllWafflesAndSpots(t)
 	defer cleanupReportTestData(t)
 
 	now := time.Now()
@@ -200,6 +211,7 @@ func TestGetSpotVelocity(t *testing.T) {
 	if db.Pool == nil {
 		t.Skip("Postgres not available")
 	}
+	clearAllWafflesAndSpots(t)
 	defer cleanupReportTestData(t)
 
 	now := time.Now()
