@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -
 
+## [v0.1.23-beta.9] - 2026-07-01
+
+### Added
+- **Admins Service Unit Tests** — Added Go unit tests in [admins_test.go](file:///Users/house/Documents/gitlab/waffle/backend/internal/services/admins_test.go) covering CRUD operations, profile/timezone updates, token generation, and reset token flows.
+- **Audit Log Service Unit Tests** — Added Go unit tests in [audit_log_test.go](file:///Users/house/Documents/gitlab/waffle/backend/internal/services/audit_log_test.go) verifying recording and filtering of admin action audits.
+- **Reports DB Isolation** — Added a `clearAllWafflesAndSpots` truncation helper in reports tests to prevent aggregate test values from being polluted by existing database records.
+
+### Fixed
+- **Password Reset Token Verification** — Fixed password reset token verification by replacing non-deterministic bcrypt hashing (which generated new random salts on lookup queries) with SHA-256 hashing.
+
 ## [v0.1.23-beta.8] - 2026-07-01
 
 ### Added
@@ -447,6 +457,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.9]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.9
 [v0.1.23-beta.8]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.8
 [v0.1.23-beta.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.7
 [v0.1.23-beta.6]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.6
