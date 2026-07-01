@@ -332,14 +332,21 @@ Project Syrup is built out of passion for the glass art community. If this app h
 
 <table>
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
       <h3>🎨 Sponsor a Glass Piece</h3>
       <p>Sponsor Tom's next <strong>Wubble</strong>, <strong>Jelli</strong>, or <strong>Pocket Monstor</strong>.</p>
       <a href="https://www.instagram.com/crysis_designs/">
         <img src="https://img.shields.io/badge/Instagram-PM%20Crysis%20Designs-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="PM Crysis Designs on Instagram" />
       </a>
     </td>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
+      <h3>💖 GitHub Sponsors</h3>
+      <p>Support development directly through GitHub Sponsors program.</p>
+      <a href="https://github.com/sponsors/notfixingit3">
+        <img src="https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" alt="Sponsor on GitHub" />
+      </a>
+    </td>
+    <td align="center" width="33%">
       <h3>☕ Support Development</h3>
       <p>Help cover hosting costs and directly support the development of this application.</p>
       <a href="https://www.buymeacoffee.com/notfixingit">
