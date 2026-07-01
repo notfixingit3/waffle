@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -
 
+## [v0.1.23-beta.8] - 2026-07-01
+
+### Added
+- **Interactive SVG Monthly Activity Chart** — Fully responsive, interactive dual-axis combo chart featuring Waffles, Claims, and Revenue metrics, with toggleable visibility, dynamic hover cursor guideline, and detailed hover tooltips.
+- **Visual Timelines for Spot Velocity** — Timelines charting response times (Active Waffles) and overall cycle times (Completed Waffles) to make spot filling metrics easy to follow.
+- **Reporting Services Unit Test Suite** — New Go test coverage in [reports_test.go](file:///Users/house/Documents/gitlab/waffle/backend/internal/services/reports_test.go) verifying correctness of drought, power buyer, monthly activity, and spot velocity database queries.
+
+### Fixed
+- **Admin Report Tab Switcher** — Fixed broken tab click selectors by replacing `.tab-btn` with the correct `.tab` selector.
+- **Monthly Activity Date Boundary** — Fixed timezone-dependent month-boundary checks in tests by matching waffle creation times.
+
 ## [v0.1.23-beta.7] - 2026-06-28
 
 ### Fixed
@@ -436,6 +447,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.8]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.8
 [v0.1.23-beta.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.7
 [v0.1.23-beta.6]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.6
 [v0.1.23-beta.5]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.5
