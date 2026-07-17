@@ -423,12 +423,19 @@ func SetWinner(waffleID uuid.UUID, winningSpotNumbers []int) error {
 	if err != nil {
 		slog.Error("Failed to get spots for buyer stats update", "error", err)
 	} else {
+		handles := make(map[string]struct{})
 		for _, spot := range spots {
 			if spot.ClaimedByHandle != nil {
 				isWin := spot.Status == models.SpotStatusWinner
 				if err := UpdateBuyerStats(*spot.ClaimedByHandle, isWin); err != nil {
 					slog.Error("Failed to update buyer stats", "handle", *spot.ClaimedByHandle, "error", err)
 				}
+				handles[*spot.ClaimedByHandle] = struct{}{}
+			}
+		}
+		for handle := range handles {
+			if err := InvalidateBuyerCardCache(handle); err != nil {
+				slog.Error("Failed to invalidate buyer card cache", "handle", handle, "error", err)
 			}
 		}
 	}
@@ -524,6 +531,29 @@ func DeleteWaffle(id uuid.UUID) error {
 	}
 	defer tx.Rollback(context.Background())
 
+	// Collect participant handles before the spots go away so their cached
+	// buyer cards can be invalidated after commit — deleting a waffle changes
+	// their stats, trophies, and expected win rate.
+	rows, err := tx.Query(context.Background(), `
+		SELECT DISTINCT claimed_by_handle FROM spots WHERE waffle_id = $1 AND claimed_by_handle IS NOT NULL
+	`, id)
+	if err != nil {
+		return fmt.Errorf("get participant handles: %w", err)
+	}
+	var handles []string
+	for rows.Next() {
+		var handle string
+		if err := rows.Scan(&handle); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan participant handle: %w", err)
+		}
+		handles = append(handles, handle)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate participant handles: %w", err)
+	}
+
 	_, err = tx.Exec(context.Background(), `DELETE FROM spots WHERE waffle_id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("delete spots: %w", err)
@@ -541,6 +571,12 @@ func DeleteWaffle(id uuid.UUID) error {
 
 	if err := tx.Commit(context.Background()); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	for _, handle := range handles {
+		if err := InvalidateBuyerCardCache(handle); err != nil {
+			slog.Error("Failed to invalidate buyer card cache", "handle", handle, "error", err)
+		}
 	}
 
 	return nil
@@ -702,12 +738,19 @@ func ClearWinner(waffleID uuid.UUID) error {
 	if err != nil {
 		slog.Error("Failed to get spots for buyer stats update", "error", err)
 	} else {
+		handles := make(map[string]struct{})
 		for _, spot := range spots {
 			if spot.ClaimedByHandle != nil {
 				isWin := spot.Status == models.SpotStatusWinner
 				if err := UpdateBuyerStats(*spot.ClaimedByHandle, isWin); err != nil {
 					slog.Error("Failed to update buyer stats", "handle", *spot.ClaimedByHandle, "error", err)
 				}
+				handles[*spot.ClaimedByHandle] = struct{}{}
+			}
+		}
+		for handle := range handles {
+			if err := InvalidateBuyerCardCache(handle); err != nil {
+				slog.Error("Failed to invalidate buyer card cache", "handle", handle, "error", err)
 			}
 		}
 	}
@@ -804,12 +847,19 @@ func ChangeWinner(waffleID uuid.UUID, newWinningSpotNumbers []int) error {
 	if err != nil {
 		slog.Error("Failed to get spots for buyer stats update", "error", err)
 	} else {
+		handles := make(map[string]struct{})
 		for _, spot := range spots {
 			if spot.ClaimedByHandle != nil {
 				isWin := spot.Status == models.SpotStatusWinner
 				if err := UpdateBuyerStats(*spot.ClaimedByHandle, isWin); err != nil {
 					slog.Error("Failed to update buyer stats", "handle", *spot.ClaimedByHandle, "error", err)
 				}
+				handles[*spot.ClaimedByHandle] = struct{}{}
+			}
+		}
+		for handle := range handles {
+			if err := InvalidateBuyerCardCache(handle); err != nil {
+				slog.Error("Failed to invalidate buyer card cache", "handle", handle, "error", err)
 			}
 		}
 	}
