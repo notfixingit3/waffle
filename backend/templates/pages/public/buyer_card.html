@@ -9,7 +9,9 @@
   <meta property="og:description" content="{{ .Description }}">
   <meta property="og:url" content="{{ .Scheme }}://{{ .Host }}/buyer/{{ .handle }}/card">
   <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="{{ .Scheme }}://{{ .Host }}/buyer/{{ .handle }}/card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{ .Scheme }}://{{ .Host }}/buyer/{{ .handle }}/card.png">
   <link rel="stylesheet" href="/static/css/output.css">
   <link rel="icon" href="/static/favicon.svg">
 </head>
