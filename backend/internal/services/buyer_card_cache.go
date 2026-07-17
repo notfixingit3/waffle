@@ -23,6 +23,15 @@ func buyerCardCacheFileName(handle, format string) (string, bool) {
 	return fmt.Sprintf("buyer-%s-%s.png", handle, format), true
 }
 
+// BuyerCardCacheFileName exposes the validated buyer cache file name to the
+// HTTP layer so handle validation lives in exactly one place (this package).
+// ok is false when the handle cannot form a safe file name; callers must treat
+// that as "no such buyer" and never fall back to joining the raw handle into a
+// path themselves.
+func BuyerCardCacheFileName(handle, format string) (string, bool) {
+	return buyerCardCacheFileName(handle, format)
+}
+
 // InvalidateBuyerCardCache removes the cached story and square buyer card
 // PNGs for handle. Invalid handles and missing files are no-ops returning nil.
 // Handles are user-controlled and persisted without charset validation, so

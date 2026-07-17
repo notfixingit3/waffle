@@ -177,6 +177,7 @@ func main() {
 	r.GET("/waffles", handlers.WaffleListPage)
 	r.GET("/waffle/:slug", handlers.WaffleDetailPage)
 	r.GET("/waffle/:slug/card.png", middleware.RateLimitShareCard, handlers.WaffleShareCardPNG)
+	r.GET("/buyer/:handle/card.png", middleware.RateLimitShareCard, handlers.BuyerCardPNG)
 	r.GET("/buyer/:handle/card", middleware.RateLimitBuyer, handlers.BuyerCardPage)
 	r.GET("/buyer/:handle", middleware.RateLimitBuyer, handlers.BuyerStatsPage)
 	r.GET("/about", handlers.AboutPage)

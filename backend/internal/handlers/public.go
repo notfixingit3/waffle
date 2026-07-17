@@ -365,6 +365,71 @@ func WaffleShareCardPNG(c *gin.Context) {
 	c.Data(http.StatusOK, "image/png", pngBytes)
 }
 
+// BuyerCardPNG serves a downloadable PNG buyer card for an Instagram handle.
+// The card is generated on first request and cached to disk; subsequent
+// requests serve the cached file. Unknown buyers (no stats) get a zero-state
+// card that is served but never cached, so arbitrary handles cannot grow the
+// disk cache. The format query parameter accepts "story" (default, 1080x1920)
+// or "square" (1080x1080). Handles that cannot form a safe cache file name
+// are rejected with 404.
+func BuyerCardPNG(c *gin.Context) {
+	handle := services.NormalizeInstagramHandle(c.Param("handle"))
+	format := strings.ToLower(strings.TrimSpace(c.DefaultQuery("format", services.ShareCardFormatStory)))
+	if format != services.ShareCardFormatSquare {
+		format = services.ShareCardFormatStory
+	}
+
+	cacheFileName, ok := services.BuyerCardCacheFileName(handle, format)
+	if !ok {
+		c.String(http.StatusNotFound, "Buyer not found")
+		return
+	}
+
+	cacheRoot, err := openShareCardCacheRoot()
+	if err != nil {
+		slog.Error("failed to open share card cache directory", "path", services.ShareCardCacheDir, "error", err)
+	} else {
+		defer func() {
+			if err := cacheRoot.Close(); err != nil {
+				slog.Warn("failed to close share card cache directory", "path", services.ShareCardCacheDir, "error", err)
+			}
+		}()
+	}
+
+	if cacheRoot != nil {
+		if cached, err := cacheRoot.ReadFile(cacheFileName); err == nil {
+			c.Header("Content-Type", "image/png")
+			c.Header("Cache-Control", "public, max-age=3600")
+			c.Data(http.StatusOK, "image/png", cached)
+			return
+		}
+	}
+
+	card, err := services.ComputeBuyerCardData(handle)
+	if err != nil {
+		slog.Error("failed to compute buyer card data", "handle", handle, "error", err)
+		c.String(http.StatusInternalServerError, "Failed to generate buyer card")
+		return
+	}
+
+	pngBytes, err := services.GenerateBuyerCardPNG(card, format)
+	if err != nil {
+		slog.Error("failed to generate buyer card", "handle", handle, "format", format, "error", err)
+		c.String(http.StatusInternalServerError, "Failed to generate buyer card")
+		return
+	}
+
+	if cacheRoot != nil && card.Stats != nil {
+		if err := cacheRoot.WriteFile(cacheFileName, pngBytes, 0o600); err != nil {
+			slog.Error("failed to write buyer card cache", "file", cacheFileName, "error", err)
+		}
+	}
+
+	c.Header("Content-Type", "image/png")
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.Data(http.StatusOK, "image/png", pngBytes)
+}
+
 func openShareCardCacheRoot() (*os.Root, error) {
 	if err := os.MkdirAll(services.ShareCardCacheDir, 0o750); err != nil {
 		return nil, err
