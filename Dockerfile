@@ -29,6 +29,7 @@ RUN adduser -D appuser
 WORKDIR /app
 COPY --from=builder /app/bin/waffle .
 COPY --from=builder /app/cmd/api/static ./static
+RUN mkdir -p /app/static/cache/share-cards && chown appuser:appuser /app/static/cache/share-cards
 COPY --from=builder /app/templates ./templates
 USER appuser
 EXPOSE 8383
