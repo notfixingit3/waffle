@@ -378,6 +378,9 @@ Project Syrup utilizes several excellent open-source third-party libraries:
 - **[DaisyUI](https://daisyui.com/)** — MIT License
 - **[Inter Font](https://rsms.me/inter/)** — SIL Open Font License 1.1
 
+### Graphics
+- **[Twemoji](https://github.com/twitter/twemoji)** — CC-BY 4.0 License (trophy emoji used in share card assets)
+
 ---
 
 ## License

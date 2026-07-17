@@ -94,3 +94,32 @@ func TestShareCardAssets_EmojiPointDownPNGReader(t *testing.T) {
 		t.Fatal("image.Decode from reader returned nil")
 	}
 }
+
+func TestShareCardAssets_EmojiTrophyPNG(t *testing.T) {
+	img, err := ShareCardEmojiTrophyPNG()
+	if err != nil {
+		t.Fatalf("ShareCardEmojiTrophyPNG() returned error: %v", err)
+	}
+	if img == nil {
+		t.Fatal("ShareCardEmojiTrophyPNG() returned nil image")
+	}
+	bounds := img.Bounds()
+	if bounds.Dx() == 0 || bounds.Dy() == 0 {
+		t.Fatal("ShareCardEmojiTrophyPNG() returned zero-dimension image")
+	}
+}
+
+func TestShareCardAssets_EmojiTrophyPNGReader(t *testing.T) {
+	r, err := ShareCardEmojiTrophyPNGReader()
+	if err != nil {
+		t.Fatalf("ShareCardEmojiTrophyPNGReader() returned error: %v", err)
+	}
+	defer r.Close()
+	img, _, err := image.Decode(r)
+	if err != nil {
+		t.Fatalf("image.Decode from reader returned error: %v", err)
+	}
+	if img == nil {
+		t.Fatal("image.Decode from reader returned nil")
+	}
+}

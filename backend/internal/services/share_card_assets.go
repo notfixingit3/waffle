@@ -36,3 +36,13 @@ func ShareCardEmojiWafflePNGReader() (io.ReadCloser, error) {
 func ShareCardEmojiPointDownPNGReader() (io.ReadCloser, error) {
 	return sharecardassets.EmojiPointDownPNGReader()
 }
+
+// ShareCardEmojiTrophyPNG returns the trophy emoji PNG as a decoded image.
+func ShareCardEmojiTrophyPNG() (image.Image, error) {
+	return sharecardassets.EmojiTrophyPNG()
+}
+
+// ShareCardEmojiTrophyPNGReader returns a reader for the trophy emoji PNG.
+func ShareCardEmojiTrophyPNGReader() (io.ReadCloser, error) {
+	return sharecardassets.EmojiTrophyPNGReader()
+}

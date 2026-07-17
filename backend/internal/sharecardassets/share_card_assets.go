@@ -8,7 +8,7 @@ import (
 	_ "image/png"
 )
 
-//go:embed emoji/waffle.png emoji/point_down.png fonts/Inter-Regular.ttf fonts/Inter-Bold.ttf
+//go:embed emoji/waffle.png emoji/point_down.png emoji/trophy.png fonts/Inter-Regular.ttf fonts/Inter-Bold.ttf
 var assets embed.FS
 
 // EmojiWafflePNG returns the waffle emoji PNG as a decoded image.
@@ -51,4 +51,20 @@ func EmojiWafflePNGReader() (io.ReadCloser, error) {
 // EmojiPointDownPNGReader returns a reader for the point-down emoji PNG.
 func EmojiPointDownPNGReader() (io.ReadCloser, error) {
 	return assets.Open("emoji/point_down.png")
+}
+
+// EmojiTrophyPNG returns the trophy emoji PNG as a decoded image.
+func EmojiTrophyPNG() (image.Image, error) {
+	f, err := assets.Open("emoji/trophy.png")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	return img, err
+}
+
+// EmojiTrophyPNGReader returns a reader for the trophy emoji PNG.
+func EmojiTrophyPNGReader() (io.ReadCloser, error) {
+	return assets.Open("emoji/trophy.png")
 }
