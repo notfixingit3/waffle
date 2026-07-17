@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -
 
+## [v0.1.23-beta.10] - 2026-07-17
+
+### Added
+- **Buyer Card PNG Endpoint** — New `GET /buyer/:handle/card.png?format=story|square` endpoint serving a shareable PNG image of any buyer's waffle card, with disk caching and safe invalidation on winner/delete flows.
+- **og:image / twitter:card Wiring** — Buyer card page now includes `og:image` and `twitter:card` (`summary_large_image`) meta tags pointing at the card.png route, enabling link unfurl previews.
+- **Trophy Emoji Asset** — Twemoji trophy PNG embedded in share card assets (CC-BY 4.0, attribution in README).
+- **E2E Playwright Suite** — End-to-end test suite for buyer card PNG flow, including Instagram in-app browser compatibility checklist (tooling/docs).
+
+### Security
+- **Path-Traversal-Safe Buyer Cache Invalidation** — `InvalidateBuyerCardCache` uses `os.Root` semantics instead of `filepath.Join` + `os.Remove`, preventing stored path-traversal attacks via user-controlled Instagram handles.
+
+### Fixed
+- **Dockerfile Cache-Dir Fix** — Share card caching now works correctly in the container image by ensuring the cache directory exists before writes.
+
 ## [v0.1.23-beta.9] - 2026-07-01
 
 ### Added
@@ -457,6 +471,7 @@ But removing it keeps your compose file clean and avoids confusion.
 
 ---
 
+[v0.1.23-beta.10]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.10
 [v0.1.23-beta.9]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.9
 [v0.1.23-beta.8]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.8
 [v0.1.23-beta.7]: https://github.com/notfixingit3/waffle/releases/tag/v0.1.23-beta.7
